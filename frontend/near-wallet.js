@@ -75,7 +75,7 @@ export class Wallet {
     return JSON.parse(Buffer.from(res.result).toString());
   }
 
-  // Call a method that changes the contract's state
+  // Call a method that changes the contract-js's state
   async callMethod({ contractId = this.contractId, method, args = {}, gas = THIRTY_TGAS, deposit = NO_DEPOSIT }) {
     const { accountId } = this.walletSelector.store.getState().accounts[0];
 

@@ -1,0 +1,13 @@
+console.log("Config???")
+
+require("util").inspect.defaultOptions.depth = 5; // Increase AVA's printing depth
+
+console.log("Config?")
+module.exports = {
+  timeout: "300000",
+  files: ["src/*.ava.ts"],
+  failWithoutAssertions: false,
+  extensions: ["ts"],
+  require: ["ts-node/register"],
+};
+console.log("Config")

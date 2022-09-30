@@ -1099,7 +1099,7 @@ let MinerNode = (_dec = NearBindgen({}), _dec2 = call({}), _dec3 = view({}), _de
 
   init() {
     this.ownerId = signerAccountId();
-    this.oracleId = predecessorAccountId(); //TODO Assert oracleId is actually an oracle
+    this.oracleId = predecessorAccountId(); //TODO Assert oracle_id is actually an oracle
 
     this.nodeAccount = currentAccountId();
     log(this.ownerId);

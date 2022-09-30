@@ -41,20 +41,22 @@ class Coordinator {
         const owner = near.signerAccountId(); //Get owner where rewards will be redeemed to
         const accountId = `${accountPrefix || near.randomSeed()}.${near.currentAccountId()}`
         near.log(accountId)
-        // const node = this.deployNodeContract({accountId: accountId})
+        // const node = this.deployNodeContract({account_id: account_id})
         // near.log(node)
+        near.log(near.usedGas())
+        near.log(near.prepaidGas())
         return NearPromise.new(accountId)
             .createAccount()
             .transfer(MIN_NODE_STORAGE)
             .addAccessKey(new PublicKey(near.signerAccountPk()), 250000000000000000000000n, 'receiver_account_id', "allowed_function_names")
             // .deployContract(includeBytes("./node.wasm"))
             .deployContract("./node.wasm")
-            // .functionCall("init", toBytes({}), ONE_NEAR, ONE_NEAR)
+            .functionCall("init", toBytes({}), ONE_NEAR, ONE_NEAR)
             .asReturn()
 
         // near.log(promise)
         // near.log(promise)
-        // this.nodes.set(accountId, node)
+        // this.nodes.set(account_id, node)
 
 
         const registerNodePromise = near.promiseBatchCreate(this.oracleAccountId)
@@ -92,3 +94,5 @@ class Coordinator {
 
 //Ideas for supported software:
 // cURL, Go, Node, Python, Bash, venv,
+// Post-quantum encryption algorithms
+// Off the record messaging

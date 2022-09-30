@@ -21,7 +21,7 @@ export class MinerNode {
     init(){
         this.ownerId = near.signerAccountId()
         this.oracleId = near.predecessorAccountId()
-        //TODO Assert oracleId is actually an oracle
+        //TODO Assert oracle_id is actually an oracle
         this.nodeAccount = near.currentAccountId()
         near.log(this.ownerId)
         near.log(this.oracleId)

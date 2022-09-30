@@ -35,8 +35,8 @@ test.after(async (t) => {
 test('returns the default greeting', async (t) => {
   const { root, coordinator, node } = t.context.accounts;
   const result = await root.call(coordinator, "createAndRegisterNode", {accountPrefix: Date.now()}, {
-    attachedDeposit: NEAR.parse("1 N").toString(),
-    gas: NEAR.parse("10 mN").toString(),
+    // attachedDeposit: NEAR.parse("1 N").toString(),
+    gas: BigInt(1000000000000000000000), //SomeN
   });
   console.log(result)
 });
@@ -53,8 +53,8 @@ test('returns the default greeting', async (t) => {
 //   const {root, contract-js} = t.context.accounts;
 //   console.log(root)
 //   // await contract-js.init({
-//   //   owner: root.accountId,
-//   //   oracle: contract-js.accountId,
+//   //   owner: root.account_id,
+//   //   oracle: contract-js.account_id,
 //   // })
 //
 // })

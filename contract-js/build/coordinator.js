@@ -585,6 +585,12 @@ function predecessorAccountId() {
 function attachedDeposit() {
   return env.attached_deposit();
 }
+function prepaidGas() {
+  return env.prepaid_gas();
+}
+function usedGas() {
+  return env.used_gas();
+}
 function randomSeed() {
   env.random_seed(0);
   return env.read_register(0);
@@ -748,7 +754,7 @@ function NearBindgen({
 }
 
 const ERR_INDEX_OUT_OF_BOUNDS = "Index out of bounds";
-const ERR_INCONSISTENT_STATE$1 = "The collection is an inconsistent state. Did previous smart contract-js execution terminate unexpectedly?";
+const ERR_INCONSISTENT_STATE$1 = "The collection is an inconsistent state. Did previous smart contract execution terminate unexpectedly?";
 
 function indexToKey(prefix, index) {
   let data = new Uint32Array([index]);
@@ -899,7 +905,7 @@ class VectorIterator {
 
 }
 
-const ERR_INCONSISTENT_STATE = "The collection is an inconsistent state. Did previous smart contract-js execution terminate unexpectedly?";
+const ERR_INCONSISTENT_STATE = "The collection is an inconsistent state. Did previous smart contract execution terminate unexpectedly?";
 
 function serializeIndex(index) {
   let data = new Uint32Array([index]);
@@ -1377,7 +1383,7 @@ class NearPromise {
 }
 
 var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _dec7, _dec8, _class, _class2;
-BigInt(1000000000000000000000000); //1 NEAR in yoctoNEAR
+const ONE_NEAR = BigInt(1000000000000000000000000); //1 NEAR in yoctoNEAR
 
 const POINT_ONE_NEAR = BigInt(100000000000000000000000); //0.1 NEAR in yoctoNEAR
 
@@ -1392,6 +1398,10 @@ const MIN_NODE_STORAGE = POINT_ONE_NEAR; //0.01 NEAR
 const MIN_STORAGE = MIN_COORDINATOR_STORAGE + MIN_NODE_STORAGE; //0.01 NEAR=~1 kb. Need a high upper bound for software data storage
 
 BigInt("50000000000000");
+
+const toBytes = obj => {
+  return bytes(JSON.stringify(obj));
+};
 
 let Coordinator = (_dec = NearBindgen({}), _dec2 = initialize({}), _dec3 = call({
   payableFunction: true
@@ -1418,12 +1428,13 @@ let Coordinator = (_dec = NearBindgen({}), _dec2 = initialize({}), _dec3 = call(
     signerAccountId(); //Get owner where rewards will be redeemed to
 
     const accountId = `${accountPrefix || randomSeed()}.${currentAccountId()}`;
-    log(accountId); // const node = this.deployNodeContract({accountId: accountId})
+    log(accountId); // const node = this.deployNodeContract({account_id: account_id})
     // near.log(node)
 
+    log(usedGas());
+    log(prepaidGas());
     return NearPromise.new(accountId).createAccount().transfer(MIN_NODE_STORAGE).addAccessKey(new PublicKey(signerAccountPk()), 250000000000000000000000n, 'receiver_account_id', "allowed_function_names") // .deployContract(includeBytes("./node.wasm"))
-    .deployContract("./node.wasm") // .functionCall("init", toBytes({}), ONE_NEAR, ONE_NEAR)
-    .asReturn(); // near.log(promise)
+    .deployContract("./node.wasm").functionCall("init", toBytes({}), ONE_NEAR, ONE_NEAR).asReturn(); // near.log(promise)
   }
 
   createBounty({

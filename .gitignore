@@ -1,0 +1,14 @@
+# Parent project
+/node_modules
+
+# Frontend
+/frontend/node_modules
+/frontend/dist
+/frontend/.parcel-cache
+
+# Contracts
+/contract-js/node_modules
+
+# Tests
+/integration-tests-js/node_modules
+

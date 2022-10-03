@@ -21,7 +21,6 @@ html {
 
 body {
   margin: 0;
-  padding: 1em;
 }
 
 main {
@@ -33,12 +32,11 @@ main.please-wait {
 }
 
 h1 {
-  background-image: url(./svg/logo-black.svg);
   background-position: center 1em;
   background-repeat: no-repeat;
   background-size: auto 1.5em;
   margin-top: 0;
-  padding: 3.5em 0 0;
+  padding: 1em 0 0;
   text-align: center;
   font-size: 1.5em;
 }
@@ -180,14 +178,11 @@ li {
 
 @media (prefers-color-scheme: dark) {
   html {
-    --bg: #1e1e1e;
-    --fg: #efefef;
+    --bg: #efefef;
+    --fg: #1e1e1e;
     --gray: #aaa;
     --shadow: #2a2a2a;
     --light-gray: #444;
-  }
-  h1 {
-    background-image: url(./svg/logo-white.svg);
   }
   input:focus {
     box-shadow: 0 0 10em rgba(255, 255, 255, 0.02) inset;
@@ -240,16 +235,4 @@ main.please-wait .loader:after {
     -webkit-transform: rotate(360deg);
     transform: rotate(360deg);
   }
-}
-
-.wallet {
-  background-color: rgb(240, 240, 241);
-  display: flex;
-  -webkit-box-align: center;
-  align-items: center;
-  border-radius: 40px;
-  padding: 2px 5px 2px 2px;
-  cursor: pointer;
-  user-select: none;
-  float: right;
 }

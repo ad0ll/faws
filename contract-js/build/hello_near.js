@@ -165,7 +165,7 @@ function convertRadix(data, from, to) {
       carry = digitBase % to;
       digits[i] = Math.floor(digitBase / to);
       if (!Number.isSafeInteger(digits[i]) || digits[i] * to + carry !== digitBase) throw new Error('convertRadix: carry overflow');
-      if (!done) continue;else if (!digits[i]) pos = i;else done = false;
+      if (!done) else if (!digits[i]) pos = i;else done = false;
     }
 
     res.push(carry);

@@ -7,6 +7,9 @@ const test = anyTest as TestFn<{
   worker: Worker;
   accounts: Record<string, NearAccount>;
 }>;
+// const root = "../contract-js/build" //js root
+const root = "../contract-rust/target/"// rust root
+
 test.before(async (t) => {
   // Init the worker and start a Sandbox server
   const worker = await Worker.init();

@@ -3,6 +3,7 @@ import App from "./App";
 import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
 import ReactDOM from "react-dom/client";
+import { createTheme, ThemeProvider } from "@mui/material";
 
 const reactRoot = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -13,12 +14,25 @@ const contractId = process.env.CONTRACT_NAME;
 const wallet = new Wallet({ contractId });
 const contract = new Contract({ wallet });
 
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#efefef",
+    },
+    secondary: {
+      main: "#555",
+    },
+  },
+});
+
 window.onload = () => {
   wallet
     .startUp()
     .then((isSignedIn: boolean) => {
       reactRoot.render(
-        <App isSignedIn={isSignedIn} contract={contract} wallet={wallet} />
+        <ThemeProvider theme={theme}>
+          <App isSignedIn={isSignedIn} contract={contract} wallet={wallet} />
+        </ThemeProvider>
       );
     })
     .catch((e) => {

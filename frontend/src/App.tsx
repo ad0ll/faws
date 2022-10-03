@@ -22,13 +22,6 @@ export default function App({
 }) {
   let pageComponent;
 
-  /// If user not signed-in with wallet - show prompt
-  if (!isSignedIn) {
-    // Sign-in flow will reload the page later
-    console.log("Trigger sign in prompt");
-    return <SignInPrompt onClick={() => wallet.signIn()} />;
-  }
-
   switch (window.location.pathname) {
     case "/":
       pageComponent = <Home wallet={wallet} />;
@@ -42,7 +35,7 @@ export default function App({
 
   return (
     <>
-      <NavBar wallet={wallet} />
+      <NavBar isSignedIn={isSignedIn} wallet={wallet} />
       {pageComponent}
     </>
   );

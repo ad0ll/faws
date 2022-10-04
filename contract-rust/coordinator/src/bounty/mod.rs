@@ -17,12 +17,20 @@ pub const DEFAULT_BOUNTY_OWNER_ID: &str = "default-bounty.test.near";
 // May be possible to incentivize higher rewards by having an ordered vector of bounties
 const MIN_REWARD: Balance = 1_000_000_000_000_000_000_000;
 
+enum SupportedDownloadProtocols {
+    IPFS,
+    HTTPS,
+    GIT,
+}
+//TODO using an enum for file_download_protocol breaks serialization
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bounty{
     pub owner_id: AccountId, // Signer who created the bounty. Used for auth.
     pub coordinator_id: AccountId, // Coordinator who created the bounty. Used for auth and verification.
     pub file_location: String, //URL/CID. Support ipfs, git, https initially
+    // pub file_download_protocol: SupportedDownloadProtocols, //ipfs, git, https
+    pub file_download_protocol: String, //ipfs, git, https
     pub success: bool, // True if we accepted responses from a minimum of ${threshold} nodes. False on error or cancel.
     pub complete: bool, // True the bounty is done processing.
     pub threshold: u64, // Min number of nodes that must have consensus to complete the bounty
@@ -42,11 +50,12 @@ impl Bounty {
     #[init]
     #[private]
     #[payable]
-    pub fn new(name: String, file_location: String, threshold: u64, total_nodes: u64, network_required: bool, amt_storage: Balance, amt_node_reward: Balance) -> Self {
+    pub fn new(name: String, file_location: String, file_download_protocol: String, threshold: u64, total_nodes: u64, network_required: bool, amt_storage: Balance, amt_node_reward: Balance) -> Self {
         Self {
             owner_id: signer_account_id(),
             coordinator_id: predecessor_account_id(), //predecessor_account_id OR whatever the user specifies
             file_location,
+            file_download_protocol,
             success: false,
             complete: false,
             threshold,

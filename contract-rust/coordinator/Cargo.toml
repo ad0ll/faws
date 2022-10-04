@@ -13,6 +13,8 @@ near-sdk = "4.0.0"
 uint = { version = "0.9.3", default-features = false }
 chrono = "0.4"
 rand = "0.8.5"
+regex = "1.6.0"
+lazy_static = "1.4.0"
 
 # These are used for integration tests, which don't build against wasm32
 # wasm32 builds will fail, if some/all of these are included under [dependencies]

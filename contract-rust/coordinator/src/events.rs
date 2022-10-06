@@ -1,4 +1,4 @@
-//TODO Update documentation in here, all pointing to NFTs
+//TODO Update documentation in here, all pointing to NFT stuffs from where this was copied
 
 use std::fmt;
 use near_sdk::{AccountId, serde_json};
@@ -14,9 +14,8 @@ use near_sdk::serde::{Deserialize, Serialize};
 #[serde(crate = "near_sdk::serde")]
 #[non_exhaustive]
 pub enum EventLogVariant {
-    BountyCreated(Vec<BountyCreatedLog>),
-    // NodesElectedLog(Vec<NodeElectedLog>),
-    // BountyCompleted(Vec<BountyCompletedLog>),
+    BountyCreated(BountyCreatedLog),
+    BountyCompleted(BountyCompletedLog),
 }
 
 /// Interface to capture data about an event
@@ -30,7 +29,6 @@ pub enum EventLogVariant {
 pub struct EventLog {
     pub standard: String,
     pub version: String,
-
     // `flatten` to not have "event": {<EventLogVariant>} in the JSON, just have the contents of {<EventLogVariant>}.
     #[serde(flatten)]
     pub event: EventLogVariant,
@@ -48,35 +46,18 @@ impl fmt::Display for EventLog {
 /// An event log to capture token minting
 ///
 /// Arguments
-/// * `owner_id`: "account.near"
-/// * `token_ids`: ["1", "abc"]
-/// * `memo`: optional message
+/// * `bounty_id`: "account.near"
+/// * `node_ids`: ["1", "abc"]
+/// * `message`: optional message
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct BountyCreatedLog {
-    pub owner_id: String,
-    pub token_ids: Vec<String>,
-    nodes: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub memo: Option<String>,
-}
-
-/// An event log to capture token minting
-///
-/// Arguments
-/// * `owner_id`: "account.near"
-/// * `token_ids`: ["1", "abc"]
-/// * `memo`: optional message
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(crate = "near_sdk::serde")]
-pub struct NodeElectedLog {
-    pub node_id: AccountId,
     pub bounty_id: AccountId,
-
+    pub node_ids: Vec<AccountId>,
+    // pub network_required: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub memo: Option<String>,
+    pub message: Option<String>,
 }
-
 
 /// An event log to capture token transfer
 ///

@@ -1,0 +1,3 @@
+[submodule "indexer-tutorials"]
+	path = indexer-tutorials
+	url = https://github.com/ad0ll/indexer-tutorials

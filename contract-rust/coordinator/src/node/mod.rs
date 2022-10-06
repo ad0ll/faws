@@ -31,13 +31,12 @@ pub struct Node {
     pub last_failure: u64,
     pub successful_runs: u64,
     pub failed_runs: u64,
-    pub allow_network: bool,
     pub gpus: Vec<Gpu>,
 }
 
 #[near_bindgen]
 impl Node {
-    pub fn new(owner_id: AccountId, allow_network: bool) -> Self {
+    pub fn new(owner_id: AccountId) -> Self {
         Self {
             owner_id,
             last_run: 0,
@@ -45,13 +44,11 @@ impl Node {
             last_failure: 0,
             successful_runs: 0,
             failed_runs: 0,
-            allow_network,
             gpus: Vec::new(),
         }
     }
 }
 
-//TODO, do we need this default?
 impl Default for Node {
     fn default() -> Self {
         Self {
@@ -61,14 +58,10 @@ impl Default for Node {
             last_failure: 0,
             successful_runs: 0,
             failed_runs: 0,
-            allow_network: true,
             gpus: Vec::new(),
         }
     }
 }
-
-
-
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

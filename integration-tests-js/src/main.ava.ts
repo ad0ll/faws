@@ -1,63 +1,63 @@
-import {Worker, NearAccount, NEAR} from 'near-workspaces';
+import { Worker, NEAR, NearAccount } from 'near-workspaces';
 import anyTest, { TestFn } from 'ava';
-import * as path from "path";
-import {describe} from "node:test";
 
 const test = anyTest as TestFn<{
   worker: Worker;
   accounts: Record<string, NearAccount>;
 }>;
-// const root = "../contract-js/build" //js root
-const root = "../contract-rust/target/"// rust root
 
-test.before(async (t) => {
+test.beforeEach(async (t) => {
   // Init the worker and start a Sandbox server
   const worker = await Worker.init();
 
-  // Deploy contracts to sandbox. Note that each time we have a new sandbox with new accounts and new pubkeys
+  // deploy contract
   const root = worker.rootAccount;
-  const coordinator = await root.createSubAccount("coordinator-account");
-  await coordinator.deploy(path.join(process.cwd(), "../contract-js/build/coordinator.wasm",));
-  const node = await root.createSubAccount("node-account");
-  await node.deploy(path.join(process.cwd(), "../contract-js/build/node.wasm",));
+
+  console.log("Creating sub accounts")
+  // some test accounts
+  // const alice = await root.createSubAccount("alice", {
+  //   initialBalance: NEAR.parse("30 N").toJSON(),
+  // });
+  // const contract = await root.createSubAccount("contract", {
+  //   initialBalance: NEAR.parse("30 N").toJSON(),
+  // });
+  console.log("Sub accounts created")
+  // Get wasm file path from package.json test script in folder above
+  // await root.deploy("../../target/wasm32-unknown-unknown/release/contract.wasm");
+  console.log("Contract deployed")
 
   // Save state for test runs, it is unique for each test
   t.context.worker = worker;
-  t.context.accounts = { root, coordinator, node };
-  console.log("Finished setting up test")
+  t.context.accounts = { root, contract: undefined, alice: undefined };
 });
 
-test.after(async (t) => {
+test.afterEach(async (t) => {
   // Stop Sandbox server
+  console.log("Stopping worker")
   await t.context.worker.tearDown().catch((error) => {
-    console.log('Failed to stop the Sandbox:', error);
+    console.log("Failed to stop the Sandbox:", error);
   });
 });
-
-
-test('returns the default greeting', async (t) => {
-  const { root, coordinator, node } = t.context.accounts;
-  const result = await root.call(coordinator, "createAndRegisterNode", {accountPrefix: Date.now()}, {
-    // attachedDeposit: NEAR.parse("1 N").toString(),
-    gas: BigInt(1000000000000000000000), //SomeN
-  });
-  console.log(result)
-});
-
 //
-// test('changes the message', async (t) => {
-//   const { root, contract-js } = t.context.accounts;
-//   await root.call(contract-js, 'set_greeting', { message: 'Howdy' });
-//   const message: string = await contract-js.view('get_greeting', {});
-//   t.is(message, 'Howdy');
+// test("send one message and retrieve it", async (t) => {
+//   console.log("Doing the thing")
+//   const { root, contract } = t.context.accounts;
+//   await root.call(contract, "add_message", { text: "aloha" });
+//   const msgs = await contract.view("get_messages");
+//   const expectedMessagesResult = [
+//     { premium: false, sender: root.accountId, text: "aloha" },
+//   ];
+//   t.deepEqual(msgs, expectedMessagesResult);
 // });
 //
-// test("miner", async (t) => {
-//   const {root, contract-js} = t.context.accounts;
-//   console.log(root)
-//   // await contract-js.init({
-//   //   owner: root.account_id,
-//   //   oracle: contract-js.account_id,
-//   // })
-//
-// })
+// test("send two messages and expect two total", async (t) => {
+//   const { root, contract, alice } = t.context.accounts;
+//   await root.call(contract, "add_message", { text: "aloha" });
+//   await alice.call(contract, "add_message", { text: "hola" }, { attachedDeposit: NEAR.parse('1') });
+//   const msgs = await contract.view("get_messages");
+//   const expected = [
+//     { premium: false, sender: root.accountId, text: "aloha" },
+//     { premium: true, sender: alice.accountId, text: "hola" },
+//   ];
+//   t.deepEqual(msgs, expected);
+// });

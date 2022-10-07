@@ -1,20 +1,12 @@
 use std::collections::HashMap;
+use std::mem::size_of_val;
 use std::fmt::Display;
-use chrono::Utc;
-use near_sdk::{AccountId, Balance, near_bindgen, require};
+use near_sdk::{AccountId, Balance, env, Gas, near_bindgen, Promise, require};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap};
-use near_sdk::env::{current_account_id, predecessor_account_id, signer_account_id};
+use near_sdk::env::{attached_deposit, block_timestamp, block_timestamp_ms, current_account_id, predecessor_account_id, signer_account_id, storage_byte_cost, storage_usage, used_gas};
 use near_sdk::serde::{Serialize, Deserialize};
-
-pub const STORAGE_COST: Balance = 1_000_000_000_000_000_000_000; //1.1 NEAR
-pub const MIN_STORAGE: Balance = 1_000_000_000_000_000_000_000; //1.1 NEAR
-pub const TGAS: u64 = 1_000_000_000_000;
-pub const DEFAULT_NODE_OWNER_ID: &str = "default-node.test.near";
-pub const DEFAULT_BOUNTY_OWNER_ID: &str = "default-bounty.test.near";
-
-// May be possible to incentivize higher rewards by having an ordered vector of bounties
-const MIN_REWARD: Balance = 1_000_000_000_000_000_000_000;
+use near_units::{parse_gas, parse_near};
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug)]
 #[serde(crate = "near_sdk::serde")]
@@ -35,11 +27,29 @@ impl Display for SupportedDownloadProtocols {
     }
 }
 
-
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug, Default)]
+#[serde(crate = "near_sdk::serde")]
+pub struct NodeResponse {
+    pub solution: String,
+    pub timestamp: u64,
+    pub gas_used: Gas,
+}
+#[near_bindgen]
+impl NodeResponse {
+    pub fn new_node_response(solution: String, timestamp: u64, gas_used: Gas) -> Self {
+        Self {
+            solution,
+            timestamp,
+            gas_used,
+        }
+    }
+}
 //TODO using an enum for file_download_protocol breaks serialization
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bounty{
+    pub id: AccountId,
     pub owner_id: AccountId, // Signer who created the bounty. Used for auth.
     pub coordinator_id: AccountId, // Coordinator who created the bounty. Used for auth and verification.
     pub file_location: String, //URL/CID. Support ipfs, git, https initially
@@ -50,19 +60,20 @@ pub struct Bounty{
     pub cancelled: bool, // True if the bounty was cancelled.
     pub threshold: u64, // Min number of nodes that must have consensus to complete the bounty
     pub total_nodes: u64, // Total nodes to process bounty. If > threshold, bounty allows for some failures.
-    pub bounty_created: i64, //UTC timestamp for when bounty was created
+    pub bounty_created: u64, //UTC timestamp for when bounty was created
     pub network_required: bool, // True if the bounty's execution requires network access. Does not block downloading files for the bounty.
     pub amt_storage: Balance, //Unused storage is refunded to the owner once the contract is closed
     pub amt_node_reward: Balance, //Total payout to the nodes.
     // pub result: String,
     // pub elected_nodes: LookupMap<AccountId, String>, //TODO: How can we make this private?
     pub elected_nodes: Vec<AccountId>, //TODO: How can we make this private? //TODO Could be LookupSet
-    pub answers: UnorderedMap<AccountId, String>, //TODO: How can we make this private?
+    pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
 }
 
 impl PartialEq<Self> for Bounty {
     fn eq(&self, other: &Self) -> bool {
-        return self.owner_id == other.owner_id
+        return self.id == other.id
+            && self.owner_id == other.owner_id
             && self.coordinator_id == other.coordinator_id
             && self.file_location == other.file_location
             && self.file_download_protocol == other.file_download_protocol
@@ -83,6 +94,7 @@ impl PartialEq<Self> for Bounty {
 impl Default for Bounty {
     fn default() -> Self {
         Self {
+            id: "bounty-id".to_string().parse().unwrap(),
             owner_id: "bounty-owner".to_string().parse().unwrap(),
             coordinator_id: "bounty-coordinator".to_string().parse().unwrap(),
             file_location: "".to_string(),
@@ -92,11 +104,11 @@ impl Default for Bounty {
             cancelled: false,
             threshold: 0,
             total_nodes: 0,
-            bounty_created: 0,
+            bounty_created: block_timestamp_ms(),
             network_required: false,
             amt_storage: 0,
             amt_node_reward: 0,
-            elected_nodes: vec![],
+            elected_nodes: Vec::new(),
             answers: UnorderedMap::new("bounty-answers".to_string().as_bytes()),
         }
     }
@@ -104,11 +116,11 @@ impl Default for Bounty {
 #[near_bindgen]
 impl Bounty {
     #[init]
-    #[private]
     #[payable]
-    pub fn init_bounty(name: String, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, amt_storage: Balance, amt_node_reward: Balance) -> Self {
-
+    #[private] // Only allow creating bounties through coordinator
+    pub fn new_bounty(name: String, id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, amt_storage: Balance, amt_node_reward: Balance) -> Self {
         Self {
+            id,
             owner_id: signer_account_id(),
             coordinator_id: predecessor_account_id(), //predecessor_account_id OR whatever the user specifies
             file_location,
@@ -118,7 +130,7 @@ impl Bounty {
             cancelled: false,
             threshold,
             total_nodes,
-            bounty_created: Utc::now().timestamp(),
+            bounty_created: block_timestamp_ms(),
             // result: "".to_string(),
             // elected_nodes: UnorderedSet::new(format!("{}-elected", name).to_string().as_bytes()),
             elected_nodes: Vec::new(),
@@ -132,99 +144,119 @@ impl Bounty {
 
     //View function to check amount left for storage to see if the publish_answer function is likely to succeed
     //Publish answer costs the node gas, even if we attempt to refund then, so we should check if there's enough budget left
-    // pub fn should_publish(&self) -> bool {
-    //     self.complete && self.success
-    // },
-    // #[private]
-    // pub fn complete_bounty(&mut self){
-    //
-    // }
-    // pub fn is_complete(&self) -> bool {
-    //     return false
-    // }
-    // pub fn should_publish(&self) -> bool {
-    //     if self.complete || self.answers. {
-    //         return false
-    //     }
-    //     if(self.complete && self.success){
-    //         return true;
-    //     }
-    //     else{
-    //         return false;
-    //     }
-    // }
-    #[private]
-    pub fn publish_answer(&mut self, result: String) {
+    pub fn get_status(&self) -> String {
+        if !self.complete {
+            return "incomplete".to_string();
+        } else if self.cancelled {
+            return "cancelled".to_string();
+        } else if self.success {
+            return "success".to_string();
+        }
+        //complete && !cancelled && !success
+        return "failed".to_string();
+    }
+
+    pub fn publish_answer(&mut self, answer: String) {
+        // used_gas()
         require!(self.complete == false, "Bounty is complete, no more answers can be published");
         require!(!self.elected_nodes.contains(&signer_account_id()), "You are not an elected node");
         require!(self.answers.get(&signer_account_id()).is_none(), "You have already submitted an answer");
-        require!(self.answers.len() < self.threshold, "Node is not accepting any more answers"); //Client should sleep then recheck if they get this message
         // Node has to pay for the transaction + storage, but this is refunded to them later
-
-        // Pay for storage using bounty deposit
-        self.answers.insert(&signer_account_id(), &result);
-
-        //TODO Check for outliers and remove them
-
+        //TODO Must check that we have enough storage left to store the answer
+        let node_response = NodeResponse::new_node_response(answer.clone(),
+                                                            block_timestamp(),
+                                                            used_gas());
+        let estimated_storage = storage_byte_cost() * size_of_val(&node_response) as u128;
+        //If we hit this, the node has to pay gas. Wondering if we can frontload storage estimates in create_bounty to prevent it from being created if it doesn't have enough storage
+        require!(estimated_storage < self.amt_storage, "Not enough storage left to store answer");
+        self.answers.insert(&signer_account_id(), &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas()));
         if self.answers.len() >= self.threshold {
-            self.complete = true;
-            self.success = true;
+            //TODO Check for outliers and remove them. This should put answers under threshold when anamolies are removed
+            self.close(false, false);
+            //Reinsert record with updated gas for closing node
+            self.answers.insert(&signer_account_id(), &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas()));
         }
+
+        //Don't return anything so we don't consume any more gas
     }
-    // View function that returns yes, no, maybe.
-    // Maybe instructs the client to sleep and recheck, because one of the answers could be dropped.
-    // No will exit the execution with no attempt to post the answer (avoids using gas)
-    // Yes will post the answer (Node pays gas, which we will try to reimburse)
-    // TODO could return int, would be cheaper?
-    pub fn should_post_answer(&self, node_id: AccountId) -> String {
-        if self.complete {
-            return "no".to_string();
+
+    // View function that returns yes, no, maybe for the client to check if they should spend gas to publish an answer
+    // TODO maybe not currently implemented
+    pub fn should_post_answer(&self, node_id: AccountId) -> String { //Return as string so we can return "maybe" later
+        return if self.complete {
+            "no".to_string() //
         } else if !self.elected_nodes.contains(&node_id) {
-            return "no".to_string();
+            "no".to_string() // You aren't an elected node
         } else if !self.answers.get(&node_id).is_some() {
-            return "no".to_string();
-        } else if self.answers.len() < self.threshold {
-            return "yes".to_string();
+            "no".to_string() // You have already posted an answer
         } else {
-            return "maybe".to_string();
+            "yes".to_string()
         }
     }
 
-    pub fn close(&mut self, failed: bool){
+    pub fn cancel(&mut self) {
+        require!(self.complete == false, "Bounty is already complete");
+        require!(self.cancelled == false, "Bounty is already cancelled");
+        require!(self.owner_id == signer_account_id() || signer_account_id() == current_account_id(), "Only the owner or the oracle can cancel the bounty");
+        self.close(false, true);
+    }
+
+    pub fn close(&mut self, failed: bool, cancelled: bool) -> Promise {
         require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can close it");
         if failed {
             self.success = false;
             self.complete = true;
-        } else if self.answers.len() >= self.threshold {
+        } else if self.cancelled {
             self.complete = true;
-            self.success = true
+            self.success = false;
+            self.cancelled = true
         } else {
             self.complete = true;
             self.success = true;
-            self.cancelled = true;
         }
-        //TODO: Publish bounty closd event
-        //TODO: Refund storage
-        //TODO: Reimburse nodes for gas
-        //TODO:
-        // env::log_str(&nft_mint_log.to_string());
-        //
-        // //calculate the required storage which was the used - initial
-        // let required_storage_in_bytes = env::storage_usage() - initial_storage_usage;
-        //
-        // //refund any excess storage if the user attached too much. Panic if they didn't attach enough to cover the required.
-        // refund_deposit(required_storage_in_bytes
+
+        let storage_used = storage_byte_cost() * size_of_val(&self) as u128;
+
+        //TODO we want to skim a very small amount of the storage cost for the coordinator, maybe 1-2% with a cap to cover storage contingencies in the future
+        let mut main_promise: Promise = Promise::new(self.owner_id.clone()).transfer(self.amt_storage - storage_used); //Storage refund promise
+        for (node_id, node_response) in &self.answers{
+            if !self.cancelled{
+                let reward_promise = Promise::new(node_id.clone()).transfer(self.amt_node_reward/self.answers.len() as u128);
+                main_promise = main_promise.then(reward_promise);
+            }
+            else { //When cancelled, nodes are refunded for gas
+                // let gas_promise = Promise::new(node_id.clone()).transfer(parse_near!(node_response.gas_used));
+                // main_promise = main_promise.then(gas_promise);
+            }
+        }
+        return main_promise;
+        //TODO refund storage to bounty creator
+        //TODO Pay nodes (do this w/ batch transaction)
+    }
+
+    #[payable]
+    pub fn add_storage_deposit(&mut self) -> Promise {
+        require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
+        self.amt_storage += attached_deposit();
+        return Promise::new(self.coordinator_id.clone()).transfer(attached_deposit());
+    }
+
+    #[payable]
+    pub fn add_node_reward_deposit(&mut self) -> Promise {
+        require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
+        self.amt_node_reward += attached_deposit();
+        return Promise::new(self.coordinator_id.clone()).transfer(attached_deposit());
     }
 
 
-    //Placeholder for now. Dumps the result as {$value: $number_of_nodes_with_value}
+    //Dumps the result as {$value: $number_of_nodes_with_value}, requiring the bounty creator to manually verify the result
     pub fn get_result(&self) -> HashMap<String, u8> {
         let mut res: HashMap<String, u8> = HashMap::new();
         for (_, value) in self.answers.iter() {
-            if !res.contains_key(&value.clone()){
-                res.insert(value.clone(), res.get(&value).unwrap() + 1);
+            if !res.contains_key(&value.solution.clone()){
+                res.insert(value.solution.clone(), res.get(&value.solution.clone()).unwrap() + 1);
             } else {
-                res.insert(value, 1);
+                res.insert(value.solution.clone(), 1);
             }
         }
         return res

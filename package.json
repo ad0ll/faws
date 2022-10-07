@@ -10,7 +10,7 @@
     "build:contract": "cd contract-js && npm run build",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "cd contract-js && npm test",
-    "test:integration": "cd integration-tests-js && npm test -- -- \\\\\\\"contract-js/build/hello_near.wasm\\\\\\\"",
+    "test:integration": "cd integration-tests-js && npm test -- -- \\\\\\\"contract-rust/target/wasm32-unknown-unknown/release/coordinator.wasm\\\\\\\"",
     "postinstall": "cd frontend && npm install && cd .. && cd integration-tests-js && npm install && cd .. && cd contract-js && npm install"
   },
   "devDependencies": {

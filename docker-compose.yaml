@@ -1,7 +1,7 @@
 services:
   app:
     build:
-        context: indexer-tutorials/
+        context: indexer-tutorials/example-indexer
         dockerfile: Dockerfile
 
   db:

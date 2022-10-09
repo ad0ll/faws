@@ -1,3 +1,9 @@
 [submodule "indexer-tutorials"]
 	path = indexer-tutorials
 	url = https://github.com/ad0ll/indexer-tutorials
+[submodule "event-api"]
+	path = event-api
+	url = https://github.com/ad0ll/event-api.git
+[submodule "indexer-tx-watcher-example"]
+	path = indexer-tx-watcher-example
+	url = https://github.com/near-examples/indexer-tx-watcher-example.git

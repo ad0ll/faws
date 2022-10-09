@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, require};
 use near_sdk::env::{attached_deposit, current_account_id, log_str, signer_account_id};
-use crate::bounty::{Bounty, SupportedDownloadProtocols};
+use near_units::gas::parse;
+use crate::bounty::{Bounty, NodeResponse, NodeResponseStatus, SupportedDownloadProtocols};
 use crate::node::Node;
 
 use crate::events::{BountyCreatedLog, EventLog, EventLogVariant};
@@ -17,6 +19,8 @@ pub const DEFAULT_NODE_OWNER_ID: &str = "default-node.test.near";
 pub const DEFAULT_BOUNTY_OWNER_ID: &str = "default-bounty.test.near";
 pub const EVENT_STANDARD_NAME: &str = "NEP-297";
 pub const EVENT_STANDARD_SPEC: &str = "1.0.0";
+pub const BOUNTY_CREATED_EVENT_NAME: &str = "BountyCreated";
+pub const BOUNTY_COMPLETED_EVENT_NAME: &str = "BountyCompleted";
 
 
 #[near_bindgen]
@@ -89,37 +93,58 @@ impl Coordinator {
     }
 
     //TODO This NEEDS pagination, can return a huge amount of data
+    //also probably not efficient
     pub fn get_nodes(&self) -> Vec<Node> {
         let mut nodes: Vec<Node> = vec![];
         for node in self.nodes.values() {
+            log!("node: {:?}", node.id);
             nodes.push(node);
         }
         return nodes;
     }
 
     //TODO This NEEDS pagination, can return a huge amount of data
+    //also probably not efficient
     #[result_serializer(borsh)]
     pub fn get_bounties(&self) -> Vec<Bounty> {
+        log!("get_bounties");
         let mut bounties: Vec<Bounty> = vec![];
         for bounty in self.bounties.values() {
             bounties.push(bounty);
         }
+        log!(format!("bounties: {}", bounties.len()));
         return bounties;
     }
 
 
     pub fn register_node(&mut self, name: String) -> Node {
-        println!("register_node");
-        let account_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
+        log!("register_node");
+        log!("current_account_id: {}", current_account_id());
+        log!("signer_account_id: {}", signer_account_id());
+        // let node_id: AccountId = format!("{}", name).parse().unwrap();
+        // let node_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
+        //     .parse().unwrap_or_else(|_| {
+        //     log!(format!("{}", name.as_str()));
+        //     log!(format!("{}", current_account_id().to_string()));
+        //     env::panic_str("failed to parse node_id")
+        //     });
+        // let node_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
+        //     .parse()
+        //     .unwrap();
+        let node_id: AccountId = format!("{}.node.{}", name, signer_account_id())
             .parse()
             .unwrap();
-        println!("account_id: {}", account_id);
-        assert!(self.nodes.get(&account_id).is_none(), "Node already registered: {}", account_id);
-        let metadata = Node::new(signer_account_id());
-        self.nodes.insert(&account_id, &metadata);
-        self.node_queue.push(account_id.clone());
+        log!("node_id: {:?}", node_id);
+
+        log!(format!("{}", current_account_id()));
+        log!("account_id: {}", node_id);
+        assert!(self.nodes.get(&node_id).is_none(), "Node already registered: {}", node_id.clone());
+        let metadata = Node::new_node(node_id.clone());
+        self.nodes.insert(&node_id, &metadata);
+        self.node_queue.push(node_id.clone());
+        println!("{}", self.node_queue.len());
         println!("finished adding node to coordinator, metadata: {}", metadata);
-        return self.nodes.get(&account_id).unwrap();
+        return self.nodes.get(&node_id).unwrap();
     }
 
     pub fn remove_node(&mut self, account_id: AccountId) {
@@ -149,15 +174,14 @@ impl Coordinator {
         return removed;
     }
 
-
-
-    #[result_serializer(borsh)]
     #[payable]
-    pub fn create_bounty(&mut self, name: String, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, amt_storage: Balance, amt_node_reward: Balance) -> Bounty {
+    #[result_serializer(borsh)]
+    pub fn create_bounty(&mut self, name: String, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, gpu_required: bool, amt_storage: String, amt_node_reward: String) -> Bounty {
         println!("{}", attached_deposit());
         println!("{}", amt_node_reward);
         println!("{}", amt_storage);
-
+        let amt_storage: u128 = amt_storage.parse().unwrap();
+        let amt_node_reward: u128 = amt_node_reward.parse().unwrap();
         require!(attached_deposit() == amt_storage + amt_node_reward, "Attached deposit must be equal to the sum of the storage and node reward amounts");
         require!(amt_storage > MIN_STORAGE, "Refundable storage deposit must be greater than 1N");
         require!(amt_node_reward > MIN_REWARD, "Refundable storage deposit must be greater than 1N");
@@ -166,8 +190,7 @@ impl Coordinator {
         require!(total_nodes.clone() <= self.nodes.len(), "Total nodes cannot be greater than the number of nodes available in the coordinator");
         let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id().to_string()).parse().unwrap();
         require!(self.bounties.get(&bounty_key).is_none(), "Bounty already exists");
-        // if threshold == self.node.len(){} //TODO
-        let mut bounty = Bounty::new_bounty(name.clone(), bounty_key.clone(), file_location, file_download_protocol, threshold, total_nodes, network_required, amt_storage, amt_node_reward);
+        let mut bounty = Bounty::new_bounty(name.clone(), bounty_key.clone(), file_location, file_download_protocol, threshold, total_nodes, network_required, gpu_required, amt_storage, amt_node_reward);
         //assert bounty owner id is signer id, important because owner_id is used for auth
         // Node election
         // Elect nodes using either an in-order queue or random indexes
@@ -211,11 +234,6 @@ impl Coordinator {
         return bounty;
     }
 
-    pub fn evaluate_answers(&mut self) {
-        //TODO
-        // Numbers can be standard deviation to drop outliers
-        // Strings can be levenshtein distance, but is that going to perform well? At a minimum requires async
-    }
 
     // O(n) shuffle where n is the number of shuffles to do.
     // Actual shuffle is O(1) because we swap the last element with the random element and push the random element at the end
@@ -231,6 +249,51 @@ impl Coordinator {
         }
     }
 
+    #[private]
+    pub fn get_answer(&self, bounty_id: AccountId, node_id: AccountId) -> Option<NodeResponse> {
+        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
+        require!(self.nodes.get(&node_id).is_some(), "Node does not exist");
+        // require!(self.signer_)
+        //TODO Only the bounty holder, coordinator contract, and the node should be able to hold the answer
+        let bounty = self.bounties.get(&bounty_id).unwrap();
+        let answer = bounty.answers.get(&node_id);
+        return answer;
+    }
+
+    #[result_serializer(borsh)]
+    pub fn post_answer(&self, bounty_id: AccountId, answer: String, status: NodeResponseStatus){
+        // return;
+        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
+        let mut bounty = self.bounties.get(&bounty_id).unwrap();
+        bounty.publish_answer(answer, status);
+    }
+
+    pub fn cancel_bounty(&self, bounty_id: AccountId){
+        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
+        let mut bounty = self.bounties.get(&bounty_id).unwrap();
+        bounty.cancel()
+    }
+
+    #[result_serializer(borsh)] //TODO Should this be private? Should only the bounty holder be able to access this?
+    pub fn get_bounty_result(&self, bounty_id: AccountId) -> HashMap<String, u8> {
+        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
+        let bounty = self.bounties.get(&bounty_id).unwrap();
+        return bounty.get_result();
+    }
+
+    #[payable]
+    pub fn add_storage_deposit(&mut self, bounty_id: AccountId){
+        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
+        let mut bounty = self.bounties.get(&bounty_id).unwrap();
+        bounty.bounty_add_storage_deposit();
+    }
+
+    #[payable]
+    pub fn add_node_reward_deposit(&mut self, bounty_id: AccountId){
+        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
+        let mut bounty = self.bounties.get(&bounty_id).unwrap();
+        bounty.bounty_add_node_reward_deposit();
+    }
 }
 
 
@@ -245,13 +308,15 @@ impl Coordinator {
  */
 #[cfg(test)]
 mod tests {
+    use std::fmt::format;
+    use near_units::parse_near;
     use super::*;
 
     #[test]
     fn can_register_node() {
         let mut coordinator = Coordinator::default();
         let name = "test".to_string();
-        let account_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
+        let account_id: AccountId = format!("{}.node.{}", name, signer_account_id())
             .parse()
             .unwrap();
         let node = coordinator.register_node(name);
@@ -264,36 +329,62 @@ mod tests {
     fn can_mark_node_offline(){
         let mut coordinator = Coordinator::default();
         let name = "test".to_string();
-        let account_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
+        let _account_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
             .parse()
             .unwrap();
-        let node = coordinator.register_node(name);
+        let _node = coordinator.register_node(name);
         //TODO
     }
 
-    #[test]
-    fn can_register_bounty() {
-        let mut coordinator = Coordinator::default();
-        coordinator.register_node("test1".to_string());
-        coordinator.register_node("test2".to_string());
-        coordinator.register_node("test3".to_string());
-        assert_eq!(coordinator.get_node_count(), 3, "Node count should be 3");
-        let name = "test-bounty".to_string();
-        let bounty = coordinator.create_bounty(
-            name.clone(),
-            "https://github.com/ad0ll/docker-hello-world".to_string(),
-            SupportedDownloadProtocols::GIT,
-            3,
-            3,
-            true,
-            1000,
-            1000,
-        );
-        assert_eq!(coordinator.get_bounty_count(), 1, "Bounty count should be 1");
-        let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id().to_string()).parse().unwrap();
-        require!(coordinator.bounties.get(&bounty_key).is_some(), "Bounty should be retrievable");
-        require!(coordinator.get_bounties().contains(&bounty), "Bounty should be retrievable from full listing");
-    }
+    // #[test]
+    // fn can_register_bounty() {
+    //     let mut coordinator = Coordinator::default();
+    //     for x in 0..3 {
+    //         coordinator.register_node(format!("test{}", x));
+    //     }
+    //     assert_eq!(coordinator.get_node_count(), 3, "Node count should be 3");
+    //     let name = "test-bounty".to_string();
+    //     let bounty = coordinator.create_bounty(
+    //         name.clone(),
+    //         "https://github.com/ad0ll/docker-hello-world".to_string(),
+    //         SupportedDownloadProtocols::GIT,
+    //         3,
+    //         3,
+    //         true,
+    //         true,
+    //         parse_near!("0.5N").to_string(),
+    //         parse_near!("2N").to_string(),
+    //     );
+    //     assert_eq!(coordinator.get_bounty_count(), 1, "Bounty count should be 1");
+    //     let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id().to_string()).parse().unwrap();
+    //     require!(coordinator.bounties.get(&bounty_key).is_some(), "Bounty should be retrievable");
+    //     require!(coordinator.get_bounties().contains(&bounty), "Bounty should be retrievable from full listing");
+    // }
+    // #[test]
+    // fn can_increase_storage_and_reward_amt() {
+    //     //TODO Reduce copying and pasting by making these standalone
+    //     let mut coordinator = Coordinator::default();
+    //     for x in 0..3 {
+    //         coordinator.register_node(format!("test{}", x));
+    //     }
+    //     assert_eq!(coordinator.get_node_count(), 3, "Node count should be 3");
+    //     let name = "test-bounty".to_string();
+    //     let bounty = coordinator.create_bounty(
+    //         name.clone(),
+    //         "https://github.com/ad0ll/docker-hello-world".to_string(),
+    //         SupportedDownloadProtocols::GIT,
+    //         3,
+    //         3,
+    //         true,
+    //         true,
+    //         parse_near!("0.5N").to_string(),
+    //         parse_near!("2N").to_string(),
+    //     );
+    //     assert_eq!(coordinator.get_bounty_count(), 1, "Bounty count should be 1");
+    //     let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id().to_string()).parse().unwrap();
+    //     require!(coordinator.bounties.get(&bounty_key).is_some(), "Bounty should be retrievable");
+    //     require!(coordinator.get_bounties().contains(&bounty), "Bounty should be retrievable from full listing");
+    // }
 }
 
 

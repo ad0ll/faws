@@ -46,18 +46,22 @@ impl fmt::Display for EventLog {
 /// An event log to capture token minting
 ///
 /// Arguments
-/// * `bounty_id`: "account.near"
-/// * `node_ids`: ["1", "abc"]
+/// * `bounty_id`: "bounty.id.test.near"
+/// * `node_ids`: ["node.id.test.near", "node2.id.test.near"]
 /// * `message`: optional message
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct BountyCreatedLog {
     pub bounty_id: AccountId,
+    // pub creator_id: AccountId, //TODO Need to implement this for filtering
     pub node_ids: Vec<AccountId>,
-    // pub network_required: bool,
+    // pub network_required: bool, //TODO Need to implement this for filtering
+    // pub gpu_required: bool, //TODO Need to implement this for filtering
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
+
+//TODO Implement post answer logs
 
 /// An event log to capture token transfer
 ///
@@ -72,7 +76,7 @@ pub struct BountyCreatedLog {
 pub struct BountyCompletedLog {
     pub solution: String,
     pub success: bool,
-
+    // pub creator_id: AccountId, //TODO We need this for filtering
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nodes: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]

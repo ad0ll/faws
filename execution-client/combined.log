@@ -1,0 +1,11 @@
+{"level":"error","message":"WebSocket error: [object Object]"}
+{"level":"error","message":"WebSocket error: [object Object]"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}

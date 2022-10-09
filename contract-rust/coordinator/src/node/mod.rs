@@ -1,15 +1,8 @@
 use std::fmt;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{near_bindgen, AccountId, Balance};
-
-pub const STORAGE_COST: Balance = 1_000_000_000_000_000_000_000;
-//1.1 NEAR
-pub const MIN_STORAGE: Balance = 1_000_000_000_000_000_000_000;
-//1.1 NEAR
-pub const TGAS: u64 = 1_000_000_000_000;
-pub const DEFAULT_NODE_OWNER_ID: &str = "default-node.test.near";
-pub const DEFAULT_BOUNTY_OWNER_ID: &str = "default-bounty.test.near";
+use near_sdk::{near_bindgen, AccountId};
+use near_sdk::env::signer_account_id;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug)]
 #[serde(crate = "near_sdk::serde")]
@@ -25,6 +18,7 @@ pub struct Gpu {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Node {
+    pub id: AccountId,
     pub owner_id: AccountId,
     pub last_run: u64,
     pub last_success: u64,
@@ -36,9 +30,13 @@ pub struct Node {
 
 #[near_bindgen]
 impl Node {
-    pub fn new(owner_id: AccountId) -> Self {
+    #[init]
+    #[private]
+    #[payable]
+    pub fn new_node(id: AccountId) -> Self {
         Self {
-            owner_id,
+            id,
+            owner_id: signer_account_id(),
             last_run: 0,
             last_success: 0,
             last_failure: 0,
@@ -52,7 +50,8 @@ impl Node {
 impl Default for Node {
     fn default() -> Self {
         Self {
-            owner_id: DEFAULT_NODE_OWNER_ID.parse().unwrap(),
+            id: "test-node".parse().unwrap(),
+            owner_id: signer_account_id(),
             last_run: 0,
             last_success: 0,
             last_failure: 0,
@@ -66,6 +65,6 @@ impl Default for Node {
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         //TODO get gpu printing
-        write!(f, "Node {{ owner_id: {}, last_run: {}, last_success: {}, last_failure: {}, successful_runs: {}, failed_runs: {}, GPUS_LOL}}", self.owner_id, self.last_run, self.last_success, self.last_failure, self.successful_runs, self.failed_runs)
+        write!(f, "Node {{ id: {}, owner_id: {}, last_run: {}, last_success: {}, last_failure: {}, successful_runs: {}, failed_runs: {}, GPUS_LOL}}", self.id, self.owner_id, self.last_run, self.last_success, self.last_failure, self.successful_runs, self.failed_runs)
     }
 }

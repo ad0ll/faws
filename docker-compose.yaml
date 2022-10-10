@@ -1,0 +1,22 @@
+services:
+
+  indexer:
+    build:
+        context: indexer/example-indexer
+        dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://near:example@localhost:5432/near
+    networks:
+      - default
+  postgres:
+    image: postgres:14.5-alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: near
+      POSTGRES_PASSWORD: example
+    networks:
+      - default
+networks:
+  default:
+    driver: bridge

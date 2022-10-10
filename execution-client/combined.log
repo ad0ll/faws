@@ -1,0 +1,161 @@
+{"level":"error","message":"WebSocket error: [object Object]"}
+{"level":"error","message":"WebSocket error: [object Object]"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"error","message":"WebSocket error:  connect EHOSTUNREACH ::1:7071 - Local (::127.0.0.1:51464)"}
+{"level":"error","message":"WebSocket error:  connect EHOSTUNREACH ::1:7071 - Local (::127.0.0.1:51472)"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"error","message":"Error processing message: TypeError: Cannot read properties of undefined (reading 'bounty_id')"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Received bounty bounty1.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty2.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty3.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty4.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty5.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty6.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty7.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty8.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty9.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something2.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something3.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something4.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something5.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something6.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something7.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something8.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something9.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something10.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something11.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something12.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something13.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something14.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something15.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something16.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something17.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something18.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something19.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something20.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something21.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Received bounty bounty1.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty2.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty3.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty4.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty5.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty6.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty7.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty8.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty9.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something2.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something3.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something4.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something5.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something6.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something7.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something8.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something9.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something10.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something11.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something12.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something13.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something14.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something15.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something16.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something17.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something18.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something19.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something20.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something21.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Received bounty bounty1.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty2.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty3.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty4.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty5.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty6.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty7.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty8.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty bounty9.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something2.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something3.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something4.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something5.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something6.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something7.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something8.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something9.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something10.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something11.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something12.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something13.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something14.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something15.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something16.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something17.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something18.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something19.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something20.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Received bounty something21.bounty.dev-1665283011588-97304367585179"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Node acheivement3.node.dev-1665283011588-97304367585179 is registered with the following properties: {\"id\":\"acheivement3.node.dev-1665283011588-97304367585179\",\"owner_id\":\"dev-1665283011588-97304367585179\",\"last_run\":0,\"last_success\":0,\"last_failure\":0,\"successful_runs\":0,\"failed_runs\":0,\"gpus\":[]}"}
+{"level":"info","message":"Received bounty something22.bounty.dev-1665283011588-97304367585179"}

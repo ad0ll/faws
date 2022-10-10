@@ -6,6 +6,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap};
 use near_sdk::env::{attached_deposit, block_timestamp, block_timestamp_ms, current_account_id, predecessor_account_id, signer_account_id, storage_byte_cost, used_gas};
 use near_sdk::serde::{Serialize, Deserialize};
+use near_units::{parse_gas, parse_near};
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -93,7 +94,6 @@ pub struct Bounty{
     pub owner_id: AccountId, // Signer who created the bounty. Used for auth.
     pub coordinator_id: AccountId, // Coordinator who created the bounty. Used for auth and verification.
     pub file_location: String, //URL/CID. Support ipfs, git, https initially
-    // pub file_download_protocol: SupportedDownloadProtocols, //ipfs, git, https
     pub file_download_protocol: SupportedDownloadProtocols, //ipfs, git, https
     pub success: bool, // True if we accepted responses from a minimum of ${threshold} nodes. False on error or cancel.
     pub complete: bool, // True the bounty is done processing.
@@ -105,7 +105,7 @@ pub struct Bounty{
     pub gpu_required: bool, // True if the bounty's execution requires GPU compute
     pub amt_storage: Balance, //Unused storage is refunded to the owner once the contract is closed
     pub amt_node_reward: Balance, //Total payout to the nodes.
-    // pub result: String,
+    // pub result: String, //TODO This was going to be the single, definitive result. Need to summarize all the responses.
     pub elected_nodes: Vec<AccountId>, //TODO: How can we make this private? //TODO Unrelated to <-, this could be/should be UnorderedSet or merged below with answers
     pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
 }
@@ -205,14 +205,11 @@ impl Bounty {
     }
 
     pub fn publish_answer(&mut self, answer: String, status: NodeResponseStatus) {
-        // used_gas()
         require!(self.complete == false, "Bounty is complete, no more answers can be published");
         require!(!self.elected_nodes.contains(&signer_account_id()), "You are not an elected node");
         require!(self.answers.get(&signer_account_id()).is_none(), "You have already submitted an answer");
-
         log!("Publishing answer from {}. Answer: {}, Status: {}", signer_account_id(), answer, status);
-        // Node has to pay for the transaction + storage, but this is refunded to them later
-        //TODO Must check that we have enough storage left to store the answer
+
         let node_response = NodeResponse::new_node_response(answer.clone(),
                                                             block_timestamp(),
                                                             used_gas(),
@@ -225,11 +222,10 @@ impl Bounty {
         self.answers.insert(&signer_account_id(), &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas(), status.clone()));
         if self.answers.len() >= self.min_nodes {
             log!("Bounty has enough answers to be considered complete");
-            //TODO Check for outliers and remove them. This should put answers under threshold when anomalies are removed
             self.close(false, false);
             //Reinsert record with updated gas for closing node
-            log!("Reinserting answer for this node with updated gas");
-            self.answers.insert(&signer_account_id(), &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas(), status.clone()));
+            // log!("Reinserting answer for this node with updated gas");
+            // self.answers.insert(&signer_account_id(), &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas(), status.clone()));
         }
         //TODO Check that there's enough node reward to pay for gas
         //Don't return anything so we don't consume any more gas
@@ -264,6 +260,7 @@ impl Bounty {
         self.close(false, true);
     }
 
+    //TODO This function can be broken into multiple parts, update bounty status, analyze answers, refund bounty storage, pay nodes
     pub fn close(&mut self, failed: bool, cancelled: bool) -> Promise {
         log!("Closing bounty");
         require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can close it");
@@ -278,6 +275,9 @@ impl Bounty {
             self.complete = true;
             self.success = true;
         }
+
+        //TODO Check for outliers and remove them. This should put answers under threshold when anomalies are removed
+        // TODO Refund the node calling this function for gas, since it's more expensive than just posting an answer
         log!("Bounty closed with the following flags: complete: {}, success: {}, cancelled: {}", self.complete, self.success, self.cancelled);
 
         let storage_used = storage_byte_cost() * size_of_val(&self) as u128;
@@ -287,19 +287,26 @@ impl Bounty {
         let mut main_promise: Promise = Promise::new(self.owner_id.clone()).transfer(self.amt_storage - storage_used); //Storage refund promise
         for (node_id, _node_response) in &self.answers{
             if !self.cancelled{
-                let reward_promise = Promise::new(node_id.clone()).transfer(self.amt_node_reward/self.answers.len() as u128);
+                let reward_promise = Promise::new(node_id.clone())
+                    .transfer(self.amt_node_reward/self.answers.len() as u128);
                 main_promise = main_promise.then(reward_promise);
             }
             else {
-                log!("Bounty was cancelled, refunding node {} for gas used", node_id);
-                //TODO When cancelled, nodes are refunded for gas
-                // let gas_promise = Promise::new(node_id.clone()).transfer(parse_near!(node_response.gas_used));
+                let answer = self.answers.get(&node_id);
+                if answer.is_some(){
+                    let gas_used = answer.unwrap().gas_used;
+                    log!("TODO: Refunding node {} for gas used posting their answer {:?}", node_id, gas_used);
+                    //TODO (Med-pri) refund storage to bounty creator
+                    // let refund_promise = Promise::new(node_id.clone())
+                        // .transfer(parse_near!(format!("{:?}", gas_used) as str)); //TODO idk what I'm doing
+                    // main_promise = main_promise.then(refund_promise);
+                } else {
+                    log!("No answer found for node {}, no need to reimburse gas", node_id);
+                }
                 // main_promise = main_promise.then(gas_promise);
             }
         }
         return main_promise;
-        //TODO refund storage to bounty creator
-        //TODO Pay nodes (do this w/ batch transaction)
     }
 
     #[payable]

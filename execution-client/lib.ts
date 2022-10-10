@@ -1,27 +1,63 @@
 import {log} from "./logger";
-import {Bounty, Result} from "./types";
+import {Bounty, InternalResultStatuses, Result} from "./types";
 
 const COORDINATOR_CONTRACT_ID = process.env.COORDINATOR_CONTRACT_ID  || "dev-1665283011588-97304367585179";
 
 //TODO check that received event is valid
 export const validateMessage = (message: string) => {
 }
-export const executeBounty: (bountyId: string) => Promise<Result> = async (bountyId: string) => {
-    
+
+export const genResult = (status: InternalResultStatuses, message: string): Result => ({
+    solution: "",
+    status,
+    message
+})
+
+// Using one of https, git, or ipfs, download the file to BOUNTY_STORAGE_LOCATION
+export const downloadFile = async (file_location: string, file_download_protocol: string) => {
+    // See https://stackoverflow.com/questions/41938718/how-to-download-files-using-axios
+    switch (file_download_protocol) {
+        case "https":
+            //TODO
+            break
+        case "git":
+            //TODO
+            break
+        case "ipfs":
+            //TODO
+            break
+    }
+    //TODO
+}
+// Take zip/tar path and unpack. Return path to unpacked directory.
+export const unpackFile = async (filePath: string): Promise<string> => {
+    //TODO
+    // If downloaded file is actually a dir (such as when doing git clone), do nothing
+    // Check if ext is zip, tar, or tar.gz
+    // If zip, unzip. If tar, untar
+    return ""
+}
+
+// Check if there is a dockerfile at the root
+export const verifyFileStructure = async (unpackedPath: string) => {
+    // TODO
+    //
+}
+
+export const executeBounty = async (bountyId: string): Promise<Result> => {
     log.debug(`Downloading bounty data for: ${bountyId}`)
     
     // @ts-ignore
     const bounty: Bounty = await coordinatorContract.get_bounty({ bounty_id: bountyId });
     if(!bounty){
-        return {
-            solution: "",
-            status: "ERROR",
-            message: `Bounty ${bountyId} not found`
-        }
+        return genResult("ERROR", `${bountyId} not found`)
     }
     log.debug(`Bounty data: ${JSON.stringify(bounty)}`)
-    
-    log.debug(`Downloading bounty file at ${bounty.file_location} using protocol ${bounty.file_download_protocol}`)
+    const {file_location, file_download_protocol, elected_nodes} = bounty;
+
+
+    log.debug(`Downloading bounty file at ${file_location} using protocol ${file_download_protocol}`)
+
     // Download package to host
     // Run dockerfile
     // Get output from dockerfile

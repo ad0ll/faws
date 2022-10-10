@@ -1,5 +1,7 @@
 
 // Answer as stored in the Coordinator
+import {ChunkHash} from "near-api-js/lib/providers/provider";
+
 export type NodeResponse = {
     solution: string,
     timestamp: string,
@@ -29,8 +31,41 @@ export type Bounty = {
 }
 
 // Internal answer from an execution that contains additional information for better UX
+export type InternalResultStatuses = "SUCCESS" | "FAILURE" | "UNELECTED" | "UNIMPLEMENTED" | "ERROR" | "TIMEOUT"
 export type Result = {
-    status: "SUCCESS" | "FAILURE" | "UNELECTED" | "ERROR" | "TIMEOUT" //These statuses are for the user, the bounty's answer/excecution status is posted to the contract
+    status: InternalResultStatuses  //These statuses are for the user, the bounty's answer/excecution status is posted to the contract
     solution: string,
     message?: string, //Optional field for an error or other message, gets dumped in index
 }
+
+
+export type EventWrapper<EventData> = {
+    standard: string,
+    version: string,
+    event: string,
+    data: EventData
+}
+type WSEvent<EventData> = {
+    secret: string,
+    events: [
+        {
+            block_height: number,
+            block_hash: ChunkHash,
+            block_timestamp: number,
+            block_epoch_id: ChunkHash,
+            receipt_id: ChunkHash,
+            log_index: number,
+            predecessor_id: string,
+            account_id: string,
+            status: string, //TODO Should this be enum?
+            event: EventWrapper<EventData>
+        }
+    ]
+}
+
+type BountyCreatedEventData = {
+    bounty_id: string,
+    node_ids: string[],
+}
+
+type BountyCreatedEvent = WSEvent<BountyCreatedEventData>

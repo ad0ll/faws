@@ -1,5 +1,5 @@
 import {log} from "./logger";
-import {Bounty, InternalResultStatuses, Result} from "./types";
+import {Bounty, InternalResultStatuses, NodeResponse, Result} from "./types";
 
 const COORDINATOR_CONTRACT_ID = process.env.COORDINATOR_CONTRACT_ID  || "dev-1665283011588-97304367585179";
 
@@ -13,6 +13,25 @@ export const genResult = (status: InternalResultStatuses, message: string): Resu
     message
 })
 
+const exampleBounty: Bounty = {
+    id: "example-bounty",
+    owner_id: "example-owner",
+    coordinator_id: "example-coordinator",
+    file_location: "git@github.com:ad0ll/docker-hello-world.git",
+    file_download_protocol: "git",
+    success: false,
+    complete: false,
+    cancelled: false,
+    min_nodes: 2,
+    total_nodes: 5,
+    network_required: true,
+    gpu_required: false,
+    amt_storage: 100000000000,
+    amt_node_reward: 1000000000,
+    elected_nodes: string[],
+    answers: { [key: string]: NodeResponse }
+}
+
 // Using one of https, git, or ipfs, download the file to BOUNTY_STORAGE_LOCATION
 export const downloadFile = async (file_location: string, file_download_protocol: string) => {
     // See https://stackoverflow.com/questions/41938718/how-to-download-files-using-axios
@@ -22,7 +41,6 @@ export const downloadFile = async (file_location: string, file_download_protocol
             break
         case "git":
             //TODO
-            break
         case "ipfs":
             //TODO
             break

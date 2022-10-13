@@ -13,6 +13,7 @@
 ## Bounty
 * (Highest pri) Figure out how to conceal answers from anyone except the coordinator, while still allowing nodes to publish answers. Maybe do this with a secret phrase that only the node and the cooridnator can access?
 * (High pri) Create bounty needs to return a bounty
+* (Med pri) Bounty owner shouldn't be elected for their own bounty (not that it matters if they are, it just looks bad)
 * (Med pri) If we end up putting all of the logic in the coordinator, we should probably move the bounty logic to the coordinator
 * (Med pri) Reimburse node who closes a bounty for gas, since this is notably more expensive than posting an answer
 * (Med-low pri) Figure out a way to reimburse nodes for gas used when publishing answers, med pri because gas is cheap and we can get the nodes more gains elsewhere

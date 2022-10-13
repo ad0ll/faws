@@ -3,7 +3,6 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, require};
 use near_sdk::env::{attached_deposit, current_account_id, log_str, signer_account_id};
-use near_units::gas::parse;
 use crate::bounty::{Bounty, BountyStatus, NodeResponse, NodeResponseStatus, SupportedDownloadProtocols};
 use crate::node::Node;
 
@@ -28,7 +27,6 @@ pub const BOUNTY_COMPLETED_EVENT_NAME: &str = "BountyCompleted";
 pub struct Coordinator {
     pub nodes: UnorderedMap<AccountId, Node>,
     pub node_queue: Vec<AccountId>,
-    pub curr_idx: usize,
     // Used for 0(1) node selection from queue
     pub bounties: UnorderedMap<AccountId, Bounty>,
     pub offline_nodes: UnorderedMap<AccountId, Node>, //Offline nodes are moved here, and can be moved back when the node owner themselves brings it back online
@@ -41,7 +39,6 @@ impl Default for Coordinator {
         Self {
             nodes: UnorderedMap::new("coordinator.nodes".as_bytes().to_vec()),
             node_queue: Vec::new(),
-            curr_idx: 0,
             bounties: UnorderedMap::new("coordinator.bounties".as_bytes().to_vec()),
             offline_nodes: UnorderedMap::new("coordinator.offline_nodes".as_bytes().to_vec())
         }
@@ -51,6 +48,7 @@ impl Default for Coordinator {
 // Implement the contract structure
 #[near_bindgen]
 impl Coordinator {
+
     #[init]
     #[private] // Public - but only callable by env::current_account_id()
     pub fn init() -> Self {
@@ -58,11 +56,11 @@ impl Coordinator {
         Self {
             nodes: UnorderedMap::new("coordinator.nodes".as_bytes()),
             node_queue: Vec::new(),
-            curr_idx: 0,
             bounties: UnorderedMap::new("coordinator.bounties".as_bytes()),
             offline_nodes: UnorderedMap::new("coordinator.bounties".as_bytes()),
         }
     }
+
     #[private]
     pub fn is_owner_or_coordinator(account_id: AccountId) -> bool { //TODO how can I invoke this function? how can I make it into a trait?
         return account_id == signer_account_id() || signer_account_id() == current_account_id();
@@ -131,17 +129,19 @@ impl Coordinator {
         return self.nodes.get(&node_id).unwrap_or_else(|| panic!("Failed to get freshly registered node: {}", node_id));
     }
 
-    //TODO untested
+    //TODO Rename me to node_id
+    //TODO Make sure this doesn't stall bounty indefinitely
     pub fn remove_node(&mut self, account_id: AccountId) {
         println!("attempting to remove node with id {}", account_id);
         let node = self.nodes.get(&account_id);
         require!(!node.is_none(), "Could not find node to remove");
         require!(signer_account_id() == node.unwrap().owner_id || signer_account_id() == current_account_id(), "Only the owner of the node or the coordinator can remove it");
         self.nodes.remove(&account_id);
+        self.node_queue.retain(|x| x != &account_id);        //TODO, this is not ideal, but it's the only way I can think of to remove the node from the queue
         log!("removed node with id {}", account_id);
     }
 
-    //TODO untested
+    //TODO untested, also rename me to node_id
     pub fn set_node_offline(&mut self, account_id: AccountId, offline: bool) -> Node {
         let removed: Node;
         if offline {
@@ -162,7 +162,7 @@ impl Coordinator {
 
     #[payable]
     #[result_serializer(borsh)]
-    pub fn create_bounty(&mut self, name: String, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, gpu_required: bool, amt_storage: String, amt_node_reward: String) -> Bounty {
+    pub fn create_bounty(&mut self, name: String, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: String, amt_node_reward: String) -> Bounty {
         log!("Creating bounty {}", name);
         let amt_storage: u128 = amt_storage.parse().unwrap();
         let amt_node_reward: u128 = amt_node_reward.parse().unwrap();
@@ -173,22 +173,24 @@ impl Coordinator {
         require!(total_nodes.clone() <= self.nodes.len(), "Total nodes cannot be greater than the number of nodes available in the coordinator");
         let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id().to_string()).parse().unwrap();
         require!(self.bounties.get(&bounty_key).is_none(), "Bounty already exists");
-        let mut bounty = Bounty::new_bounty(name.clone(), bounty_key.clone(), file_location, file_download_protocol, threshold, total_nodes, network_required, gpu_required, amt_storage, amt_node_reward);
+        let mut bounty = Bounty::new_bounty(name.clone(), bounty_key.clone(), file_location, file_download_protocol, min_nodes, total_nodes, timeout_seconds, network_required, gpu_required, amt_storage, amt_node_reward);
         require!(bounty.owner_id == signer_account_id(), "The bounty's owner id must be the signer"); //Cautionary check. We don't want to risk preventing the creator from cancelling the bounty to withdraw their funds
 
         let seed = env::random_seed()[0]; //TODO Random seed may have security vulnerabilities. This is a risk we will likely have to take, but should read docs
+        log!("Seed: {}", seed);
         while bounty.elected_nodes.len() < total_nodes.clone() as usize {
             let key: AccountId;
-            if self.node_queue.len() == 1{
+            if self.node_queue.len() == 1 {
                 key = self.node_queue.pop().unwrap();
-                println!("elected {} (only node in queue)", key);
+                log!("elected {} (only node in queue)", key);
             //TODO Case for: If asking for all nodes...
             } else {
                 let random_node = seed % self.node_queue.len() as u8;
-                println!("electing node at: {}", random_node.to_string());
-                // let key = self.node_queue.swap_remove(random_node); // O(1) by replacing removed with last element
+                log!("electing node at: {}, node queue len {}", random_node.to_string(), self.node_queue.len());
+                // let key = self.node_queue.swap_remove(random_node); // O(1) by replacing removed with last elementz
                 key = self.node_queue.swap_remove(random_node as usize); // Remove node to eliminate possibility of collisions
-                println!("elected {} (was at index {})", key, random_node.to_string());
+                log!("elected {} (was at index {}), node", key, random_node.to_string());
+
             }
             require!(!bounty.elected_nodes.contains(&key), "Node already elected");
             bounty.elected_nodes.push(key.clone());
@@ -218,7 +220,6 @@ impl Coordinator {
 
     // O(n) shuffle where n is the number of shuffles to do.
     // Shuffle op is O(1) because we swap the last element with the random element and push the random element at the end
-    //TODO This function is not used
     pub fn shuffle_nodes(&mut self, n: u64) {
         require!(n > 0, "n must be greater than 0");
         let mut i = 0;
@@ -236,7 +237,7 @@ impl Coordinator {
         let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
         if bounty.get_status() == BountyStatus::Pending {
-            require!(signer_account_id() == current_account_id() //Coordingator contract
+            require!(signer_account_id() == current_account_id() //Coordinator contract
             || signer_account_id() == node.owner_id, "Only the node owner or the coordinator contract can retrieve a node's answer from a pending bounty");
         }
         require!(bounty.elected_nodes.contains(&node_id), "Node is not elected for this bounty");
@@ -254,7 +255,7 @@ impl Coordinator {
         log!("Checking if node {} should post answer for bounty {}", node_id, bounty_id);
         let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
-        require!(signer_account_id() == current_account_id() //Coordingator contract
+        require!(signer_account_id() == current_account_id() //Coordinator contract
             || signer_account_id() == bounty.owner_id //Bounty owner
             || signer_account_id() == node.owner_id, "Only the bounty owner, node owner, or the coordinator contract can check if they should post an answer");
         require!(bounty.elected_nodes.contains(&node_id), "Node is not elected for this bounty");
@@ -267,11 +268,12 @@ impl Coordinator {
     }
 
     #[result_serializer(borsh)]
-    pub fn post_answer(&self, bounty_id: AccountId, answer: String, status: NodeResponseStatus){
-        log!("Posting answer for bounty {}", bounty_id);
-        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
-        let mut bounty = self.bounties.get(&bounty_id).unwrap();
-        bounty.publish_answer(answer, status);
+    pub fn post_answer(&self, bounty_id: AccountId, node_id: AccountId, answer: String, status: NodeResponseStatus){
+        log!("Posting answer for bounty {:?}", bounty_id);
+        let mut bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
+        let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", bounty_id));
+        require!(signer_account_id() == node.owner_id, "Only the node owner can post an answer");
+        bounty.publish_answer(node_id, answer, status);
     }
 
     #[result_serializer(borsh)] //TODO Should this be private? Should only the bounty holder be able to access this?
@@ -308,8 +310,6 @@ impl Coordinator {
  */
 #[cfg(test)]
 mod tests {
-    use std::fmt::format;
-    use near_units::parse_near;
     use super::*;
 
     #[test]
@@ -320,6 +320,7 @@ mod tests {
             .parse()
             .unwrap();
         let node = coordinator.register_node(name);
+        
         assert_eq!(node.owner_id, signer_account_id(), "Owner id should be current account id");
         assert_eq!(coordinator.get_node_count(), 1, "Node count should be 1");
         assert!(coordinator.nodes.get(&account_id).is_some(), "Should be able to retrieve node");

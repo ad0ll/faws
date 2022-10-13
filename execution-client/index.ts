@@ -11,9 +11,11 @@ import {Bounty, NodeResponse} from "./types";
 import WebSocket from "ws";
 
 
+// TODO Consider what the reward is.
+
 //config items
 const WEBSOCKET_URL = process.env.WEBSOCKET_URL || 'ws://localhost:7071';
-const UNIVERSAL_TIMEOUT = process.env.UNIVERSAL_TIMEOUT || 30000;
+const UNIVERSAL_TIMEOUT = process.env.UNIVERSAL_TIMEOUT || 30000; // TODO Overrides bounty timeout
 const ACCOUNT_ID= process.env.ACCOUNT_ID || "test1.test.near";
 const NODE_ID = process.env.NODE_ID || "acheivement3.node.dev-1665283011588-97304367585179";
 const ACCEPT_NETWORK_WORKLOADS = process.env.ACCEPT_NETWORK_WORKLOADS || true;
@@ -30,7 +32,7 @@ const connectionConfig = {
     networkId:  process.env.NEAR_NETWORK_ID || "localnet",
     keyStore,
     nodeUrl:  process.env.NEAR_NODE_URL || "http://0.0.0.0:3030",
-    walletUrl: process.env.NEAR_WALLET_URL || "http://0.0.0.0/wallet", // Default isn't a real url
+    walletUrl: process.env.NEA_WALLET_URL || "http://0.0.0.0/wallet", // Default isn't a real url
     helperUrl: process.env.NEAR_HELPER_URL || "http://0.0.0.0/helper", // Default isn't a real url
     explorerUrl: process.env.NEAR_EXPLORER_URL || "http://0.0.0.0/helper", // Default isn't a real url
 };

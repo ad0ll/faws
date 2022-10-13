@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use std::fs;
 use anyhow::{Error};
 use near_sdk::{AccountId, env};
-use near_sdk::env::{random_seed, state_write};
+use near_sdk::env::{random_seed};
 use near_sdk::serde_json::json;
 use near_units::parse_near;
 use near_workspaces::{Account, Contract, Worker};
@@ -11,6 +12,11 @@ use coordinator::bounty::{Bounty, NodeResponse, NodeResponseStatus};
 
 pub async fn setup_coordinator(worker: Worker<Sandbox>) -> anyhow::Result<Contract> {
     println!("Deploying coordinator contract");
+    let paths = fs::read_dir("./").unwrap();
+
+    for path in paths {
+        println!("Name: {}", path.unwrap().path().display())
+    }
     let coordinator_wasm_filepath = "../target/wasm32-unknown-unknown/release/coordinator.wasm";
     let coordinator_wasm = std::fs::read(coordinator_wasm_filepath).unwrap();
     let coordinator_contract = worker.dev_deploy(&coordinator_wasm).await?;
@@ -117,11 +123,11 @@ pub async fn get_nodes(coordinator_contract: &Contract) -> anyhow::Result<Vec<No
     return Ok(nodes);
 }
 
-pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, n_bounties: u64, n_threshold: u64, n_elections: u64) -> anyhow::Result<Vec<Bounty>>{
+pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, n_bounties: u64, min_nodes: u64, total_nodes: u64) -> anyhow::Result<Vec<Bounty>>{
     println!("Creating {} bounties", n_bounties);
     let node_count = get_node_count(coordinator_contract).await?;
     assert!(node_count > 0, "failed to create bounty, no nodes are registered");
-    assert!(node_count >= n_elections, "failed to create bounty, not enough nodes are registered");
+    assert!(node_count >= total_nodes, "failed to create bounty, not enough nodes are registered");
     for i in 0..n_bounties {
         println!("creating bounty {}", i);
         let name = format!("test-bounty{}", i.clone());
@@ -130,15 +136,15 @@ pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, n_
         let name: String = format!("test-bounty{}", i.clone());
         let location: String = "https://github.com/ad0ll/docker-hello-world.git".to_string();
         // let bounty = Bounty::new_bounty(name, name.parse. location, )
-        println!("yyyybalance for {}", parse_near!("1N"));
         let _bounty: Bounty = creator
             .call(coordinator_contract.id(), "create_bounty")
             .args_json(json!({
                 "name": name,
                 "file_location": location,
                 "file_download_protocol": "GIT",
-                "threshold": n_threshold,
-                "total_nodes": n_elections,
+                "min_nodes": min_nodes,
+                "total_nodes": total_nodes,
+                "timeout_seconds": 30,
                 "network_required": true,
                 "gpu_required": false,
                 "amt_storage": format!("{}", parse_near!("1N")), //Make this a string since javascript doesn't support u128
@@ -149,6 +155,7 @@ pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, n_
             .await?
             .borsh()?;
     };
+
     //TODO compare against statically created bounties
     let bounties  = get_bounties(&coordinator_contract).await?;
     println!("Num bounties from get_bounties{}", bounties.len());
@@ -186,7 +193,6 @@ async fn get_answer(coordinator_contract: Contract, account: Account, bounty_id:
     return Ok(answer);
 }
 async fn post_answer(coordinator_contract: Contract, account: Account, bounty_id: AccountId, answer: String, status: NodeResponseStatus) -> anyhow::Result<()>{
-let stat = format!("{}", status);
     println!("posting answer: {}", answer);
     println!("bounty_id: {}", bounty_id);
     account
@@ -194,7 +200,7 @@ let stat = format!("{}", status);
         .args_json(json!({
             "bounty_id": bounty_id.clone(),
             "answer": answer.clone(),
-            "status": "SUCCESS",
+            "status": status.clone(),
         }))
         .max_gas()
         .transact()
@@ -222,43 +228,60 @@ async fn test_create_bounty() -> anyhow::Result<()>{
     let accounts = create_accounts(worker.clone(), 1).await;
     let account_vec: Vec<Account> = accounts.values().cloned().collect();
     let _nodes = create_nodes(&coordinator_contract, account_vec.clone(),  1).await?;
-    let bounty_owner = (random_seed()[0]%10) as usize;
-    let _bounties = create_bounty(&coordinator_contract, account_vec[bounty_owner].clone(), 1, 1, 1 ).await?;
+    let bounty_owner = &account_vec[(random_seed().clone()[0]%10) as usize] ;
+    let _bounties = create_bounty(&coordinator_contract, bounty_owner.clone(), 1, 1, 1 ).await?;
     assert_eq!(get_bounty_count(coordinator_contract.clone()).await?, 1, "bounty count should be 1");
     Ok(())
 }
 
 #[tokio::test]
 async fn test_bounty_full_lifecycle() -> anyhow::Result<()>{
+    let num_accounts = 5;
+    let min_nodes = 2;
+    let max_nodes = 3;
     let worker = near_workspaces::sandbox().await?;
     let coordinator_contract = setup_coordinator(worker.clone()).await?;
-    let accounts = create_accounts(worker.clone(), 1).await;
+    let mut accounts = create_accounts(worker.clone(), num_accounts).await;
     let account_vec: Vec<Account> = accounts.values().cloned().collect();
-    let nodes = create_nodes(&coordinator_contract, account_vec.clone(),  10).await?;
-    assert_eq!(get_node_count(&coordinator_contract).await?, 10, "node bootstrapping didn't return the expected number of nodes");
-    let bounty_owner = (random_seed()[0]%10) as usize;
-    let bounties = create_bounty(&coordinator_contract, account_vec[bounty_owner].clone(), 1, 5, 8).await?;
+    let mut nodes = create_nodes(&coordinator_contract, account_vec.clone(),  1).await?;
+    assert_eq!(get_node_count(&coordinator_contract).await?, num_accounts, "node bootstrapping didn't return the expected number of nodes");
+    let bounty_owner_id = accounts.keys().next().unwrap().clone();
+    let bounty_owner = accounts.get(&bounty_owner_id).unwrap_or_else(|| panic!("failed to remove bounty owner from accounts"));
+    let bounties = create_bounty(&coordinator_contract, bounty_owner.clone(), 1, min_nodes, max_nodes).await?;
     assert_eq!(get_bounty_count(coordinator_contract.clone()).await?, 1, "bounty count should be 1");
     for bounty in bounties{
         println!("fetching bounty: {}", bounty.id);
-            assert_eq!(get_bounty(&coordinator_contract, bounty.id.clone()).await?.id, bounty.id.clone(), "bounty should exist");
-            for elected in bounty.elected_nodes{
-
-                let node = nodes.get(&elected).unwrap();
-                let account = accounts.get(&node.owner_id).unwrap();
-                println!("posting answer for bounty {}, node {}", bounty.id.clone(), node.id.clone());
+        assert_eq!(get_bounty(&coordinator_contract, bounty.id.clone()).await?.id, bounty.id.clone(), "bounty should exist");
+        let mut curr_idx = 0;
+        for elected in bounty.elected_nodes{
+            let node = nodes.get(&elected).unwrap_or_else(|| panic!("failed to get node {} from nodes", &elected));
+            let account = accounts.get(&node.owner_id).unwrap_or_else(|| panic!("failed to get account {} from accounts", &node.owner_id));
+            println!("checking if we should post answer using {} for bounty {}, node {}", coordinator_contract.id(), bounty.id.clone(), node.id.clone());
+            let should_post_answer: bool = account
+                .call(coordinator_contract.id(), "should_post_answer")
+                .args_json(json!({
+                "bounty_id": bounty.id.clone(),
+                "node_id": node.id.clone(),
+            })).view()
+                .await?
+                .borsh()?;
+            println!("should_post_answer: {}", should_post_answer);
+            if curr_idx >= min_nodes{
+                println!("index above min_nodes, should not post answer");
+                assert_eq!(should_post_answer, false, "should_post_answer should be false since we have enough nodes to close the bounty");
+                break;
+            } else {
+                println!("index below min_nodes, should post answer");
+                assert_eq!(should_post_answer, true, "should_post_answer should be true since we don't have enough nodes to close the bounty");
                 post_answer(coordinator_contract.clone(), account.clone(), bounty.id.clone(), "42".to_string(), NodeResponseStatus::SUCCESS).await?;
                 let answer = get_answer(coordinator_contract.clone(), account.clone(), bounty.id.clone()).await?;
                 assert_eq!(answer.solution, "42".to_string(), "answer should be 42");
                 assert!(answer.timestamp > 0, "timestamp should be greater than 0");
-                // assert!(answer.gas_used > 0, "gas used should be greater than 0");
                 println!("node: {}, owned by {} posted answer", node.id.clone(), node.owner_id.clone());
+            }
+            curr_idx += 1;
         }
     }
-
-    // assert_eq!(bounty.elected_nodes.len(), 5, "bounty creation didn't return the expected number of elected nodes");
-    // println!("bounty created with these nodes: {:?}", bounty.elected_nodes);
-    println!("timestamp: {}", env::block_timestamp());
-    println!("timestamp ms: {}", env::block_timestamp_ms());
     Ok(())
 }
+

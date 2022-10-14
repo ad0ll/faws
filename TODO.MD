@@ -32,8 +32,8 @@
 # Client
 ## Disorganized
 * (High pri) Client must be able to set timeout to prevent malicious actor from blocking their node
-* (Med pri) Client should preflight node to make sure it has all the software it needs installed (docker, git, curl, etc)
-* (Low pri) Client should have a pruning routine to run docker system prune
+* (Med pri) Client should be able to download from IPFS
+* (Low pri) Client should have a pruning routine to run docker system prune and to clean the file system
 * (Low pri) Client should prune images that are older than some specified days
 * (Very low pri) Client should build images w/ `DOCKER_BUILDKIT=1 docker build .`
 

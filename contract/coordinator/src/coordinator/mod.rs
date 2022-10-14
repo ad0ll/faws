@@ -267,6 +267,7 @@ impl Coordinator {
         return bounty.should_publish_answer(node.id) == "yes";
     }
 
+
     #[result_serializer(borsh)]
     pub fn post_answer(&self, bounty_id: AccountId, node_id: AccountId, answer: String, status: NodeResponseStatus){
         log!("Posting answer for bounty {:?}", bounty_id);

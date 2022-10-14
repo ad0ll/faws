@@ -180,32 +180,33 @@ async fn create_accounts(worker: Worker<Sandbox>, n: u64) -> HashMap<AccountId, 
     return res;
 }
 
-async fn get_answer(coordinator_contract: Contract, account: Account, bounty_id: AccountId) -> anyhow::Result<NodeResponse>{
+async fn get_answer(coordinator_contract: Contract, account: Account, node_id: AccountId, bounty_id: AccountId) -> anyhow::Result<NodeResponse>{
     let answer: NodeResponse = account
         .call(coordinator_contract.id(), "get_answer")
         .args_json(json!({
             "bounty_id": bounty_id,
-            "node_id": account.id(),
+            "node_id": node_id,
         }))
-        .view()
+        .transact()
         .await?
-        .borsh()?;
+        .json()?;
     return Ok(answer);
 }
-async fn post_answer(coordinator_contract: Contract, account: Account, bounty_id: AccountId, answer: String, status: NodeResponseStatus) -> anyhow::Result<()>{
+async fn post_answer(coordinator_contract: Contract, account: Account, node_id: AccountId, bounty_id: AccountId, answer: String, status: NodeResponseStatus) -> anyhow::Result<()>{
     println!("posting answer: {}", answer);
     println!("bounty_id: {}", bounty_id);
     account
         .call(coordinator_contract.id(), "post_answer")
         .args_json(json!({
+            "node_id": node_id.clone(),
             "bounty_id": bounty_id.clone(),
             "answer": answer.clone(),
             "status": status.clone(),
         }))
-        .max_gas()
         .transact()
         .await?
-        .borsh()?;
+        .into_result()?;
+        // .borsh()?;
     return Ok(());
 }
 
@@ -246,7 +247,18 @@ async fn test_bounty_full_lifecycle() -> anyhow::Result<()>{
     let mut nodes = create_nodes(&coordinator_contract, account_vec.clone(),  1).await?;
     assert_eq!(get_node_count(&coordinator_contract).await?, num_accounts, "node bootstrapping didn't return the expected number of nodes");
     let bounty_owner_id = accounts.keys().next().unwrap().clone();
-    let bounty_owner = accounts.get(&bounty_owner_id).unwrap_or_else(|| panic!("failed to remove bounty owner from accounts"));
+    let bounty_owner = accounts.remove(&bounty_owner_id).unwrap_or_else(|| panic!("failed to remove bounty owner from accounts"));
+    let mut keys_to_remove: Vec<AccountId> = vec!();
+    for x in nodes.values() {
+        if x.owner_id == bounty_owner_id {
+            keys_to_remove.push(x.id.clone())
+        }
+    }
+    for x in keys_to_remove {
+        let node = nodes.remove(&x).unwrap();
+        println!("removed node: {}, owned by {}", node.id, node.owner_id);
+    }
+
     let bounties = create_bounty(&coordinator_contract, bounty_owner.clone(), 1, min_nodes, max_nodes).await?;
     assert_eq!(get_bounty_count(coordinator_contract.clone()).await?, 1, "bounty count should be 1");
     for bounty in bounties{
@@ -257,28 +269,32 @@ async fn test_bounty_full_lifecycle() -> anyhow::Result<()>{
             let node = nodes.get(&elected).unwrap_or_else(|| panic!("failed to get node {} from nodes", &elected));
             let account = accounts.get(&node.owner_id).unwrap_or_else(|| panic!("failed to get account {} from accounts", &node.owner_id));
             println!("checking if we should post answer using {} for bounty {}, node {}", coordinator_contract.id(), bounty.id.clone(), node.id.clone());
-            let should_post_answer: bool = account
+            println!("generated json {}", json!({
+                "bounty_id": bounty.id.clone(),
+                "node_id": node.id.clone(),
+            }));
+            let should_post_answer = account
                 .call(coordinator_contract.id(), "should_post_answer")
                 .args_json(json!({
                 "bounty_id": bounty.id.clone(),
                 "node_id": node.id.clone(),
-            })).view()
+            })).transact()
                 .await?
-                .borsh()?;
-            println!("should_post_answer: {}", should_post_answer);
+                .json::<bool>()?;
+            println!("should_post_answer {}: {:?}", node.id, should_post_answer);
             if curr_idx >= min_nodes{
                 println!("index above min_nodes, should not post answer");
                 assert_eq!(should_post_answer, false, "should_post_answer should be false since we have enough nodes to close the bounty");
                 break;
-            } else {
+            }
                 println!("index below min_nodes, should post answer");
-                assert_eq!(should_post_answer, true, "should_post_answer should be true since we don't have enough nodes to close the bounty");
-                post_answer(coordinator_contract.clone(), account.clone(), bounty.id.clone(), "42".to_string(), NodeResponseStatus::SUCCESS).await?;
-                let answer = get_answer(coordinator_contract.clone(), account.clone(), bounty.id.clone()).await?;
+                // assert_eq!(should_post_answer, true, "should_post_answer should be true since we don't have enough nodes to close the bounty");
+                post_answer(coordinator_contract.clone(), account.clone(), node.id.clone(), bounty.id.clone(), "42".to_string(), NodeResponseStatus::SUCCESS).await?;
+                println!("posted answer to {} for {}", bounty.id.clone(), node.id.clone());
+                let answer = get_answer(coordinator_contract.clone(), account.clone(), node.id.clone(),bounty.id.clone()).await?;
                 assert_eq!(answer.solution, "42".to_string(), "answer should be 42");
                 assert!(answer.timestamp > 0, "timestamp should be greater than 0");
                 println!("node: {}, owned by {} posted answer", node.id.clone(), node.owner_id.clone());
-            }
             curr_idx += 1;
         }
     }

@@ -88,16 +88,7 @@ impl NodeResponse {
 }
 
 // TODO Add a timeout to a bounty
-/*
-Hey Amit, follow up from earlier, I
-./build.sh builds the image for a wasm target. You can deploy it with local-near dev-deploy ./target/wasm32-unknown-unknown/release/coordinator. Integration tests have the right path for deploying the contract w/ near_workspaces
-deploy.sh doesn't work/haven't tested it, same with localnet-deploy.sh
-helper.sh has a dump of some local commands that I've been using if you need it for reference
-You can get a completely new contract state by deleting the neardev directory
-Feel free to add in new types and properties, storage is cheap.  https://docs.near.org/concepts/storage/data-storage#big-o-notation-big-o-notation-1 has all the map and lookup types for reference. TL;DR LookupSet/Map are slightly faster than UnorderedSet/Map, but give you no iteration.
-integration tests all almost work (just the last one breaks on should_post_answer) and are good references for how to interact with the contract.
-If you can get integrations tests to work, near_workspace makes sure you always have a fresh network and fresh contract deployment every run and eliminates the need to run the indexer (required to test using the cli)
- */
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bounty{

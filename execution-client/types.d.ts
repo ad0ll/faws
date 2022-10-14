@@ -8,6 +8,7 @@ export type NodeResponse = {
     gas_used: BigInt,
     status: "SUCCESS" | "FAILURE"
 }
+export type SupportedFileDownloadProtocols = "git" | "ipfs" | "http";
 
 // Must match contract
 export type Bounty = {

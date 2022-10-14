@@ -1,106 +1,90 @@
-# Hello NEAR Contract
+## Instructions
+1. Build the contract with `./build.sh`
+2. Deploy t
 
-The smart contract exposes two methods to enable storing and retrieving a greeting in the NEAR network.
 
-```rust
-const DEFAULT_GREETING: &str = "Hello";
-
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct Contract {
-    greeting: String,
-}
-
-impl Default for Contract {
-    fn default() -> Self {
-        Self{greeting: DEFAULT_GREETING.to_string()}
-    }
-}
-
-#[near_bindgen]
-impl Contract {
-    // Public: Returns the stored greeting, defaulting to 'Hello'
-    pub fn get_greeting(&self) -> String {
-        return self.greeting.clone();
-    }
-
-    // Public: Takes a greeting, such as 'howdy', and records it
-    pub fn set_greeting(&mut self, greeting: String) {
-        // Record a log permanently to the blockchain!
-        log!("Saving greeting {}", greeting);
-        self.greeting = greeting;
-    }
-}
-```
-
-<br />
-
-# Quickstart
-
-1. Make sure you have installed [rust](https://rust.org/).
-2. Install the [`NEAR CLI`](https://github.com/near/near-cli#setup)
-
-<br />
-
-## 1. Build and Deploy the Contract
-You can automatically compile and deploy the contract in the NEAR testnet by running:
-
+## Examples
+1.  Deploy contract
 ```bash
-./deploy.sh
+local_near dev-deploy --wasmFile target/wasm32-unknown-unknown/release/coordinator.wasm 
 ```
-
-Once finished, check the `neardev/dev-account` file to find the address in which the contract was deployed:
-
+2. Create an account:
 ```bash
-cat ./neardev/dev-account
-# e.g. dev-1659899566943-21539992274727
+
 ```
-
-<br />
-
-## 2. Retrieve the Greeting
-
-`get_greeting` is a read-only method (aka `view` method).
-
-`View` methods can be called for **free** by anyone, even people **without a NEAR account**!
-
+1. Register a node:
 ```bash
-# Use near-cli to get the greeting
-near view <dev-account> get_greeting
+local_near call "dev-1665283011588-97304367585179" register_node '{"name": "acheivement20"}' --accountId=dev-1665427694682-19594043998989
 ```
-
-<br />
-
-## 3. Store a New Greeting
-`set_greeting` changes the contract's state, for which it is a `change` method.
-
-`Change` methods can only be invoked using a NEAR account, since the account needs to pay GAS for the transaction.
-
+2. Create a bounty:
 ```bash
-# Use near-cli to set a new greeting
-near call <dev-account> set_greeting '{"greeting":"howdy"}' --account_id <dev-account>
+local_near call "dev-1665283011588-97304367585179" create_bounty '{"name": "something22", "file_location": "https://github.com/ad0ll/docker-hello-world.git", "file_download_protocol": "GIT", "threshold": 2, "total_nodes": 3, "network_required": true, "gpu_required": false, "amt_storage": "1000000000000000000000000", "amt_node_reward": "1000000000000000000000000"}' --accountId="dev-1665427694682-19594043998989" --deposit 2 
 ```
-
-**Tip:** If you would like to call `set_greeting` using your own account, first login into NEAR using:
-
+1. Get nodes
+```bash 
+ local_near call "dev-1665283011588-97304367585179" get_nodes '{}' --accountId dev-1665427694682-19594043998989 
+```
+2. Get bounties (useless because borsh serialization)
 ```bash
-# Use near-cli to login your NEAR account
-near login
+local_near call "dev-1665283011588-97304367585179" get_bounties '{}' --accountId=dev-1665427694682-19594043998989 
+```
+3. Get bounty
+```bash
+
 ```
 
-and then use the logged account to sign the transaction: `--account_id <your
--account>`.
+local_near generate-key account1
+near repl
+// Paste this code in the javascript console
+const pk58 = 'ed25519:<data>'
+nearAPI.utils.PublicKey.fromString(pk58).data.hexSlice()
+
+local_near call localnet create_account '{"new_account_id": "<account-name>.testnet"
+near call testnet create_account '{"new_account_id": "<account-name>.testnet", "new_public_key": "ed25519:<data>"}' --deposit 0.00182 --accountId <account-with-funds>
+
+
+~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ local_near generate-key account1                                                                                                          4s 06:50:22
+Loaded master account test.near key from /Users/adoll/.near/validator_key.json with public key = ed25519:HxzAZgDCZTvA4dJbUJH1u9VT1YAex13QZohVoYr732zu
+Key pair with ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA public key for an account "account1"
+~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ near repl                                                                                                                                    06:53:49
+> const pk58 = 'ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA'
+undefined
+> const pk58='ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA'
+Uncaught SyntaxError: Identifier 'pk58' has already been declared
+> nearAPI.utils.PublicKey.fromString(pk58).data.hexSlice()
+'48cc310c9020f664cd3f8da6c9a1eae425b2830b623348bec45a38fba896e553'
 
 
 
+>
+~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ local_near generate-key account2                                                                                                       1m 4s 06:55:03
+Loaded master account test.near key from /Users/adoll/.near/validator_key.json with public key = ed25519:HxzAZgDCZTvA4dJbUJH1u9VT1YAex13QZohVoYr732zu
+Key pair with ed25519:HEmKDD7JzmhMuoTz3HfsTpAfdmww3EaujexLYXhigvEC public key for an account "account2"
+~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ local_near generate-key account3                                                                                                             06:55:08
+Loaded master account test.near key from /Users/adoll/.near/validator_key.json with public key = ed25519:HxzAZgDCZTvA4dJbUJH1u9VT1YAex13QZohVoYr732zu
+Key pair with ed25519:BwZVQnCpJCFXcreoPMN4uC2fXoJaKxun4AmZmYdynFVD public key for an account "account3"
+~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ near repl
 
-## Bounties
+> nearAPI.utils.PublicKey.fromString('ed25519:HEmKDD7JzmhMuoTz3HfsTpAfdmww3EaujexLYXhigvEC').data.hexSlice()
+'f141a5b618ecc20c9991642529202907b241476ce2e2074121153f3eded89e19'
 
-Bounties are objects that specify work to be executed on nodes.
 
-File location: Either a git repo, http link, or ipfs link. The first part of the url will be used to determine the protocol.
+> nearAPI.utils.PublicKey.fromString('ed25519:BwZVQnCpJCFXcreoPMN4uC2fXoJaKxun4AmZmYdynFVD').data.hexSlice()
+'a28ef825426ea7eb976c8a1083824d45a63e27f73c048ca1cf921dbcc70d7124'
 
-### How to prepare packages for nodes:
 
-A Dockerfile must always be present at the root of the repo.
-* `Dockerfile`: Note that run.sh will always take precedence over a Dockerfile when both are present
+
+near call testnet create_account '{"new_account_id": "account1.localnet", "new_public_key": "ed25519:<data>"}' --deposit 0.00182 --accountId <account-with-funds>
+
+ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA
+48cc310c9020f664cd3f8da6c9a1eae425b2830b623348bec45a38fba896e553
+local_near call localnet create_account '{"new_account_id": "account1.localnet", "new_public_key": "ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA"}' --deposit 2 --accountId dev-1665283011588-97304367585179
+
+
+ed25519:HEmKDD7JzmhMuoTz3HfsTpAfdmww3EaujexLYXhigvEC
+f141a5b618ecc20c9991642529202907b241476ce2e2074121153f3eded89e19
+
+ed25519:BwZVQnCpJCFXcreoPMN4uC2fXoJaKxun4AmZmYdynFVD
+a28ef825426ea7eb976c8a1083824d45a63e27f73c048ca1cf921dbcc70d7124
+
+near call create_acc

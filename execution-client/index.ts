@@ -9,17 +9,20 @@ import os from "os"
 import path from "path"
 import {Bounty, NodeResponse} from "./types";
 import WebSocket from "ws";
+import shell from "shelljs";
 
+
+// TODO Consider what the reward is.
 
 //config items
-const WEBSOCKET_URL = process.env.WEBSOCKET_URL || 'ws://localhost:7071';
-const UNIVERSAL_TIMEOUT = process.env.UNIVERSAL_TIMEOUT || 30000;
-const ACCOUNT_ID= process.env.ACCOUNT_ID || "test1.test.near";
-const NODE_ID = process.env.NODE_ID || "acheivement3.node.dev-1665283011588-97304367585179";
-const ACCEPT_NETWORK_WORKLOADS = process.env.ACCEPT_NETWORK_WORKLOADS || true;
-const ACCEPT_GPU_WORKLOADS = process.env.ACCEPT_GPU_WORKLOADS || true;
-const COORDINATOR_CONTRACT_ID = process.env.COORDINATOR_CONTRACT_ID  || "dev-1665283011588-97304367585179";
-const BOUNTY_STORAGE_LOCATION = process.env.BOUNTY_STORAGE_DIR || path.join(process.cwd(), "bounties");
+export const WEBSOCKET_URL = process.env.WEBSOCKET_URL || 'ws://localhost:7071';
+export const UNIVERSAL_TIMEOUT = process.env.UNIVERSAL_TIMEOUT || 30000; // TODO Overrides bounty timeout
+export const ACCOUNT_ID= process.env.ACCOUNT_ID || "test1.test.near";
+export const NODE_ID = process.env.NODE_ID || "acheivement3.node.dev-1665283011588-97304367585179";
+export const ACCEPT_NETWORK_WORKLOADS = process.env.ACCEPT_NETWORK_WORKLOADS || true;
+export const ACCEPT_GPU_WORKLOADS = process.env.ACCEPT_GPU_WORKLOADS || true;
+export const COORDINATOR_CONTRACT_ID = process.env.COORDINATOR_CONTRACT_ID  || "dev-1665283011588-97304367585179";
+export const BOUNTY_STORAGE_LOCATION = process.env.BOUNTY_STORAGE_DIR || path.join(process.cwd(), "bounties");
 const { keyStores } = nearAPI;
 //TODO We probably want to do a browser key store
 // const keyStore = new keyStores.BrowserLocalStorageKeyStore(); //Needed because we have to sign transactions
@@ -30,7 +33,7 @@ const connectionConfig = {
     networkId:  process.env.NEAR_NETWORK_ID || "localnet",
     keyStore,
     nodeUrl:  process.env.NEAR_NODE_URL || "http://0.0.0.0:3030",
-    walletUrl: process.env.NEAR_WALLET_URL || "http://0.0.0.0/wallet", // Default isn't a real url
+    walletUrl: process.env.NEA_WALLET_URL || "http://0.0.0.0/wallet", // Default isn't a real url
     helperUrl: process.env.NEAR_HELPER_URL || "http://0.0.0.0/helper", // Default isn't a real url
     explorerUrl: process.env.NEAR_EXPLORER_URL || "http://0.0.0.0/helper", // Default isn't a real url
 };
@@ -79,20 +82,17 @@ const bootstrapNode = async () => {
         log.error(`Node ${NODE_ID} is not registered with the coordinator contract (${COORDINATOR_CONTRACT_ID})`);
         process.exit(1);
     }
-    //TODO If node isn't registered, we could register it here
-    /*
-        TODO Check software installed on node. Should have:
-        git
-        curl
-        docker
-        unzip
-        tar
 
-        Not technically required but recommended:
-        wget
-        python3
-        docker-compose
-     */
+    const missingSoftware = [];
+    shell.which("docker") || missingSoftware.push("docker is not installed");
+    shell.which("git") || missingSoftware.push("git is not installed");
+    shell.which("curl") || missingSoftware.push("curl is not installed");
+    shell.which("tar") || missingSoftware.push("tar is not installed");
+    shell.which("unzip") || missingSoftware.push("unzip is not installed");
+    if(missingSoftware.length > 0) {
+        log.error(`Could not start node, missing the following software: ${missingSoftware.join(", ")}`);
+        process.exit(1);
+    }
 }
 
 (async () => {

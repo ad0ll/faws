@@ -159,3 +159,49 @@
 {"level":"info","message":"Fetching node info from coordinator contract"}
 {"level":"info","message":"Node acheivement3.node.dev-1665283011588-97304367585179 is registered with the following properties: {\"id\":\"acheivement3.node.dev-1665283011588-97304367585179\",\"owner_id\":\"dev-1665283011588-97304367585179\",\"last_run\":0,\"last_success\":0,\"last_failure\":0,\"successful_runs\":0,\"failed_runs\":0,\"gpus\":[]}"}
 {"level":"info","message":"Received bounty something22.bounty.dev-1665283011588-97304367585179"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}

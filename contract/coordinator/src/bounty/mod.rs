@@ -6,7 +6,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap};
 use near_sdk::env::{attached_deposit, block_timestamp, block_timestamp_ms, current_account_id, predecessor_account_id, signer_account_id, storage_byte_cost, used_gas};
 use near_sdk::serde::{Serialize, Deserialize};
-use near_units::{parse_gas, parse_near};
+
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -17,7 +17,7 @@ pub enum SupportedDownloadProtocols {
     EMPTY
 }
 impl Display for SupportedDownloadProtocols {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             SupportedDownloadProtocols::IPFS => write!(f, "ipfs"),
             SupportedDownloadProtocols::HTTPS => write!(f, "https"),
@@ -87,6 +87,17 @@ impl NodeResponse {
     }
 }
 
+// TODO Add a timeout to a bounty
+/*
+Hey Amit, follow up from earlier, I
+./build.sh builds the image for a wasm target. You can deploy it with local-near dev-deploy ./target/wasm32-unknown-unknown/release/coordinator. Integration tests have the right path for deploying the contract w/ near_workspaces
+deploy.sh doesn't work/haven't tested it, same with localnet-deploy.sh
+helper.sh has a dump of some local commands that I've been using if you need it for reference
+You can get a completely new contract state by deleting the neardev directory
+Feel free to add in new types and properties, storage is cheap.  https://docs.near.org/concepts/storage/data-storage#big-o-notation-big-o-notation-1 has all the map and lookup types for reference. TL;DR LookupSet/Map are slightly faster than UnorderedSet/Map, but give you no iteration.
+integration tests all almost work (just the last one breaks on should_post_answer) and are good references for how to interact with the contract.
+If you can get integrations tests to work, near_workspace makes sure you always have a fresh network and fresh contract deployment every run and eliminates the need to run the indexer (required to test using the cli)
+ */
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bounty{
@@ -105,6 +116,7 @@ pub struct Bounty{
     pub gpu_required: bool, // True if the bounty's execution requires GPU compute
     pub amt_storage: Balance, //Unused storage is refunded to the owner once the contract is closed
     pub amt_node_reward: Balance, //Total payout to the nodes.
+    pub timeout_seconds: u64, // Bounty timeout in seconds. If 0, no timeout.
     // pub result: String, //TODO This was going to be the single, definitive result. Need to summarize all the responses.
     pub elected_nodes: Vec<AccountId>, //TODO: How can we make this private? //TODO Unrelated to <-, this could be/should be UnorderedSet or merged below with answers
     pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
@@ -122,6 +134,7 @@ impl PartialEq<Self> for Bounty {
             && self.cancelled == other.cancelled
             && self.min_nodes == other.min_nodes
             && self.total_nodes == other.total_nodes
+            && self.timeout_seconds == other.timeout_seconds
             && self.bounty_created == other.bounty_created
             && self.network_required == other.network_required
             && self.gpu_required == other.gpu_required
@@ -145,6 +158,7 @@ impl Default for Bounty {
             cancelled: false,
             min_nodes: 0,
             total_nodes: 0,
+            timeout_seconds: 30,
             bounty_created: block_timestamp_ms(),
             network_required: false,
             gpu_required: false,
@@ -160,7 +174,7 @@ impl Bounty {
     #[init]
     #[payable]
     #[private] // Only allow creating bounties through coordinator
-    pub fn new_bounty(name: String, id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128) -> Self {
+    pub fn new_bounty(name: String, id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128) -> Self {
         Self {
             id,
             owner_id: signer_account_id(),
@@ -170,8 +184,9 @@ impl Bounty {
             success: false,
             complete: false,
             cancelled: false,
-            min_nodes: threshold,
+            min_nodes,
             total_nodes,
+            timeout_seconds,
             bounty_created: block_timestamp_ms(),
             // result: "".to_string(),
             // elected_nodes: UnorderedSet::new(format!("{}-elected", name).to_string().as_bytes()),
@@ -187,6 +202,7 @@ impl Bounty {
 
     //View function to check amount left for storage to see if the publish_answer function is likely to succeed
     //Publish answer costs the node gas, even if we attempt to refund then, so we should check if there's enough budget left
+    #[private]
     pub fn get_status(&self) -> BountyStatus {
         log!("Fetching bounty status...");
         if !self.complete {
@@ -204,11 +220,13 @@ impl Bounty {
         return BountyStatus::Failed;
     }
 
-    pub fn publish_answer(&mut self, answer: String, status: NodeResponseStatus) {
+    #[private]
+    pub fn publish_answer(&mut self, node_id: AccountId, answer: String, status: NodeResponseStatus) {
+
         require!(self.complete == false, "Bounty is complete, no more answers can be published");
-        require!(!self.elected_nodes.contains(&signer_account_id()), "You are not an elected node");
-        require!(self.answers.get(&signer_account_id()).is_none(), "You have already submitted an answer");
-        log!("Publishing answer from {}. Answer: {}, Status: {}", signer_account_id(), answer, status);
+        require!(self.elected_nodes.contains(&node_id), "You are not an elected node");
+        require!(self.answers.get(&node_id).is_none(), "You have already submitted an answer");
+        log!("Publishing answer from {} (owner: {}). Answer: {}, Status: {}", &node_id, signer_account_id(), answer, status);
 
         let node_response = NodeResponse::new_node_response(answer.clone(),
                                                             block_timestamp(),
@@ -219,31 +237,34 @@ impl Bounty {
         //If we hit this, the node has to pay gas. Wondering if we can front-load storage estimates in create_bounty to prevent it from being created if it doesn't have enough storage
         log!("Estimated storage cost for answer {}, bounty has used {}, has {} left", estimated_storage, used_storage, self.amt_storage - used_storage);
         require!(estimated_storage < (self.amt_storage), "Not enough storage left to store answer");
-        self.answers.insert(&signer_account_id(), &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas(), status.clone()));
+        self.answers.insert(&node_id, &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas(), status.clone()));
+       log!("Finished publishing answer for {}, checking if enough nodes have responded to close the bounty ({}/{})...", &node_id, self.answers.len(), self.min_nodes);
+        for (check_node_id, node_response) in self.answers.iter() {
+            log!("Node {} responded with answer {}, status {}", check_node_id, node_response.solution, node_response.status);
+        }
+        //TODO Analyze answers here
         if self.answers.len() >= self.min_nodes {
             log!("Bounty has enough answers to be considered complete");
+            //TODO Analyze answers here
             self.close(false, false);
             //Reinsert record with updated gas for closing node
-            // log!("Reinserting answer for this node with updated gas");
-            // self.answers.insert(&signer_account_id(), &NodeResponse::new_node_response(answer.clone(), block_timestamp(), used_gas(), status.clone()));
         }
-        //TODO Check that there's enough node reward to pay for gas
-        //Don't return anything so we don't consume any more gas
     }
 
     // TODO maybe not currently implemented
     // View function that returns yes, no, maybe for the client to check if they should spend gas to publish an answer
+    #[private]
     pub fn should_publish_answer(&self, node_id: AccountId) -> String { //Return as string so we can return "maybe" later
         if self.complete {
             log!("Should not publish, bounty is complete");
             return "no".to_string();
-        } else if self.cancelled { //Bounty should never be cancelled without being complete, but have this as a safegaurd
+        } else if self.cancelled { //Bounty should never be cancelled without being complete, but have this as a safeguard
             log!("Should not publish, bounty is cancelled");
             return "no".to_string();
         } else if !self.elected_nodes.contains(&node_id) {
             log!("Should not publish, you are not an elected node");
             return "no".to_string(); // You aren't an elected node
-        } else if !self.answers.get(&node_id).is_some() {
+        } else if self.answers.get(&node_id).is_some() {
             log!("Should not publish, you have already submitted an answer");
             return "no".to_string(); // You have already posted an answer
         }
@@ -252,15 +273,16 @@ impl Bounty {
         return "yes".to_string();
     }
 
+    #[private]
     pub fn cancel(&mut self) {
+        log!("Cancelling bounty");
         require!(self.complete == false, "Bounty is already complete");
         require!(self.cancelled == false, "Bounty is already cancelled");
-        require!(self.owner_id == signer_account_id() || signer_account_id() == current_account_id(), "Only the owner or the oracle can cancel the bounty");
-        log!("Cancelling bounty");
         self.close(false, true);
     }
 
     //TODO This function can be broken into multiple parts, update bounty status, analyze answers, refund bounty storage, pay nodes
+    #[private]
     pub fn close(&mut self, failed: bool, cancelled: bool) -> Promise {
         log!("Closing bounty");
         require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can close it");
@@ -286,6 +308,7 @@ impl Bounty {
         //TODO we want to skim a very small amount of the storage cost for the coordinator, maybe 1-2% with a cap to cover storage contingencies in the future
         let mut main_promise: Promise = Promise::new(self.owner_id.clone()).transfer(self.amt_storage - storage_used); //Storage refund promise
         for (node_id, _node_response) in &self.answers{
+            //TODO only reward confirmed nodes
             if !self.cancelled{
                 let reward_promise = Promise::new(node_id.clone())
                     .transfer(self.amt_node_reward/self.answers.len() as u128);
@@ -310,6 +333,7 @@ impl Bounty {
     }
 
     #[payable]
+    #[private]
     pub fn bounty_add_storage_deposit(&mut self) -> Promise {
         require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
         self.amt_storage += attached_deposit();
@@ -317,6 +341,7 @@ impl Bounty {
     }
 
     #[payable]
+    #[private]
     pub fn bounty_add_node_reward_deposit(&mut self) -> Promise {
         require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
         self.amt_node_reward += attached_deposit();
@@ -325,6 +350,7 @@ impl Bounty {
 
 
     //Dumps the result as {$value: $number_of_nodes_with_value}, requiring the bounty creator to manually verify the result
+    #[private]
     pub fn get_result(&self) -> HashMap<String, u8> {
         let mut res: HashMap<String, u8> = HashMap::new();
         for (_, value) in self.answers.iter() {

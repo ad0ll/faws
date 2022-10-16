@@ -1,9 +1,8 @@
-import React from "react";
 import App from "./App";
 import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
 import ReactDOM from "react-dom/client";
-import { createTheme, ThemeProvider } from "@mui/material";
+import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 
 const reactRoot = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -16,12 +15,33 @@ const contract = new Contract({ wallet });
 
 const theme = createTheme({
   palette: {
-    primary: {
-      main: "#efefef",
+    mode: "dark",
+    action: {
+      active: "#66B2FF",
     },
-    secondary: {
-      main: "#555",
+    background: {
+      default: "rgb(0, 30, 60)",
+      paper: "rgb(0, 30, 60)",
     },
+    text: {
+      primary: "rgb(189, 189, 189)",
+      secondary: "#ccc",
+    },
+    divider: "rgba(194, 224, 255, 0.08)",
+  },
+  typography: {
+    fontFamily: [
+      "-apple-system",
+      "BlinkMacSystemFont",
+      '"Segoe UI"',
+      "Roboto",
+      '"Helvetica Neue"',
+      "Arial",
+      "sans-serif",
+      '"Apple Color Emoji"',
+      '"Segoe UI Emoji"',
+      '"Segoe UI Symbol"',
+    ].join(","),
   },
 });
 
@@ -31,6 +51,7 @@ window.onload = () => {
     .then((isSignedIn: boolean) => {
       reactRoot.render(
         <ThemeProvider theme={theme}>
+          <CssBaseline />
           <App isSignedIn={isSignedIn} contract={contract} wallet={wallet} />
         </ThemeProvider>
       );

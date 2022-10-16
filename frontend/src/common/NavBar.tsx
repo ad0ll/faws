@@ -6,15 +6,14 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { default as Logo } from "../../assets/svg/logo-black.svg";
-import { default as UserIcon } from "../../assets/svg/user-icon-white.svg";
 import { Wallet } from "./near-wallet";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import { IconButton } from "@mui/material";
 
 const pageMap = {
-  Home: "/",
-  Bounties: "/bounties",
-  Coordinator: "/coordinator",
+  bounties: "/bounties",
+  node: "/node",
 };
 
 export default function NavBar({
@@ -24,7 +23,16 @@ export default function NavBar({
   isSignedIn: boolean;
   wallet: Wallet;
 }) {
-  const [anchorElNav, setAnchorElNav] = React.useState(null);
+  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
+    null
+  );
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null
+  );
+
+  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElNav(event.currentTarget);
+  };
 
   const handleCloseNavMenu = () => {
     setAnchorElNav(null);
@@ -43,10 +51,18 @@ export default function NavBar({
     <AppBar position="static">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
-          <div className="logo">
+          <Box sx={{ display: { xs: "none", md: "flex" } }}>
             <img src={Logo} />
-          </div>
+          </Box>
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleOpenNavMenu}
+              color="inherit"
+            ></IconButton>
             <Menu
               id="menu-appbar"
               anchorEl={anchorElNav}
@@ -65,25 +81,31 @@ export default function NavBar({
                 display: { xs: "block", md: "none" },
               }}
             >
-              {Object.keys(pageMap).map((page) => (
-                <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Typography textAlign="center">{page}</Typography>
-                </MenuItem>
-              ))}
+              <MenuItem key="Bounties" onClick={handleCloseNavMenu}>
+                <Typography textAlign="center">Bounty</Typography>
+              </MenuItem>
+              <MenuItem key="Node" onClick={handleCloseNavMenu}>
+                <Typography textAlign="center">Node</Typography>
+              </MenuItem>
             </Menu>
           </Box>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
-            {Object.keys(pageMap).map((page) => (
-              <Button
-                key={page}
-                onClick={handleCloseNavMenu}
-                sx={{ my: 2, color: "gray", display: "block" }}
-              >
-                {page}
-              </Button>
-            ))}
+            <Button
+              key="Bounties"
+              href="/bounty"
+              sx={{ my: 2, color: "white", display: "block" }}
+            >
+              Bounty
+            </Button>
+            <Button
+              key="Node"
+              href="/node"
+              sx={{ my: 2, color: "white", display: "block" }}
+            >
+              Node
+            </Button>
           </Box>
-          {walletComponent}
+          <Box sx={{ flexGrow: 0 }}>{walletComponent}</Box>
         </Toolbar>
       </Container>
     </AppBar>
@@ -91,14 +113,17 @@ export default function NavBar({
 }
 
 export function SignInPrompt({ onClick }) {
-  return <button onClick={onClick}>Connect Wallet</button>;
+  return (
+    <Button onClick={onClick} variant="contained">
+      Connect Wallet
+    </Button>
+  );
 }
 
 function SignOutButton({ accountId, onClick }: { accountId: string; onClick }) {
   return (
-    <button onClick={onClick}>
-      <img src={UserIcon} />
-      <div>{accountId}</div>
-    </button>
+    <Button onClick={onClick} variant="contained">
+      {accountId}
+    </Button>
   );
 }

@@ -1,15 +1,12 @@
 import "regenerator-runtime/runtime";
-import React from "react";
-
-import "../assets/global.scss";
 
 import NavBar from "./common/NavBar";
 import Home from "./home/Home";
 import Coordinator from "./coordinator/Coordinator";
-import Bounties from "./bounties/Bounties";
-import { SignInPrompt } from "./common/NavBar";
 import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
+import Node from "./node/Node";
+import Bounty from "./bounty/Bounty";
 
 export default function App({
   isSignedIn,
@@ -26,17 +23,20 @@ export default function App({
     case "/":
       pageComponent = <Home wallet={wallet} />;
       break;
-    case "/bounties":
-      pageComponent = <Bounties wallet={wallet} />;
+    case "/bounty":
+      pageComponent = <Bounty wallet={wallet} />;
       break;
     case "/coordinator":
       pageComponent = <Coordinator wallet={wallet} />;
+      break;
+    case "/node":
+      pageComponent = <Node wallet={wallet} />;
   }
 
   return (
     <>
       <NavBar isSignedIn={isSignedIn} wallet={wallet} />
-      {pageComponent}
+      <main>{pageComponent}</main>
     </>
   );
 }

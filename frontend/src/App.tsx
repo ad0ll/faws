@@ -36,7 +36,11 @@ export default function App({
   return (
     <>
       <NavBar isSignedIn={isSignedIn} wallet={wallet} />
-      <main>{pageComponent}</main>
+      <main
+        style={{ marginTop: "16px", marginLeft: "32px", marginRight: "32px" }}
+      >
+        {pageComponent}
+      </main>
     </>
   );
 }

@@ -18,6 +18,7 @@ import { setupLedger } from "@near-wallet-selector/ledger";
 import { setupNearWallet } from "@near-wallet-selector/near-wallet";
 import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
 import { CodeResult } from "near-api-js/lib/providers/provider";
+import { Bounty } from "../bounty/types";
 
 const THIRTY_TGAS = "30000000000000";
 const NO_DEPOSIT = "0";
@@ -28,6 +29,7 @@ export class Wallet {
   wallet: NearWallet;
   accountId: string;
   contractId: string;
+  existingBounties: Bounty[] = [];
 
   constructor({ contractId }: { contractId: string }) {
     this.contractId = contractId;
@@ -51,6 +53,8 @@ export class Wallet {
 
       this.wallet = await this.walletSelector.wallet();
       this.accountId = accounts[0].accountId;
+
+      // TODO: Add contract call to retrieve existing bounties for account Id
     }
     console.log(isSignedIn);
     return isSignedIn;

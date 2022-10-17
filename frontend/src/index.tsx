@@ -17,7 +17,7 @@ const theme = createTheme({
   palette: {
     mode: "dark",
     action: {
-      active: "#66B2FF",
+      active: "rgb(102, 178, 255)",
     },
     background: {
       default: "rgb(0, 30, 60)",
@@ -25,7 +25,7 @@ const theme = createTheme({
     },
     text: {
       primary: "rgb(189, 189, 189)",
-      secondary: "#ccc",
+      secondary: "rgb(204, 204, 204)",
     },
     divider: "rgba(194, 224, 255, 0.08)",
   },

@@ -2,6 +2,7 @@ import { Wallet } from "../common/near-wallet";
 import { Box, Grid, Tab, Tabs, Typography } from "@mui/material";
 import CreateBounty from "./CreateBounty";
 import React from "react";
+import ExistingBounty from "./ExistingBounty";
 
 // name: String, id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128
 
@@ -47,30 +48,13 @@ export default function Bounty({ wallet }: { wallet: Wallet }) {
 
   return (
     <>
-      {/* <Typography variant="h4">Bounty</Typography> */}
-      <Grid container rowSpacing={1} spacing={2}>
-        <Grid item xs={4}></Grid>
-        <Grid item xs={4}>
-          <Box sx={{ width: "100%" }}>
-            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-              <Tabs
-                value={value}
-                onChange={handleChange}
-                aria-label="bounty tabs"
-              >
-                <Tab label="Create" {...a11yProps(0)} />
-                <Tab label="Existing" {...a11yProps(1)} />
-              </Tabs>
-            </Box>
-            <TabPanel value={value} index={0}>
-              <CreateBounty wallet={wallet} />
-            </TabPanel>
-            <TabPanel value={value} index={1}>
-              Existing
-            </TabPanel>
-          </Box>
+      <Grid container spacing={8}>
+        <Grid item xs={6}>
+          <CreateBounty wallet={wallet} />
         </Grid>
-        <Grid item xs={4}></Grid>
+        <Grid item xs={6}>
+          <ExistingBounty wallet={wallet} />
+        </Grid>
       </Grid>
     </>
   );

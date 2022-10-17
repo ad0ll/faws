@@ -9,13 +9,11 @@ import {
   Select,
   SelectChangeEvent,
   TextField,
+  Typography,
 } from "@mui/material";
 import React from "react";
 import { Wallet } from "../common/near-wallet";
-
-// name: String, id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128
-
-const fileDownloadProtocols = ["IPFS", "Git", "HTTP"];
+import { SupportedDownloadProtocols } from "./types";
 
 export default function CreateBounty({ wallet }: { wallet: Wallet }) {
   const [protocol, setProtocol] = React.useState("");
@@ -26,10 +24,10 @@ export default function CreateBounty({ wallet }: { wallet: Wallet }) {
 
   return (
     <>
+      <Typography variant="h5">Create Bounty</Typography>
       <FormGroup>
-        <FormControl>
+        <FormControl margin="normal">
           <TextField
-            margin="normal"
             fullWidth
             id="outlined-basic"
             label="Name"
@@ -37,9 +35,8 @@ export default function CreateBounty({ wallet }: { wallet: Wallet }) {
             size="small"
           />
         </FormControl>
-        <FormControl>
+        <FormControl margin="normal">
           <TextField
-            margin="normal"
             fullWidth
             id="outlined-basic"
             label="File Location"
@@ -47,7 +44,7 @@ export default function CreateBounty({ wallet }: { wallet: Wallet }) {
             size="small"
           />
         </FormControl>
-        <FormControl>
+        <FormControl size="small" margin="normal">
           <InputLabel id="file-download-protocol-select-label">
             File Download Protocol
           </InputLabel>
@@ -59,14 +56,13 @@ export default function CreateBounty({ wallet }: { wallet: Wallet }) {
             onChange={handleChange}
             size="small"
           >
-            {fileDownloadProtocols.map((protocol) => (
+            {SupportedDownloadProtocols.map((protocol) => (
               <MenuItem value={protocol}>{protocol}</MenuItem>
             ))}
           </Select>
         </FormControl>
-        <FormControl>
+        <FormControl margin="normal">
           <TextField
-            margin="normal"
             fullWidth
             id="outlined-basic"
             label="Threshold"
@@ -74,9 +70,8 @@ export default function CreateBounty({ wallet }: { wallet: Wallet }) {
             size="small"
           />
         </FormControl>
-        <FormControl>
+        <FormControl margin="normal">
           <TextField
-            margin="normal"
             fullWidth
             id="outlined-basic"
             label="Total Nodes"
@@ -92,27 +87,27 @@ export default function CreateBounty({ wallet }: { wallet: Wallet }) {
           control={<Checkbox defaultChecked />}
           label="GPU Required"
         />
-        <FormControl>
+        <FormControl margin="normal">
           <TextField
-            margin="normal"
             fullWidth
             id="outlined-basic"
             label="Storage Amount"
             variant="outlined"
             size="small"
+            placeholder="Storage in KB"
           />
         </FormControl>
-        <FormControl>
+        <FormControl margin="normal">
           <TextField
-            margin="normal"
             fullWidth
             id="outlined-basic"
             label="Reward Amount"
             variant="outlined"
             size="small"
+            placeholder="Reward in NEAR"
           />
         </FormControl>
-        <FormControl>
+        <FormControl margin="normal">
           <Button variant="contained">Create</Button>
         </FormControl>
       </FormGroup>

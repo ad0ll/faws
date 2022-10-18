@@ -205,3 +205,482 @@
 {"level":"info","message":"Checking if node is registered..."}
 {"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
 {"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"error","message":"WebSocket error:  connect ECONNREFUSED ::1:7071"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Connected to NEAR account: test1.test.near, balance: [object Object]"}
+{"level":"info","message":"Checking if node is registered..."}
+{"level":"info","message":"Connecting to coordinator contract at dev-1665283011588-97304367585179"}
+{"level":"info","message":"Fetching node info from coordinator contract"}
+{"level":"info","message":"Listening for bounties on ws://localhost:7071"}
+{"level":"info","message":"Subscribed to bounty_created events"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666029748316:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666029748316/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666029751404:"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666029753129:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666029753129/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666029756145:"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666029757687:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666029757687/files"}
+{"level":"info","message":"building docker image example-bounty-1666029757687"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666029828174:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666029828174/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666029936084:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666029936084/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032192555:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032192555/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032257148:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032257148/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032264586:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032264586/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032308962:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032308962/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032312702:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032312702/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032320639:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032320639/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032349887:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032349887/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032360019:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032360019/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032363593:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032363593/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032374340:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032374340/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032378149:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032378149/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032381554:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032381554/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666032385128:"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666032385128/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119099505"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119099514"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119099515"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119099516"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119099517"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119099518"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119139684"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119139692"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119139694"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119139694"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119139695"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119139696"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119375391"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666119375391/files"}
+{"level":"info","message":"building docker image example-bounty-1666119375391"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty-1666119405672"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty-1666119405672/files"}
+{"level":"info","message":"building docker image example-bounty-1666119405672"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"building docker image example-bounty"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"Successfully cloned git repo to /Users/adoll/.local/bounty_data/example-bounty/files"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}
+{"level":"info","message":"Bootstrapping client configuration from environment"}
+{"level":"info","message":"Creating bounty storage directories for example-bounty"}

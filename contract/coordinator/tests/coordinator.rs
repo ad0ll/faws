@@ -1,14 +1,16 @@
 use std::collections::HashMap;
 use std::fs;
-use anyhow::{Error};
+
+use anyhow::Error;
 use near_sdk::{AccountId, env};
-use near_sdk::env::{random_seed};
+use near_sdk::env::random_seed;
 use near_sdk::serde_json::json;
 use near_units::parse_near;
 use near_workspaces::{Account, Contract, Worker};
 use near_workspaces::network::Sandbox;
-use coordinator::node::Node;
+
 use coordinator::bounty::{Bounty, NodeResponse, NodeResponseStatus};
+use coordinator::node::Node;
 
 pub async fn setup_coordinator(worker: Worker<Sandbox>) -> anyhow::Result<Contract> {
     println!("Deploying coordinator contract");
@@ -32,7 +34,7 @@ pub async fn setup_coordinator(worker: Worker<Sandbox>) -> anyhow::Result<Contra
 
 // pub async fn create_nodes(coordinator_contract: Contract, accounts: Vec<Account>, n_per_account: u64) -> Result<HashMap<AccountId, Vec<Node>>, Error> {
 pub async fn create_nodes(coordinator_contract: &Contract, accounts: Vec<Account>, n_per_account: u64) -> Result<HashMap<AccountId, Node>, Error> {
-    println!("Creating {} nodes", accounts.len()*n_per_account as usize);
+    println!("Creating {} nodes", accounts.len() * n_per_account as usize);
     let mut res: HashMap<AccountId, Node> = HashMap::new();
     for account in accounts {
         // let mut tx = account.batch(coordinator_contract.id());
@@ -62,7 +64,7 @@ pub async fn create_nodes(coordinator_contract: &Contract, accounts: Vec<Account
     return Ok(res);
 }
 
-pub async fn get_node_count(coordinator_contract: &Contract) -> anyhow::Result<u64>{
+pub async fn get_node_count(coordinator_contract: &Contract) -> anyhow::Result<u64> {
     let node_count: u64 = coordinator_contract
         .call("get_node_count")
         .args_json(json!({}))
@@ -73,7 +75,7 @@ pub async fn get_node_count(coordinator_contract: &Contract) -> anyhow::Result<u
     return Ok(node_count);
 }
 
-pub async fn get_bounty_count(coordinator_contract: Contract) -> anyhow::Result<u64>{
+pub async fn get_bounty_count(coordinator_contract: Contract) -> anyhow::Result<u64> {
     println!("Checking for bounty count");
     // let bounty_count: u64 = coordinator_contract
     let res = coordinator_contract
@@ -85,7 +87,8 @@ pub async fn get_bounty_count(coordinator_contract: Contract) -> anyhow::Result<
     println!("Checked for bounty count, received: {:?}", res);
     return Ok(res);
 }
-pub async fn get_bounty(coordinator_contract: &Contract, bounty_id: AccountId) -> anyhow::Result<Bounty>{
+
+pub async fn get_bounty(coordinator_contract: &Contract, bounty_id: AccountId) -> anyhow::Result<Bounty> {
     println!("Checking for bounty {}", bounty_id);
     let bounty: Bounty = coordinator_contract
         .call("get_bounty")
@@ -99,10 +102,10 @@ pub async fn get_bounty(coordinator_contract: &Contract, bounty_id: AccountId) -
     return Ok(bounty);
 }
 
-pub async fn get_bounties(coordinator_contract: &Contract) -> anyhow::Result<Vec<Bounty>>{
+pub async fn get_bounties(coordinator_contract: &Contract) -> anyhow::Result<Vec<Bounty>> {
     println!("Checking for bounties");
     let bounties: Vec<Bounty> = coordinator_contract
-    .call("get_bounties")
+        .call("get_bounties")
         .args_json(json!({}))
         .view()
         .await?
@@ -111,7 +114,7 @@ pub async fn get_bounties(coordinator_contract: &Contract) -> anyhow::Result<Vec
     return Ok(bounties);
 }
 
-pub async fn get_nodes(coordinator_contract: &Contract) -> anyhow::Result<Vec<Node>>{
+pub async fn get_nodes(coordinator_contract: &Contract) -> anyhow::Result<Vec<Node>> {
     println!("Fetching all nodes");
     let nodes: Vec<Node> = coordinator_contract
         .call("get_nodes")
@@ -123,7 +126,7 @@ pub async fn get_nodes(coordinator_contract: &Contract) -> anyhow::Result<Vec<No
     return Ok(nodes);
 }
 
-pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, n_bounties: u64, min_nodes: u64, total_nodes: u64) -> anyhow::Result<Vec<Bounty>>{
+pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, n_bounties: u64, min_nodes: u64, total_nodes: u64) -> anyhow::Result<Vec<Bounty>> {
     println!("Creating {} bounties", n_bounties);
     let node_count = get_node_count(coordinator_contract).await?;
     assert!(node_count > 0, "failed to create bounty, no nodes are registered");
@@ -157,13 +160,13 @@ pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, n_
     };
 
     //TODO compare against statically created bounties
-    let bounties  = get_bounties(&coordinator_contract).await?;
+    let bounties = get_bounties(&coordinator_contract).await?;
     println!("Num bounties from get_bounties{}", bounties.len());
     return Ok(bounties);
 }
 
 
-async fn create_accounts(worker: Worker<Sandbox>, n: u64) -> HashMap<AccountId, Account>{
+async fn create_accounts(worker: Worker<Sandbox>, n: u64) -> HashMap<AccountId, Account> {
     let min_balance = parse_near!("10 N");
     let root = worker.root_account().unwrap();
     assert!(n > 0, "failed to create accounts, n must be greater than 0");
@@ -180,9 +183,9 @@ async fn create_accounts(worker: Worker<Sandbox>, n: u64) -> HashMap<AccountId, 
     return res;
 }
 
-async fn get_answer(coordinator_contract: Contract, account: Account, node_id: AccountId, bounty_id: AccountId) -> anyhow::Result<NodeResponse>{
+async fn call_get_answer(coordinator_contract: Contract, account: Account, node_id: AccountId, bounty_id: AccountId) -> anyhow::Result<NodeResponse> {
     let answer: NodeResponse = account
-        .call(coordinator_contract.id(), "get_answer")
+        .call(coordinator_contract.id(), "call_get_answer")
         .args_json(json!({
             "bounty_id": bounty_id,
             "node_id": node_id,
@@ -192,21 +195,23 @@ async fn get_answer(coordinator_contract: Contract, account: Account, node_id: A
         .json()?;
     return Ok(answer);
 }
-async fn post_answer(coordinator_contract: Contract, account: Account, node_id: AccountId, bounty_id: AccountId, answer: String, status: NodeResponseStatus) -> anyhow::Result<()>{
+
+async fn post_answer(coordinator_contract: Contract, account: Account, node_id: AccountId, bounty_id: AccountId, answer: String, status: NodeResponseStatus) -> anyhow::Result<()> {
     println!("posting answer: {}", answer);
     println!("bounty_id: {}", bounty_id);
-    account
+    let nodeResponse = account
         .call(coordinator_contract.id(), "post_answer")
         .args_json(json!({
             "node_id": node_id.clone(),
             "bounty_id": bounty_id.clone(),
             "answer": answer.clone(),
+            "message": "test message",
             "status": status.clone(),
         }))
         .transact()
         .await?
-        .into_result()?;
-        // .borsh()?;
+        // .into_result()?;
+    .borsh()?;
     return Ok(());
 }
 
@@ -223,20 +228,20 @@ async fn test_create_nodes() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_create_bounty() -> anyhow::Result<()>{
+async fn test_create_bounty() -> anyhow::Result<()> {
     let worker = near_workspaces::sandbox().await?;
     let coordinator_contract = setup_coordinator(worker.clone()).await?;
     let accounts = create_accounts(worker.clone(), 1).await;
     let account_vec: Vec<Account> = accounts.values().cloned().collect();
-    let _nodes = create_nodes(&coordinator_contract, account_vec.clone(),  1).await?;
-    let bounty_owner = &account_vec[(random_seed().clone()[0]%10) as usize] ;
-    let _bounties = create_bounty(&coordinator_contract, bounty_owner.clone(), 1, 1, 1 ).await?;
+    let _nodes = create_nodes(&coordinator_contract, account_vec.clone(), 1).await?;
+    let bounty_owner = &account_vec[(random_seed().clone()[0] % 10) as usize];
+    let _bounties = create_bounty(&coordinator_contract, bounty_owner.clone(), 1, 1, 1).await?;
     assert_eq!(get_bounty_count(coordinator_contract.clone()).await?, 1, "bounty count should be 1");
     Ok(())
 }
 
 #[tokio::test]
-async fn test_bounty_full_lifecycle() -> anyhow::Result<()>{
+async fn test_bounty_full_lifecycle() -> anyhow::Result<()> {
     let num_accounts = 5;
     let min_nodes = 2;
     let max_nodes = 3;
@@ -244,7 +249,7 @@ async fn test_bounty_full_lifecycle() -> anyhow::Result<()>{
     let coordinator_contract = setup_coordinator(worker.clone()).await?;
     let mut accounts = create_accounts(worker.clone(), num_accounts).await;
     let account_vec: Vec<Account> = accounts.values().cloned().collect();
-    let mut nodes = create_nodes(&coordinator_contract, account_vec.clone(),  1).await?;
+    let mut nodes = create_nodes(&coordinator_contract, account_vec.clone(), 1).await?;
     assert_eq!(get_node_count(&coordinator_contract).await?, num_accounts, "node bootstrapping didn't return the expected number of nodes");
     let bounty_owner_id = accounts.keys().next().unwrap().clone();
     let bounty_owner = accounts.remove(&bounty_owner_id).unwrap_or_else(|| panic!("failed to remove bounty owner from accounts"));
@@ -258,43 +263,42 @@ async fn test_bounty_full_lifecycle() -> anyhow::Result<()>{
         let node = nodes.remove(&x).unwrap();
         println!("removed node: {}, owned by {}", node.id, node.owner_id);
     }
-
     let bounties = create_bounty(&coordinator_contract, bounty_owner.clone(), 1, min_nodes, max_nodes).await?;
     assert_eq!(get_bounty_count(coordinator_contract.clone()).await?, 1, "bounty count should be 1");
-    for bounty in bounties{
+    for bounty in bounties {
         println!("fetching bounty: {}", bounty.id);
         assert_eq!(get_bounty(&coordinator_contract, bounty.id.clone()).await?.id, bounty.id.clone(), "bounty should exist");
         let mut curr_idx = 0;
-        for elected in bounty.elected_nodes{
+        for elected in bounty.elected_nodes {
             let node = nodes.get(&elected).unwrap_or_else(|| panic!("failed to get node {} from nodes", &elected));
             let account = accounts.get(&node.owner_id).unwrap_or_else(|| panic!("failed to get account {} from accounts", &node.owner_id));
             println!("checking if we should post answer using {} for bounty {}, node {}", coordinator_contract.id(), bounty.id.clone(), node.id.clone());
-            println!("generated json {}", json!({
-                "bounty_id": bounty.id.clone(),
-                "node_id": node.id.clone(),
-            }));
-            let should_post_answer = account
+            let should_post_answer: bool = account
                 .call(coordinator_contract.id(), "should_post_answer")
+                .max_gas()
                 .args_json(json!({
                 "bounty_id": bounty.id.clone(),
+                "message": format!("test message {}", env::random_seed()[0]),
                 "node_id": node.id.clone(),
-            })).transact()
+            }))
+                .transact()
+                // .view() //view doesn't work for some reason
                 .await?
                 .json::<bool>()?;
             println!("should_post_answer {}: {:?}", node.id, should_post_answer);
-            if curr_idx >= min_nodes{
+
+            if curr_idx >= min_nodes {
                 println!("index above min_nodes, should not post answer");
                 assert_eq!(should_post_answer, false, "should_post_answer should be false since we have enough nodes to close the bounty");
                 break;
             }
-                println!("index below min_nodes, should post answer");
-                // assert_eq!(should_post_answer, true, "should_post_answer should be true since we don't have enough nodes to close the bounty");
-                post_answer(coordinator_contract.clone(), account.clone(), node.id.clone(), bounty.id.clone(), "42".to_string(), NodeResponseStatus::SUCCESS).await?;
-                println!("posted answer to {} for {}", bounty.id.clone(), node.id.clone());
-                let answer = get_answer(coordinator_contract.clone(), account.clone(), node.id.clone(),bounty.id.clone()).await?;
-                assert_eq!(answer.solution, "42".to_string(), "answer should be 42");
-                assert!(answer.timestamp > 0, "timestamp should be greater than 0");
-                println!("node: {}, owned by {} posted answer", node.id.clone(), node.owner_id.clone());
+
+            post_answer(coordinator_contract.clone(), account.clone(), node.id.clone(), bounty.id.clone(), "42".to_string(), NodeResponseStatus::SUCCESS).await?;
+            println!("index below min_nodes, should post answer");
+            println!("posted answer to {} for {}", bounty.id.clone(), node.id.clone());
+            let answer = call_get_answer(coordinator_contract.clone(), account.clone(), node.id.clone(), bounty.id.clone()).await?;
+            assert_eq!(answer.solution, "42".to_string(), "answer should be 42");
+            println!("node: {}, owned by {} posted answer", node.id.clone(), node.owner_id.clone());
             curr_idx += 1;
         }
     }

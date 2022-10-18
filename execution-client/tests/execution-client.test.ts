@@ -1,42 +1,203 @@
-import test, {ExecutionContext} from "ava"
-import {SupportedFileDownloadProtocols} from "../types";
-import {downloadFile} from "../lib";
+import {Bounty, ClientConfig, SupportedFileDownloadProtocols} from "../types";
 import * as fs from "fs";
-import * as path from "path";
 import shell from "shelljs";
+import {readConfigFromEnv} from "../config";
+import {Execution} from "../lib";
+import anyTest, {ExecutionContext, TestFn} from "ava";
 
-const testingFilesPathPrefix = "/tmp/exec-client-testing"
-const downloadFileTest = async (t: ExecutionContext, fileLocation: string, downloadProtocol: SupportedFileDownloadProtocols, pathPrefix: string): Promise<string> => {
-    //TODO Assert CWD
-    const downloadPath = path.join(testingFilesPathPrefix, pathPrefix)
-    if(fs.existsSync(downloadPath)) {
-        fs.rmSync(downloadPath, {recursive: true})
+
+type TypedAvaExecutionContext = ExecutionContext<{ config: ClientConfig }>;
+const test = anyTest as TestFn<{
+    config: ClientConfig
+
+}>;
+const getExampleBounty = (config: ClientConfig, {
+    id = `example-bounty`,
+    owner_id = "example-owner",
+    coordinator_id = "example-coordinator",
+    file_location = "git@github.com:ad0ll/docker-hello-world.git",
+    file_download_protocol = "git",
+    success = false,
+    complete = false,
+    cancelled = false,
+    min_nodes = 2,
+    total_nodes = 5,
+    network_required = true,
+    gpu_required = false,
+    bounty_created = 0,
+    amt_storage = BigInt(10000000000000000000),
+    amt_node_reward = BigInt(10000000000000000000),
+    elected_nodes  = [] as string[],
+    answers = {},
+    build_args = [] as string[],
+    runtime_args = [] as string[],
+}): Bounty => ({
+    id,
+    owner_id,
+    coordinator_id,
+    file_location,
+    // @ts-ignore-next-line
+    file_download_protocol,
+    success,
+    complete,
+    cancelled,
+    min_nodes,
+    total_nodes,
+    network_required,
+    gpu_required,
+    bounty_created,
+    amt_storage,
+    amt_node_reward,
+    elected_nodes,
+    answers,
+    build_args,
+    runtime_args,
+})
+
+const downloadFileTest = async (t: TypedAvaExecutionContext, file_location: string, file_download_protocol: SupportedFileDownloadProtocols, forceRemove=false) => {
+    const {config} = t.context;
+    const execution = new Execution(config, getExampleBounty(config, {
+        file_location,
+        file_download_protocol,
+    }))
+    const {executionContext} = execution
+    const {filesDir, packageName, packagePath, dockerfilePath} = executionContext.storage
+    if( fs.existsSync(dockerfilePath) && !forceRemove) {
+        console.log(`package has already been downloaded, skipping`)
+        t.assert(fs.existsSync(dockerfilePath), `Dockerfile should be present at root after extraction`)
+        return
     }
-    fs.mkdirSync(downloadPath, {recursive: true})
-    const dockerfilePath = await downloadFile(fileLocation, downloadProtocol, downloadPath)
-    t.is(dockerfilePath, path.join(downloadPath, "/execution-files/Dockerfile"))
-    t.assert(fs.existsSync(path.join(downloadPath, "/execution-files/Dockerfile")))
-    return dockerfilePath
+    if (fs.existsSync(filesDir)) {
+        fs.rmSync(filesDir, {recursive: true})
+    }
+    fs.mkdirSync(filesDir, {recursive: true})
+    await execution.downloadFile()
+    if (!packageName.endsWith(".git")) {
+        console.log(`encountered file path ending in zip/tar, zip/tar file should be present at root`, packagePath)
+        t.assert(fs.existsSync(packagePath), `zip/tar file should be present at ${packagePath} after download`)
+    } else { //git clones should clone pre-extracted
+        console.log(`encountered file path ending in git, Dockerfile should be present at root`, dockerfilePath)
+        t.assert(fs.existsSync(dockerfilePath), `Dockerfile should be present at ${dockerfilePath} after cloning git repo`)
+    }
 }
 
-// test("can download file with git", async t => {
-//     await downloadFileTest(t, "git@github.com:ad0ll/docker-hello-world.git", "git", "git-download")
-// })
+const downloadAndExtractFileTest = async (t: TypedAvaExecutionContext, file_location: string, file_download_protocol: SupportedFileDownloadProtocols, forceRemove=false): Promise<Execution> => {
+    const {config} = t.context
+    const execution = new Execution(config, getExampleBounty(config, {
+        file_location,
+        file_download_protocol,
+    }))
+    await downloadFileTest(t, file_location, file_download_protocol, forceRemove)
+    const {bounty, storage} = execution.executionContext
+    const {packagePath, dockerfilePath} = storage
+    if (bounty.file_download_protocol !== SupportedFileDownloadProtocols.GIT) { //git repos should clone pre-extracted
+        console.log(`extracting `, packagePath) //?
+        await execution.extractFile()
+    }
+    t.assert(fs.existsSync(dockerfilePath), `Dockerfile should be present at root after extraction`)
+    return execution;
+}
+const buildImageTest = async (t: TypedAvaExecutionContext, file_location: string, file_download_protocol: SupportedFileDownloadProtocols, buildArgs: string[] =[]): Promise<Execution> => {
+    const execution = await downloadAndExtractFileTest(t, file_location, file_download_protocol)
+    execution.executionContext.bounty.build_args = buildArgs
+    await execution.buildImage()
+    const {imageName} = execution.executionContext
+    console.log(`checking for ${imageName}`)
+    const {code, stdout} = shell.exec(`docker images ${imageName} -q`)
+    t.assert(code === 0, `docker images ${imageName} -q should return 0`)
+    console.log(`found image ${imageName} with id ${stdout}`)
+    return execution;
+}
 
-test("can download zip file with http", async t => {
-    await downloadFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", "http", "zip-download")
+test.before((t) => {
+    const config = readConfigFromEnv()
+    t.context = {
+        config
+    }
 })
 
-test("can download tar.gz file with http", async t => {
-  //TODO
-    t.pass()
+test.after(t => {
+    const {config} = t.context as { config: ClientConfig }
+    const deleteContents = process.env.TEST_DELETE_CONTENTS !== "false" || false
+    if (deleteContents) {    // Delete all files created for testing
+        if (fs.existsSync(config.bountyStorageDir)) {
+            fs.rmSync(config.bountyStorageDir, {recursive: true})
+        }
+    }
+    // Prune dangling docker contents
+    shell.exec("docker system prune -f")
 })
-//
-// test.after(t => {
-//     // Delete all files created for testing
-//     if(fs.existsSync(testingFilesPathPrefix)) {
-//         fs.rmSync(testingFilesPathPrefix, {recursive: true})
-//     }
-//     // Prune dangling docker images
-//     shell.exec("docker system prune -y")
-// })
+
+test.serial("can download file with git", async t => {
+    await downloadFileTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT, true)
+})
+
+test.serial("can download file with http", async t => {
+    await downloadFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", SupportedFileDownloadProtocols.HTTP, true)
+})
+
+test.serial("can extract (which does nothing) with git", async t => {
+    await downloadAndExtractFileTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT, true)
+})
+
+test.serial("can extract file with zip", async t => {
+    await downloadAndExtractFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", SupportedFileDownloadProtocols.HTTP, true)
+})
+
+
+
+test.serial("image build error results in failure", async t => {
+    //TODO, pass --build-arg FORCE_ERROR=yes to docker build
+    const error = await t.throwsAsync(buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT, ["FORCE_ERROR=yes"]))
+})
+test.serial("can build image", async t => {
+    await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
+})
+
+test("running image without errors is success", async t => {
+    const execution = await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
+    execution.executionContext.containerName = execution.executionContext.containerName + "-no-error"
+    const res = await execution.runImage()
+    console.log(res)
+    t.assert(res.result !== "")
+})
+
+test("running image with no output is failure", async t => {
+    const execution = await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
+    execution.executionContext.containerName = execution.executionContext.containerName + "-no-output"
+    execution.executionContext.bounty.runtime_args = ["NO_RESULT"]
+    const error = await t.throwsAsync(execution.runImage())
+    console.log(`error`, error)
+})
+
+test("running image with malformed output is failure", async t => {
+    const execution = await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
+    execution.executionContext.containerName = execution.executionContext.containerName + "-malformed-output"
+    execution.executionContext.bounty.runtime_args = ["MALFORMED_RESULT"]
+    const error = await t.throwsAsync(execution.runImage())
+    console.log(`error`, error)
+})
+test("running image with expected error is failure", async t => {
+    const execution = await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
+    execution.executionContext.containerName = execution.executionContext.containerName + "-expected-error"
+    execution.executionContext.bounty.runtime_args = ["EXPECTED_ERROR"]
+    const error = await t.throwsAsync(execution.runImage())
+    console.log(`error`, error)
+})
+
+test("running image with unexpected error is failure", async t => {
+    const execution = await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
+    execution.executionContext.containerName = execution.executionContext.containerName + "-unexpected-error"
+    execution.executionContext.bounty.runtime_args = ["UNEXPECTED_ERROR"]
+    const error = await t.throwsAsync(execution.runImage())
+    console.log(`error`, error)
+})
+
+test("running image with timeout is failure", async t => {
+    t.assert(true)
+    //TODO
+    // const execution = await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
+    // execution.executionContext.bounty.runtime_args = ["TIMEOUT"]
+    // const error = await t.throwsAsync(execution.runImage())
+    // console.log(`error`, error)
+})

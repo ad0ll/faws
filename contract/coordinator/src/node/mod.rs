@@ -25,6 +25,7 @@ pub struct Node {
     pub last_failure: u64,
     pub successful_runs: u64,
     pub failed_runs: u64,
+    pub unanswered_runs: u64,
     pub gpus: Vec<Gpu>,
 }
 
@@ -42,6 +43,7 @@ impl Node {
             last_failure: 0,
             successful_runs: 0,
             failed_runs: 0,
+            unanswered_runs: 0,
             gpus: Vec::new(),
         }
     }
@@ -57,6 +59,7 @@ impl Default for Node {
             last_failure: 0,
             successful_runs: 0,
             failed_runs: 0,
+            unanswered_runs: 0,
             gpus: Vec::new(),
         }
     }

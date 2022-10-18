@@ -1,165 +1,120 @@
-import {exec} from "child_process";
-import * as nearAPI from "near-api-js";
-import winston from "winston";
-import {Account, connect, Contract, WalletConnection} from "near-api-js";
-import {log} from "./logger";
-import {ChunkHash} from "near-api-js/lib/providers/provider";
-import {executeBounty} from "./lib";
-import os from "os"
-import path from "path"
-import {Bounty, NodeResponse} from "./types";
+import {Account} from "near-api-js";
+import {logger} from "./logger";
+import {ClientConfig, CoordinatorContract, ClientExecutionResult} from "./types";
 import WebSocket from "ws";
 import shell from "shelljs";
+import {readConfigFromEnv} from "./config"
+import {getAccount, getBounty, getCoordinatorContract} from "./util";
+import {Execution} from "./lib";
 
-
-// TODO Consider what the reward is.
-
-//config items
-export const WEBSOCKET_URL = process.env.WEBSOCKET_URL || 'ws://localhost:7071';
-export const UNIVERSAL_TIMEOUT = process.env.UNIVERSAL_TIMEOUT || 30000; // TODO Overrides bounty timeout
-export const ACCOUNT_ID= process.env.ACCOUNT_ID || "test1.test.near";
-export const NODE_ID = process.env.NODE_ID || "acheivement3.node.dev-1665283011588-97304367585179";
-export const ACCEPT_NETWORK_WORKLOADS = process.env.ACCEPT_NETWORK_WORKLOADS || true;
-export const ACCEPT_GPU_WORKLOADS = process.env.ACCEPT_GPU_WORKLOADS || true;
-export const COORDINATOR_CONTRACT_ID = process.env.COORDINATOR_CONTRACT_ID  || "dev-1665283011588-97304367585179";
-export const BOUNTY_STORAGE_LOCATION = process.env.BOUNTY_STORAGE_DIR || path.join(process.cwd(), "bounties");
-const { keyStores } = nearAPI;
-//TODO We probably want to do a browser key store
-// const keyStore = new keyStores.BrowserLocalStorageKeyStore(); //Needed because we have to sign transactions
-const CREDENTIALS_DIR = process.env.CREDENTIALS_DIR || path.join(os.homedir(), ".near-credentials",);
-const keyStore = new keyStores.UnencryptedFileSystemKeyStore(CREDENTIALS_DIR);
-
-const connectionConfig = {
-    networkId:  process.env.NEAR_NETWORK_ID || "localnet",
-    keyStore,
-    nodeUrl:  process.env.NEAR_NODE_URL || "http://0.0.0.0:3030",
-    walletUrl: process.env.NEA_WALLET_URL || "http://0.0.0.0/wallet", // Default isn't a real url
-    helperUrl: process.env.NEAR_HELPER_URL || "http://0.0.0.0/helper", // Default isn't a real url
-    explorerUrl: process.env.NEAR_EXPLORER_URL || "http://0.0.0.0/helper", // Default isn't a real url
-};
 
 //Global config items
-export let account: Account;
-export let coordinatorContract: CoordinatorContract;
+class ExecutionClient {
+    private websocketClient: WebSocket
+    public executions: {[key: string]: Execution} = {} // not deliberate
 
-// TODO check with team member about how to get the account
-const bootstrapNear = async () => {
-    const nearConnection = await connect(connectionConfig);
-    account = await nearConnection.account(ACCOUNT_ID);
-    log.info(`Connected to NEAR account: ${account.accountId}, balance: ${await account.getAccountBalance()}`);
-    log.info(`Checking if node is registered...`)
-    // create wallet connection
-    // const walletConnection = new WalletConnection(nearConnection, "bounty-executor");
+    constructor(public account: Account,
+                public coordinatorContract: CoordinatorContract,
+                // public node: Node, TODO should probably get the node
+                public config: ClientConfig,
+    ) {
+        this.websocketClient = new WebSocket(this.config.websocketUrl);
+    }
 
-}
+    async initialize() {
+        await this.validateNode()
+        this.addWebsocketListeners()
+    }
 
-type CoordinatorContract = Contract & {
-    get_bounty:  ({bounty_id}: {bounty_id: string}) => Promise<Bounty>;
-    should_publish_answer: ({bounty_id, node_id}: {bounty_id: string, node_id: string}) => Promise<boolean>;
-    get_node: ({account_id}: {account_id: string}) => Promise<any>; //TODO should return node instead
-    get_answer: ({bounty_id,}: {bounty_id: string}) => Promise<NodeResponse>;
-    publish_answer: ({bounty_id, node_id, result}: {bounty_id: string, node_id: string, result: NodeResponse}) => Promise<void>;
-}
-const getCoordinatorContract = (): CoordinatorContract => {
-    log.info(`Connecting to coordinator contract at ${COORDINATOR_CONTRACT_ID}`);
-    let contract = new Contract(
-        account, // the account object that is connecting
-        COORDINATOR_CONTRACT_ID, // the contract id
-        {
-            // make sure the ContractCoordinator type matches the contrac
-            viewMethods: ["get_bounty", "should_publish_answer", "get_node", "get_result"], // view methods do not change state but usually return a value
-            changeMethods: ["publish_answer"], // change methods modify state
+
+    // Checks if the node has all the required software installed
+    async validateNode() {
+        logger.info("Fetching node info from coordinator contract");
+        const node = await this.coordinatorContract.get_node({account_id: this.config.nodeId});
+        logger.info(`Node ${this.config.nodeId} is registered with the following properties: ${JSON.stringify(node)}`);
+        if (!node) {
+            logger.error(`Node ${this.config.nodeId} is not registered with the coordinator contract (${this.config.coordinatorContractId})`);
+            process.exit(1);
         }
-    );
-    return contract as CoordinatorContract;
-}
 
-const bootstrapNode = async () => {
-    log.info("Fetching node info from coordinator contract");
-    const node = await coordinatorContract.get_node({account_id: NODE_ID});
-    log.info(`Node ${NODE_ID} is registered with the following properties: ${JSON.stringify(node)}`);
-    if(!node) {
-        log.error(`Node ${NODE_ID} is not registered with the coordinator contract (${COORDINATOR_CONTRACT_ID})`);
-        process.exit(1);
+        const missingSoftware = [];
+        shell.which("docker") || missingSoftware.push("docker is not installed");
+        shell.which("git") || missingSoftware.push("git is not installed");
+        shell.which("curl") || missingSoftware.push("curl is not installed");
+        shell.which("wget") || missingSoftware.push("wget is not installed");
+        shell.which("tar") || missingSoftware.push("tar is not installed");
+        shell.which("unzip") || missingSoftware.push("unzip is not installed");
+        if (missingSoftware.length > 0) {
+            logger.error(`Could not start node, missing the following software: ${missingSoftware.join(", ")}`);
+            process.exit(1);
+        }
     }
 
-    const missingSoftware = [];
-    shell.which("docker") || missingSoftware.push("docker is not installed");
-    shell.which("git") || missingSoftware.push("git is not installed");
-    shell.which("curl") || missingSoftware.push("curl is not installed");
-    shell.which("tar") || missingSoftware.push("tar is not installed");
-    shell.which("unzip") || missingSoftware.push("unzip is not installed");
-    if(missingSoftware.length > 0) {
-        log.error(`Could not start node, missing the following software: ${missingSoftware.join(", ")}`);
-        process.exit(1);
-    }
-}
-
-(async () => {
-    await bootstrapNear()
-    coordinatorContract = getCoordinatorContract()
-    await bootstrapNode()
-
-})()
-
-const client = new WebSocket(WEBSOCKET_URL);
-
-client.onopen = () => {
-    log.info(`Listening for bounties on ${WEBSOCKET_URL}`);
-    client.send(JSON.stringify({
-        "filter": [{
-            "event": {
-                "event": "bounty_created"
-            }
-        }],
-        // "fetch_past_events": true,
-        "secret": "execution_client"
-    }), () => {
-        log.info("Subscribed to bounty_created events")
-    });
-}
-client.on('message', async (data) => {
-    try {
-        console.log("Got event")
-        // console.log(data.toString())
-        console.log("Parsing event")
-        const message = JSON.parse(data.toString())
-        console.log("parsed")
-        log.debug(`Received message: `, message);
-        if (message.events) {
-            for (const eventData of message.events) {
-        
-                if (eventData.event.event === "bounty_created") {
-                    const bountyData = eventData.event.data;
-                    const bountyId = bountyData.bounty_id;
-                    log.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);
-                    if (bountyData.node_ids.includes(NODE_ID)) {
-                        log.info(`We're elected! Executing bounty ${bountyId}...`);
-                        const res = await executeBounty(bountyId);
-                        if (res.status === "ERROR") {
-                            log.error(`Error executing bounty ${bountyId}`, res.message);
-                        } else if (res.status === "UNELECTED") {
-                            log.debug(`We're not elected for bounty ${bountyId}.`);
-                        } else if (res.status === "FAILURE") {
-                            log.info(`Finished executing the bounty, but the bounty failed to execute: ${bountyId}`, res.message);
-                        } else if (res.status === "UNIMPLEMENTED") {
-                            log.info(`Encountered an unimplemented feature ${res.message}: ${bountyId}!`);
-                        } else if (res.status === "TIMEOUT") {
-                            log.info(`Bounty timed out: ${bountyId}!`);
-                        } else if (res.status === "SUCCESS") {
-                            log.info(`Successfully executed the bounty: ${bountyId}`);
-                        } else {
-                            log.info(`Received unknown status from bounty execution ${bountyId}, ${res.status}`, res.message);
+    private addWebsocketListeners() {
+        this.websocketClient = new WebSocket(this.config.websocketUrl);
+        this.websocketClient.onopen = () => {
+            logger.info(`Listening for bounties on ${this.config.websocketUrl}`);
+            this.websocketClient.send(JSON.stringify({
+                "filter": [{
+                    "event": {
+                        "event": "bounty_created"
+                    }
+                }],
+                // "fetch_past_events": true,
+                "secret": "execution_client"
+            }), () => {
+                logger.info("Subscribed to bounty_created events")
+            });
+        }
+        this.websocketClient.on('message', async (data) => {
+            try {
+                const message = JSON.parse(data.toString())
+                logger.debug(`Received message: `, message);
+                if (message.events) {
+                    for (const eventData of message.events) {
+                        if (eventData.event.event === "bounty_created") {
+                            const bountyData = eventData.event.data;
+                            const bountyId = bountyData.bounty_id;
+                            logger.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);
+                            if (bountyData.node_ids.includes(this.config.nodeId)) {
+                                logger.info(`We're elected! Executing bounty ${bountyId}...`);
+                                const bounty = await getBounty(this.config, this.coordinatorContract, bountyId)
+                                const execution = new Execution(this.config, bounty)
+                                this.executions[bountyId] = execution;
+                                try {
+                                    const result = await execution.execute()
+                                    logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(result)}`);
+                                    //TODO post answer to bounty
+                                } catch (e: any) {
+                                    logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
+                                    //TODO e will have name and message, post failure to chain
+                                } finally {
+                                    delete this.executions[bountyId]
+                                }
+                                 await execution.execute();
+                            }
                         }
                     }
+
                 }
+            } catch (e) {
+                logger.error(`Error processing message: ${e}`);
             }
-        
+        });
+
+        this.websocketClient.onerror = (error) => {
+            logger.error(`WebSocket error: `, error);
         }
-    } catch (e) {
-        log.error(`Error processing message: ${e}`);
     }
-});
-client.onerror = (error) => {
-    log.error(`WebSocket error: `, error);
 }
+
+
+const init = async () => {
+    const config = readConfigFromEnv()
+    const account = await getAccount(config, config.accountId);
+    const coordinatorContract = await getCoordinatorContract(config, account)
+    const client = new ExecutionClient(account, coordinatorContract, config);
+    await client.initialize();
+}
+
+(async () => init())()

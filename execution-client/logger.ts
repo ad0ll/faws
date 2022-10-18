@@ -2,7 +2,7 @@ import winston from "winston";
 
 const LOG_LEVEL = process.env.LOG_LEVEL || "debug";
 
-export const log = winston.createLogger({
+export const logger = winston.createLogger({
     level: LOG_LEVEL,
     format: winston.format.json(),
     transports: [

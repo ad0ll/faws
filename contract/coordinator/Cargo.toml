@@ -4,7 +4,8 @@ version = "1.0.0"
 authors = ["ad0ll <ad0ll@ad0ll.io>",
     "amit <amit@need.his.email.dev>"]
 edition = "2021"
-
+[alias]
+build = "build --workspace --target wasm32-unknown-unknown"
 [lib]
 name= "coordinator"
 #[target.'cfg(not(target_arch = "wasm32"))'.lib]

@@ -2,7 +2,7 @@ import {Bounty, ClientConfig, SupportedFileDownloadProtocols} from "../types";
 import * as fs from "fs";
 import shell from "shelljs";
 import {readConfigFromEnv} from "../config";
-import {Execution} from "../lib";
+import {Execution} from "../execution";
 import anyTest, {ExecutionContext, TestFn} from "ava";
 
 
@@ -16,7 +16,7 @@ const getExampleBounty = (config: ClientConfig, {
     owner_id = "example-owner",
     coordinator_id = "example-coordinator",
     file_location = "git@github.com:ad0ll/docker-hello-world.git",
-    file_download_protocol = "git",
+    file_download_protocol = SupportedFileDownloadProtocols.GIT,
     success = false,
     complete = false,
     cancelled = false,
@@ -36,7 +36,6 @@ const getExampleBounty = (config: ClientConfig, {
     owner_id,
     coordinator_id,
     file_location,
-    // @ts-ignore-next-line
     file_download_protocol,
     success,
     complete,
@@ -98,6 +97,7 @@ const downloadAndExtractFileTest = async (t: TypedAvaExecutionContext, file_loca
     return execution;
 }
 const buildImageTest = async (t: TypedAvaExecutionContext, file_location: string, file_download_protocol: SupportedFileDownloadProtocols, buildArgs: string[] =[]): Promise<Execution> => {
+    const config = readConfigFromEnv()
     const execution = await downloadAndExtractFileTest(t, file_location, file_download_protocol)
     execution.executionContext.bounty.build_args = buildArgs
     await execution.buildImage()
@@ -144,12 +144,11 @@ test.serial("can extract file with zip", async t => {
     await downloadAndExtractFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", SupportedFileDownloadProtocols.HTTP, true)
 })
 
-
-
 test.serial("image build error results in failure", async t => {
-    //TODO, pass --build-arg FORCE_ERROR=yes to docker build
     const error = await t.throwsAsync(buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT, ["FORCE_ERROR=yes"]))
+    console.log(`error: `, error)
 })
+
 test.serial("can build image", async t => {
     await buildImageTest(t, "git@github.com:ad0ll/docker-hello-world.git", SupportedFileDownloadProtocols.GIT)
 })

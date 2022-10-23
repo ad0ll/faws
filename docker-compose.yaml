@@ -1,13 +1,13 @@
 services:
-
-  indexer:
-    build:
-        context: indexer/example-indexer
-        dockerfile: Dockerfile
-    environment:
-      DATABASE_URL: postgresql://near:example@localhost:5432/near
-    networks:
-      - default
+#  indexer:
+#    build:
+#        context: indexer/example-indexer
+#        dockerfile: Dockerfile
+#    environment:
+#      DATABASE_URL: postgresql://near:example@localhost:5432/near
+#    networks:
+#      - default
+#  localhost:7071 is the event api endpoint for later
   postgres:
     image: postgres:14.5-alpine
     ports:

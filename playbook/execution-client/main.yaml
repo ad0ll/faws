@@ -1,0 +1,37 @@
+- name: install execution client
+  hosts: localhost
+  vars:
+    # TODO neither of the below should be required
+    NODEJS_VERSION: "8"
+    ansible_distribution_release: "xenial" #trusty
+  tasks:
+    - name: install dependencies
+      apt:
+        name: "{{item}}"
+        state: present
+        update_cache: yes
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - unshare
+        - chroot
+        - wget
+        - git
+        - unzip
+        - tar
+        - gnupg-agent
+        - software-properties-common
+    - name: Install the gpg key for nodejs LTS
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+        state: present
+    - name: Install the nodejs LTS repos
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_{{ NODEJS_VERSION }}.x {{ ansible_distribution_release }} main"
+        state: present
+        update_cache: yes
+    - name: Install nodejs
+      apt:
+        name: nodejs
+        state: present

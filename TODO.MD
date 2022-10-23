@@ -1,5 +1,29 @@
-# Global
+# Cutting room floor for Monday:
+## Planned
+* GPU workloads: 
+  * ad0ll: (8 points) I'd consider required. **Painful to develop**, needs Linux w/ Nvidia GPU. I'll get one of my old mining rigs set up for this.
+* Download files from IPFS:
+  * ad0ll: (3 points) IPFS downloads can be plugged into. 
+* Upload to IPFS when creating bounties (P2P)
+  * ad0ll: (8 points, vote CUT), IPFS has JS packages that we can load into the frontend, but this is about as centralized as you can get.
+* Upload to IPFS when creating bounties (Filecoin)
+  * ad0ll: (16 points, vote CUT) Would have to support mul
+* Create sandboxes during image build
+  * 
+* Basic execution client ui
+  * 
+* Reject bounty
+  * Separate from failed, this is when a node refuses to do a bounty. For instance, if a node is configured not to access the internet, and the bounty tries to.
+* Allow/disallow internet access
+  * ad0ll
+# Unplanned
+* Upload large answers to IPFS (P2P)
+    * ad0ll: (16 points, vote CUT) This is decentralized and would be a great way to cut on storage. BUT, it means that answers aren't visible on chain. We currently haven't specced private bounties 
+  
+* # Global
 * (Highest pri) Need to come up with a product name
+* (Highest pri) Need to discuss if we want to advertise this product as a "mining" application
+ 
 # Contracts
 ## Global
 * (High pri) Inclusion of rlib makes the contract bulky and expensive to deploy (currently ~2.5mb or 26~27 NEAR, or ~$100-150). I think this is needed for tests(?), but we could add a new build profile that excludes it.
@@ -11,6 +35,7 @@
 * (Med pri) close_bounty and post_answer functions are quite large and complex. Individual functions should be moved to smaller jobs, and some of the logic should probably be moved back to Bounty (so we can use self instead of re-fetching the bounty)
 * (Med pri) Coordinator often passes ids instead of objects to functions. This is because Bounty doesn't implement serialize. I was unsure of whether I should figure out how to borsh serialize the param, or if I should move some logic back to bounty and use `self`. Med pri because I'm not sure if this consumes more memory or if the performance impact is noteworthy.
 * (Med pri) Analyze answers to cut outliers
+* (Med pri) Allow nodes to reject bounties. This is separate from failing a bounty, it means that the node is refusing to work on it. Due to things like blocking network access or requiring gpus 
 * (Med-low-pri) Find a gas efficient way to prioritize bounties with higher node rewards. Maybe using Vec or TreeMap.
 ## Node
 * (Med-pri) Add support to indicate that a node supports GPU workloads
@@ -22,6 +47,7 @@
 * (Med pri) Bounty should be able to specify build args and runtime args for container. Currently present and expected on the back end, but needs to be added to the contract.
 * (Med pri) Bounty owner shouldn't be elected for their own bounty (not that it matters if they are, it just looks bad). We can do this in an O(1) way by implementing Owner:[Node] map.
 * (Med pri) No information about payouts visible on the bounty
+* (Med-low pri) JSON serializer currently doesn't serialize  UnorderedMaps or *Sets
 * (Med-low pri) Need to figure out some way to transmit secrets. Bounty creator should be able to encrypt secrets and share the key with the coordinator. Then elected nodes should be able to download the key.
 * (Med-low pri) Figure out a way to reimburse nodes for gas used when publishing answers, med pri because gas is cheap and we can get the nodes more gains elsewhere
 * (Med-low pri) Should get_bounty prevent someone who isn't elected from getting an incomplete bounty?

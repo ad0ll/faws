@@ -1,17 +1,22 @@
 # Execution client
 
 ## Risks
-#### **Please read this section first**
+### **Please read this section first**
 This execution client is built to allow people you don't know to run code on your computer. 
 While we've done some DD to attempt to prevent some of the most aggregious
 For this reason, although it is not required, we **HIGHLY** recommend taking the following steps to protect yourself from malicious actors:
-* Installing an always on VPN on your node or using tor for all network interactions. This should be considered required.
-* Isolating all of your nodes on a separate VLAN
+
+#### All users
+* Installing an always on VPN on your node or using tor for all network interactions. This should be considered required, but it's difficult to enforce in installation script. 
+* Using PiHole or PFBlockerNG or similar for blocklists
+* Setting sensible thresholds for Memory, CPU, and disk to prevent trolls from eating your resources. These are enabled by default at 85%.
+* The UI will tell you which jobs have been rejected and why if you need to adjust your timeouts later
+
+#### Developers/Highly technical users
+Isolating all of your nodes on a separate VLAN.
 * Forcing DNS requests to always go through your router. 
-* Using PiHole or PFBlockerNG or similar for blacklists (TODO what's the replacement for blacklists?)
 * Having firewall rules that...
 * Paying close attention to Snyk alerts when building the image
-* Setting sensible thresholds for CPU to prevent . These are enabled by default at 85% for all of disk, cpu, and memory.
 * TODO Setting a kill threshold to destroy the most extensive bounties when memory has reached XYZ. This is on by default XYZ
 
 This is the long-running process that clients will
@@ -36,3 +41,6 @@ The longer, but more accurate step-by-step is this
 
 4. client acks they've received it by changing their node status to pending. This is done by setting coordinator_contract.bounties[BOUNTY_ID].elected_nodes[NODE_ID].status to PENDING
 4. Client s
+
+## Development
+A full list of configurable items can be found in .env.example

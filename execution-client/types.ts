@@ -6,13 +6,16 @@ export type NodeResponse = {
     solution: string,
     timestamp: string,
     gas_used: BigInt,
-    status: "SUCCESS" | "FAILURE"
+    status: NodeResponseStatuses
 }
-
+export enum NodeResponseStatuses {
+    SUCCESS = "SUCCESS",
+    FAILURE = "FAILURE"
+}
 export enum SupportedFileDownloadProtocols {
-    GIT = "git",
-    // IPFS = "ipfs",
-    HTTP = "http",
+    GIT = "GIT",
+    IPFS = "IPFS",
+    HTTP = "HTTP",
 }
 
 // Must match contract
@@ -21,7 +24,7 @@ export type Bounty = {
     owner_id: string,
     coordinator_id: string,
     file_location: string,
-    file_download_protocol: "git" | "ipfs" | "http",
+    file_download_protocol: SupportedFileDownloadProtocols,
     success: boolean,
     complete: boolean,
     cancelled: boolean,
@@ -85,6 +88,23 @@ export type ClientExecutionContext = {
     }
 }
 
+// Node overlaps with @types/node, so this is called ClientNode instead
+export type ClientNode = {
+    id: string,
+    owner_id: string,
+    last_run: number,
+    last_success: number,
+    last_failure: number,
+    successful_runs: number,
+    failed_runs: number,
+    unanswered_runs: number,
+    gpus: {
+        brand: string,
+        architecture: string,
+        cores: number,
+        memory: number,
+    }[]
+}
 
 // Internal answer from an execution that contains additional information for better UX
 export type InternalResultStatuses = "SUCCESS" | "FAILURE" | "UNELECTED" | "UNIMPLEMENTED" | "ERROR" | "TIMEOUT"
@@ -124,15 +144,31 @@ type BountyCreatedEventData = {
 }
 
 type BountyCreatedEvent = WSEvent<BountyCreatedEventData>
-
+export type CreateBountyArgs = {
+    name: string,
+    file_location: string,
+    file_download_protocol: SupportedFileDownloadProtocols,
+    min_nodes: number,
+    total_nodes: number,
+    timeout_seconds: number,
+    network_required: boolean,
+    gpu_required: boolean,
+    amt_storage: string,
+    amt_node_reward: string,
+}
+//Convenience type to give completions and checks for coordinator contract calls
 export type CoordinatorContract = Contract & {
     get_bounty: ({bounty_id}: { bounty_id: string }) => Promise<Bounty>;
-    should_publish_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<boolean>;
-    get_node: ({account_id}: { account_id: string }) => Promise<any>; //TODO should return node instead
-    get_answer: ({bounty_id,}: { bounty_id: string }) => Promise<NodeResponse>;
-    publish_answer: ({
+    should_post_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<boolean>;
+    get_node: ({account_id}: { account_id: string }) => Promise<ClientNode>;
+    create_bounty: (args: CreateBountyArgs, gas: string, deposit: string) => Promise<Bounty>;
+    //Note that this is the "view" version, can only be run when the bounty is complete/cancelled. use call_get_answer to get answers from hot bounties.
+    get_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<NodeResponse>;
+    post_answer: ({
                          bounty_id,
                          node_id,
-                         result
-                     }: { bounty_id: string, node_id: string, result: NodeResponse }) => Promise<void>;
+                         answer,
+                         message,
+                         status
+                     }: { bounty_id: string, node_id: string, answer: string, message?: string, status: NodeResponseStatuses }) => Promise<void>;
 }

@@ -6,7 +6,8 @@ use near_sdk::{AccountId, Balance, log, near_bindgen, Promise, require};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::env::{attached_deposit, block_timestamp, block_timestamp_ms, current_account_id, predecessor_account_id, signer_account_id, storage_byte_cost};
-use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::serde::{Deserialize, Serialize, Serializer};
+use near_sdk::serde::ser::{SerializeSeq, SerializeStruct};
 use crate::node::Node;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
@@ -132,6 +133,56 @@ pub struct Bounty {
     pub unanswered_nodes: UnorderedSet<AccountId>,
 }
 
+impl Serialize for Bounty {
+fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+{
+    // 3 is the number of fields in the struct.
+    let mut state = serializer.serialize_struct("Bounty", 15)?;
+    state.serialize_field("id", &self.id)?;
+    state.serialize_field("owner_id", &self.owner_id)?;
+    state.serialize_field("coordinator_id", &self.coordinator_id)?;
+    state.serialize_field("file_location", &self.file_location)?;
+    state.serialize_field("file_download_protocol", &self.file_download_protocol)?;
+    state.serialize_field("status", &self.status)?;
+    state.serialize_field("min_nodes", &self.min_nodes)?;
+    state.serialize_field("total_nodes", &self.total_nodes)?;
+    state.serialize_field("bounty_created", &self.bounty_created)?;
+    state.serialize_field("network_required", &self.network_required)?;
+    state.serialize_field("gpu_required", &self.gpu_required)?;
+    state.serialize_field("amt_storage", &self.amt_storage)?;
+    state.serialize_field("amt_node_reward", &self.amt_node_reward)?;
+    state.serialize_field("timeout_seconds", &self.timeout_seconds)?;
+    state.serialize_field("elected_nodes", &self.elected_nodes)?;
+
+    //TODO Figure out how to serialize and add these fields
+    // pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
+    // pub failed_nodes: UnorderedSet<AccountId>,
+    // pub successful_nodes: UnorderedSet<AccountId>,
+    // pub unanswered_nodes: UnorderedSet<AccountId>,
+    state.end()
+
+}
+}
+
+// impl Serialize for UnorderedSet<AccountId>
+//     where
+//         AccountId: Serialize,
+// {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//         where
+//             S: Serializer,
+//     {
+//         let mut seq = serializer.serialize_seq(Some(self.len() as usize))?;
+//         for e in self {
+//             seq.serialize_element(e)?;
+//         }
+//         seq.end()
+//     }
+// }
+
+
 impl PartialEq<Self> for Bounty {
     fn eq(&self, other: &Self) -> bool {
         return self.id == other.id
@@ -181,6 +232,11 @@ impl Default for Bounty {
         }
     }
 }
+// impl Serialize for Bounty {
+//     fn serialize<S>(&self, serializer: S) -> Result<serde::ser::Ok, serde::ser::Error> where S: Serializer {
+//         todo!()
+//     }
+// }
 
 #[near_bindgen]
 impl Bounty {
@@ -233,26 +289,9 @@ impl Bounty {
             log!("Should not publish, we have enough failed nodes to close the bounty")
         }
         //TODO Should check if we have enough successful answers and return no if we're evaluating them
-        log!("Should publish, {} is elected, has not submitted an answer, and the bounty isn't complete");
+        log!("Should publish, {} is elected, has not submitted an answer, and the bounty isn't complete", node_id);
         return "yes".to_string();
     }
-
-    #[payable]
-    #[private]
-    pub fn bounty_add_storage_deposit(&mut self) -> Promise {
-        require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
-        self.amt_storage += attached_deposit();
-        return Promise::new(self.coordinator_id.clone()).transfer(attached_deposit());
-    }
-
-    #[payable]
-    #[private]
-    pub fn bounty_add_node_reward_deposit(&mut self) -> Promise {
-        require!(self.owner_id == signer_account_id() || self.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
-        self.amt_node_reward += attached_deposit();
-        return Promise::new(self.coordinator_id.clone()).transfer(attached_deposit());
-    }
-
 
     //Dumps the result as {$value: $number_of_nodes_with_value}, requiring the bounty creator to manually verify the result
     #[private]

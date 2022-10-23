@@ -4,8 +4,6 @@ version = "1.0.0"
 authors = ["ad0ll <ad0ll@ad0ll.io>",
     "amit <amit@need.his.email.dev>"]
 edition = "2021"
-[alias]
-build = "build --workspace --target wasm32-unknown-unknown"
 [lib]
 name= "coordinator"
 #[target.'cfg(not(target_arch = "wasm32"))'.lib]
@@ -14,6 +12,9 @@ crate-type = ["rlib", "cdylib"]
 #[target.'cfg(target_arch = "wasm32")'.lib]
 #crate-type = ["cdylib"]
 
+# Generally, most external libraries don't seem to work when compiling to wasm.
+#If you add a dependency, and the app breaks, try removing it
+# Test dependencies go under dev-dependencies
 [dependencies]
 near-sdk = "4.0.0"
 uint = { version = "0.9.3", default-features = false }
@@ -30,6 +31,7 @@ anyhow = "1.0"
 tokio = { version = "1", features = ["full"] }
 near-workspaces = "0.6.0"
 near-sandbox-utils = "0.6.0"
+chrono = "0.4.22"
 
 
 #[target.'cfg(not(target_arch = "wasm32"))'.dependencies]

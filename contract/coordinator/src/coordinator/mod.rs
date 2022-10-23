@@ -6,18 +6,16 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::env::{attached_deposit, block_timestamp, current_account_id, log_str, signer_account_id, storage_byte_cost};
 use near_sdk::serde::{Deserialize, Serialize};
+use near_units::parse_near;
 
 use crate::bounty::{Bounty, BountyStatus, NodeResponse, NodeResponseStatus, SupportedDownloadProtocols};
 use crate::events::{BountyCreatedLog, EventLog, EventLogVariant};
 use crate::node::Node;
 
-// pub const STORAGE_COST: Balance = parse_near!("1 N");
-pub const STORAGE_COST: Balance = 1_000_000_000_000_000_000_000;
+pub const MIN_STORAGE: Balance = parse_near!("0.1 N");
+// pub const MIN_STORAGE: Balance = 1_000_000_000_000_000_000_00;
 //1 NEAR
-// pub const MIN_STORAGE: Balance = parse_near!("1 N");
-pub const MIN_STORAGE: Balance = 1_000_000_000_000_000_000_000;
-//1 NEAR
-pub const MIN_REWARD: Balance = 10_000_000_000_000_000_000;
+pub const MIN_REWARD: Balance = parse_near!("0.1 N");
 // 0.01 NEAR
 pub const DEFAULT_NODE_OWNER_ID: &str = "default-node.test.near";
 pub const DEFAULT_BOUNTY_OWNER_ID: &str = "default-bounty.test.near";
@@ -30,8 +28,10 @@ pub const BOUNTY_COMPLETED_EVENT_NAME: &str = "BountyCompleted";
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PayoutStrategy {
-    SuccessfulNodes, //If min_nodes+ succeeds, only successful nodes should get paid
-    FailedNodes, //If min_nodes+ fails, only failed nodes should get paid
+    SuccessfulNodes,
+    //If min_nodes+ succeeds, only successful nodes should get paid
+    FailedNodes,
+    //If min_nodes+ fails, only failed nodes should get paid
     AllAnsweredNodes, //If a bounty is cancelled, all nodes should get paid
 }
 
@@ -97,10 +97,10 @@ impl Coordinator {
         return self.nodes.get(&account_id).unwrap_or_else(|| panic!("Node {} is not registered", account_id));
     }
 
-    //Serialize override necessary because Bounty contains an UnorderedMap
-    #[result_serializer(borsh)]
     pub fn get_bounty(&self, bounty_id: AccountId) -> Bounty {
-        return self.bounties.get(&bounty_id).unwrap();
+        let bounty = self.bounties.get(&bounty_id).unwrap();
+        log!("get_bounty {}", bounty_id);
+        return bounty;
     }
 
     //TODO This NEEDS pagination, can return a huge amount of data
@@ -117,17 +117,20 @@ impl Coordinator {
 
     //TODO This NEEDS pagination, can return a huge amount of data
     //also probably not efficient
-    #[result_serializer(borsh)]
+    // #[result_serializer(borsh)]
     pub fn get_bounties(&self) -> Vec<Bounty> {
         log!("Fetching all {} bounties", self.bounties.len());
         let mut bounties: Vec<Bounty> = vec![];
         for bounty in self.bounties.values() {
+            log!("pushing bounty: {:?}", bounty.id);
             bounties.push(bounty);
         }
+        log!("returning bounties");
         return bounties;
     }
 
     pub fn register_node(&mut self, name: String) -> Node {
+        //TODO Require deposit
         let node_id: AccountId = format!("{}.node.{}", name, signer_account_id())
             .parse()
             .unwrap();
@@ -143,10 +146,10 @@ impl Coordinator {
     //TODO Rename me to node_id
     //TODO Make sure this doesn't stall bounty indefinitely
     pub fn remove_node(&mut self, account_id: AccountId) {
+        //TODO refund deposit
         println!("attempting to remove node with id {}", account_id);
-        let node = self.nodes.get(&account_id);
-        require!(!node.is_none(), "Could not find node to remove");
-        require!(signer_account_id() == node.unwrap().owner_id || signer_account_id() == current_account_id(), "Only the owner of the node or the coordinator can remove it");
+        let node = self.nodes.get(&account_id).unwrap_or_else(|| panic!("Node {} is not registered", account_id));
+        require!(signer_account_id() == node.owner_id || signer_account_id() == current_account_id(), "Only the owner of the node or the coordinator can remove it");
         self.nodes.remove(&account_id);
         self.node_queue.retain(|x| x != &account_id);
         //This is O(N) which hurts and could be avoided by changing the node queue to an UnorderedSet
@@ -176,14 +179,19 @@ impl Coordinator {
     #[result_serializer(borsh)]
     pub fn create_bounty(&mut self, name: String, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: String, amt_node_reward: String) -> Bounty {
         log!("Creating bounty {}", name);
+        log!("Coordinator {}", current_account_id());
+        log!("Coordinator {}", current_account_id().to_string());
+        log!(format!("{}.bounty.{}", name, current_account_id().to_string()));
+        log!(format!("{}.bounty.{}", name, current_account_id().to_string()));
         let amt_storage: u128 = amt_storage.parse().unwrap();
         let amt_node_reward: u128 = amt_node_reward.parse().unwrap();
         require!(attached_deposit() == amt_storage + amt_node_reward, "Attached deposit must be equal to the sum of the storage and node reward amounts");
-        require!(amt_storage > MIN_STORAGE, "Refundable storage deposit must be greater than 1N");
-        require!(amt_node_reward > MIN_REWARD, "Refundable storage deposit must be greater than 1N");
+        require!(amt_storage > MIN_STORAGE, "Refundable storage deposit must be greater than 0.1N"); //0.1N ~10KB, should be more than enough for most
+        require!(amt_node_reward > MIN_REWARD, "Node reward must be at least 0.1N");
         require!(self.get_node_count() >= total_nodes, "Not enough nodes registered for bounty");
         require!(total_nodes.clone() <= self.nodes.len(), "Total nodes cannot be greater than the number of nodes available in the coordinator");
-        let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id().to_string()).parse().unwrap();
+        let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id()).parse().unwrap();
+        log!("Bounty key is: {}", bounty_key);
         require!(self.bounties.get(&bounty_key).is_none(), "Bounty already exists");
         let mut bounty = Bounty::new_bounty(name.clone(), bounty_key.clone(), file_location, file_download_protocol, min_nodes, total_nodes, timeout_seconds, network_required, gpu_required, amt_storage, amt_node_reward);
         require!(bounty.owner_id == signer_account_id(), "The bounty's owner id must be the signer"); //Cautionary check. We don't want to risk preventing the creator from cancelling the bounty to withdraw their funds
@@ -231,19 +239,6 @@ impl Coordinator {
     }
 
 
-    // O(n) shuffle where n is the number of shuffles to do.
-    // Shuffle op is O(1) because we swap the last element with the random element and push the random element at the end
-    pub fn shuffle_nodes(&mut self, n: u64) {
-        require!(n > 0, "n must be greater than 0");
-        let mut i = 0;
-        let seed = env::random_seed()[0];
-        while i < n {
-            let random_node = seed % self.node_queue.len() as u8;
-            let node = self.node_queue.swap_remove(random_node as usize);
-            self.node_queue.push(node);
-            i += 1;
-        }
-    }
 
     //View function to fetch an answer that can only be run after the bounty has been completed
     pub fn get_answer(&self, bounty_id: AccountId, node_id: AccountId) -> NodeResponse {
@@ -289,24 +284,26 @@ impl Coordinator {
         // if signer_account_id() == bounty.owner_id {
         //     require!(bounty.get_status() != BountyStatus::Pending, "Bounty must be complete for bounty owner to get answer");
         // }
+
+        //TODO Check if bounty has enough storage!!
         return bounty.should_publish_answer(&node.id) == "yes";
     }
 
 
     //TODO This function can be broken into multiple parts, update bounty status, analyze answers, refund bounty storage, pay nodes
     pub fn post_answer(&mut self, bounty_id: AccountId, node_id: AccountId, answer: String, message: String, status: NodeResponseStatus) -> NodeResponse {
-        log!("Posting answer for bounty {:?}", bounty_id);
         let mut bounty = self.bounties.get(&bounty_id.clone()).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         let mut node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", bounty_id));
         require!(signer_account_id() == node.owner_id, "Only the node owner can post an answer");
         require!(bounty.status == BountyStatus::Pending, "Bounty is complete, no more answers can be published");
         require!(bounty.elected_nodes.contains(&node_id), "You are not an elected node");
         require!(bounty.answers.get(&node_id).is_none(), "You have already submitted an answer");
-        log!("Publishing answer from {} (owner: {}). Answer: {}, Timestamp: {}, Status: {}", &node_id, signer_account_id(), answer, block_timestamp(), status);
+        log!("Publishing answer to {} from {} (owner: {}). Answer: {}, Timestamp: {}, Status: {}", &bounty_id, &node_id, signer_account_id(), answer, block_timestamp(), status);
 
-        let node_response = NodeResponse::new_node_response(answer, message, status.clone());
+        let node_response = NodeResponse::new_node_response(answer, message, status);
         let estimated_storage = storage_byte_cost() * size_of_val(&node_response) as u128;
-        let used_storage = storage_byte_cost() * size_of_val(&self) as u128;
+        let used_storage = storage_byte_cost() * size_of_val(&bounty) as u128;
+
         //If we hit this, the node has to pay gas. Wondering if we can front-load storage estimates in create_bounty to prevent it from being created if it doesn't have enough storage
         log!("Estimated storage cost for answer {}, bounty has used {}, has {} left", estimated_storage, used_storage, bounty.amt_storage - used_storage);
         require!(estimated_storage < (bounty.amt_storage), "Not enough storage left to store answer");
@@ -342,7 +339,7 @@ impl Coordinator {
         }
         // After changing the nested vec (bounty.bounties) we MUST reinsert it into the map (self.bounties) to register the change in storage.
         self.bounties.insert(&bounty_id, &bounty);
-        return node_response;
+        return bounty.answers.get(&node_id).unwrap();
     }
 
     #[private]
@@ -350,7 +347,12 @@ impl Coordinator {
 
         // If you make the below mutable, please make sure to re-insert it into the coordinator at the end
         let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist (close_bounty)", bounty_id));
-        require!(bounty.owner_id == signer_account_id() || bounty.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can close it");
+        if bounty.successful_nodes.len() < bounty.min_nodes && bounty.failed_nodes.len() < bounty.min_nodes {
+            require!(
+            bounty.owner_id == signer_account_id() || bounty.coordinator_id == current_account_id(), format!("Only the owner of the bounty or the coordinator can close the bounty before receiving at least {} successful or failed responses", bounty.min_nodes));
+        }
+
+        // Anyone can attempt to close the bounty once we've received min nodes
         log!("Closing bounty {}", bounty_id);
 
 
@@ -372,7 +374,7 @@ impl Coordinator {
 
 
         let storage_used = storage_byte_cost() * size_of_val(&bounty) as u128;
-        log!("Bounty used {} storage, will refund {} or {} deposit", storage_used, bounty.amt_storage - storage_used, bounty.amt_storage);
+        log!("Bounty used {} storage, will refund {} of {} deposit", storage_used, bounty.amt_storage - storage_used, bounty.amt_storage);
 
         //TODO we want to skim a very small amount of the storage cost for the coordinator, maybe 1-2% with a cap to cover storage contingencies in the future
         let mut main_promise = Promise::new(bounty.owner_id.clone()).transfer(bounty.amt_storage - storage_used); //Storage refund promise
@@ -409,7 +411,9 @@ impl Coordinator {
                 continue;
             }
             let node_response = node_response_option.unwrap();
-            if payout_strategy == PayoutStrategy::AllAnsweredNodes || (payout_strategy == PayoutStrategy::SuccessfulNodes && node_response.status == NodeResponseStatus::SUCCESS){
+            if payout_strategy == PayoutStrategy::AllAnsweredNodes
+                || (payout_strategy == PayoutStrategy::SuccessfulNodes && node_response.status == NodeResponseStatus::SUCCESS)
+                || (payout_strategy == PayoutStrategy::FailedNodes && node_response.status == NodeResponseStatus::FAILURE) {
                 log!("paying {} reward of {}", node_id, payout_per_node);
                 let reward_promise = Promise::new(node.owner_id)
                     .transfer(payout_per_node);
@@ -434,17 +438,23 @@ impl Coordinator {
     }
 
     #[payable]
-    pub fn add_storage_deposit(&mut self, bounty_id: AccountId) {
+    pub fn add_storage_deposit(&mut self, bounty_id: AccountId) -> Promise {
         require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
         let mut bounty = self.bounties.get(&bounty_id).unwrap();
-        bounty.bounty_add_storage_deposit();
+        require!(bounty.owner_id == signer_account_id() || bounty.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
+        bounty.amt_storage += attached_deposit();
+        self.bounties.insert(&bounty_id, &bounty);
+        return Promise::new(current_account_id()).transfer(attached_deposit());
     }
 
     #[payable]
-    pub fn add_node_reward_deposit(&mut self, bounty_id: AccountId) {
+    pub fn add_node_reward_deposit(&mut self, bounty_id: AccountId) -> Promise {
         require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
         let mut bounty = self.bounties.get(&bounty_id).unwrap();
-        bounty.bounty_add_node_reward_deposit();
+        require!(bounty.owner_id == signer_account_id() || bounty.coordinator_id == current_account_id(), "Only the owner of the bounty or the coordinator can add to the deposit");
+        bounty.amt_node_reward += attached_deposit();
+        self.bounties.insert(&bounty_id, &bounty);
+        return Promise::new(current_account_id()).transfer(attached_deposit());
     }
 }
 

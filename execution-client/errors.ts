@@ -1,10 +1,7 @@
-export class ExecutionError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "ExecutionError";
-    }
-}
 
+
+// Happens when the node is first starting, thrown if the node is missing software or is unable to go through its initialization ceremonies
+// Typically fatal
 export class SetupError extends Error {
     constructor(message: string) {
         super(message);
@@ -12,6 +9,7 @@ export class SetupError extends Error {
     }
 }
 
+// Everything prior
 export class PreflightError extends Error {
     constructor(message: string) {
         super(message);
@@ -19,16 +17,23 @@ export class PreflightError extends Error {
     }
 }
 
-export class BountyNotFoundError extends Error {
+export class ExecutionError extends Error {
     constructor(message: string) {
         super(message);
-        this.name = "PreflightError";
+        this.name = "ExecutionError";
     }
 }
 
-export class PostResultError extends Error {
+export class BountyNotFoundError extends Error {
     constructor(message: string) {
         super(message);
-        this.name = "PreflightError";
+        this.name = "BountyNotFoundError";
+    }
+}
+
+export class PostExecutionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "PostExecutionError";
     }
 }

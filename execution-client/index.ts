@@ -1,17 +1,24 @@
 import {Account} from "near-api-js";
 import {logger} from "./logger";
-import {ClientConfig, CoordinatorContract, ClientExecutionResult} from "./types";
+import {
+    ClientConfig,
+    ClientExecutionResult,
+    CoordinatorContract,
+    NodeResponseStatuses,
+    SupportedFileDownloadProtocols
+} from "./types";
 import WebSocket from "ws";
 import shell from "shelljs";
 import {readConfigFromEnv} from "./config"
-import {getAccount, getBounty, getCoordinatorContract} from "./util";
-import {Execution} from "./lib";
+import {emitBounty, getAccount, getBounty, getCoordinatorContract} from "./util";
+import {Execution} from "./execution";
+import {ExecutionError, PostExecutionError, PreflightError, SetupError} from "./errors";
 
 
 //Global config items
 class ExecutionClient {
     private websocketClient: WebSocket
-    public executions: {[key: string]: Execution} = {} // not deliberate
+    public executions: { [key: string]: Execution } = {} // not deliberate
 
     constructor(public account: Account,
                 public coordinatorContract: CoordinatorContract,
@@ -31,8 +38,10 @@ class ExecutionClient {
     async validateNode() {
         logger.info("Fetching node info from coordinator contract");
         const node = await this.coordinatorContract.get_node({account_id: this.config.nodeId});
+        //TODO Check if account is owner of the node
         logger.info(`Node ${this.config.nodeId} is registered with the following properties: ${JSON.stringify(node)}`);
         if (!node) {
+            //TODO Consider registering the node here
             logger.error(`Node ${this.config.nodeId} is not registered with the coordinator contract (${this.config.coordinatorContractId})`);
             process.exit(1);
         }
@@ -47,6 +56,32 @@ class ExecutionClient {
         if (missingSoftware.length > 0) {
             logger.error(`Could not start node, missing the following software: ${missingSoftware.join(", ")}`);
             process.exit(1);
+        }
+    }
+
+    async publishAnswer(bountyId: string, result: ClientExecutionResult) {
+        logger.debug(`Publishing answer for bounty ${bountyId} to coordinator contract with res: `, result);
+        //Should always check should_post_answer first, since it's a view function and publish_answer is not
+        logger.debug(`Checking if we should post answer for bounty ${bountyId}`);
+        const shouldPostAnswer = await this.coordinatorContract.should_post_answer({
+            bounty_id: bountyId,
+            node_id: this.config.nodeId
+        })
+        logger.debug(`Should post answer for bounty ${bountyId}: ${shouldPostAnswer}`);
+        if (shouldPostAnswer) {
+            logger.info(`Publishing answer for bounty ${bountyId}`);
+            const payload = {
+                bounty_id: bountyId,
+                node_id: this.config.nodeId,
+                answer: result.result,
+                message: result.message,
+                status: result.errorType ? NodeResponseStatuses.FAILURE : NodeResponseStatuses.SUCCESS
+            }
+            logger.debug(`Publishing answer for bounty ${bountyId} with payload: `, payload);
+            const res = this.coordinatorContract.post_answer(payload)
+            logger.info(`Successfully published answer for bounty ${bountyId} with result: ${JSON.stringify(res)}`);
+        } else {
+            logger.info(`Not publishing answer for bounty ${bountyId} because should_post_answer returned false`);
         }
     }
 
@@ -78,27 +113,40 @@ class ExecutionClient {
                             logger.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);
                             if (bountyData.node_ids.includes(this.config.nodeId)) {
                                 logger.info(`We're elected! Executing bounty ${bountyId}...`);
-                                const bounty = await getBounty(this.config, this.coordinatorContract, bountyId)
-                                const execution = new Execution(this.config, bounty)
-                                this.executions[bountyId] = execution;
                                 try {
-                                    const result = await execution.execute()
-                                    logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(result)}`);
-                                    //TODO post answer to bounty
+                                    const bounty = await getBounty(this.config, this.coordinatorContract, bountyId)
+                                    const execution = new Execution(this.config, bounty)
+                                    this.executions[bountyId] = execution;
+                                    const res = await execution.execute()
+                                    await this.publishAnswer(bountyId, res)
+                                    logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(res)}`);
                                 } catch (e: any) {
                                     logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
+                                    if(e instanceof SetupError) { //TODO remove me once cleaned up
+                                        logger.warning(`Execution of bounty ${bountyId} failed with SetupError, but SetupError is disallowed in execution catch: ${e.message}`);
+                                    }
+                                    if (e instanceof SetupError
+                                        || e instanceof PreflightError
+                                        || e instanceof ExecutionError){
+                                        await this.publishAnswer(bountyId, {
+                                            result: "",
+                                            message: e.message,
+                                            errorType: e.constructor.name
+                                        })
+                                    }
                                     //TODO e will have name and message, post failure to chain
                                 } finally {
                                     delete this.executions[bountyId]
                                 }
-                                 await execution.execute();
                             }
                         }
                     }
 
                 }
             } catch (e) {
-                logger.error(`Error processing message: ${e}`);
+                e instanceof PostExecutionError
+                ? logger.error(`Error while posting execution result: ${e.message}`)
+                    : logger.error(`Error while processing message: ${e}`);
             }
         });
 
@@ -115,6 +163,15 @@ const init = async () => {
     const coordinatorContract = await getCoordinatorContract(config, account)
     const client = new ExecutionClient(account, coordinatorContract, config);
     await client.initialize();
+
+
+    // Creates a bounty at a defined interval. Used for development to keep a constant stream of bounty events going
+    // Default block when attempting to run against mainnet since it'll cost real near. Pass EMIT_BOUNTY__ALLOW_MAINNET to override
+    if ((config.nearConnection.networkId !== "mainnet" || process.env.EMIT_BOUNTY__ALLOW_MAINNET) && process.env.EMIT_BOUNTY) {
+        const emitInterval = parseInt(process.env.EMIT_BOUNTY__INTERVAL || "30000")
+        logger.info(`Emitting bounties every ${emitInterval}ms`);
+        await emitBounty(config, coordinatorContract, emitInterval)
+    }
 }
 
 (async () => init())()

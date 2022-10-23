@@ -7,3 +7,6 @@
 [submodule "indexer-tx-watcher-example"]
 	path = indexer-tx-watcher-example
 	url = https://github.com/near-examples/indexer-tx-watcher-example.git
+[submodule "near-explorer"]
+	path = near-explorer
+	url = https://github.com/near/near-explorer.git

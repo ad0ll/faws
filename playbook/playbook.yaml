@@ -1,0 +1,10 @@
+- name: install execution client
+  hosts: localhost
+  tasks:
+    - name: install execution client
+      include_role:
+        name: execution_client
+      vars:
+        execution_client_version: 1.0.0
+        execution_client_install_dir: /opt/execution_client/
+        execution_client_download_url: https://github.com/ad0ll/near-isnt-decentralized

@@ -13,6 +13,7 @@ import os from "os";
 import assert from "assert";
 import {ExecutionError, PreflightError, SetupError} from "./errors";
 import {fillPlaceholders} from "./util";
+import {database} from "./index";
 
 
 // const exampleBounty: Bounty = {
@@ -48,7 +49,6 @@ export class Execution {
     private startTime = new Date().getTime();
     private endTime = 0;
     public executionContext: ClientExecutionContext = {} as ClientExecutionContext;
-
     constructor(
         config: ClientConfig,
         bounty: Bounty,
@@ -73,9 +73,16 @@ export class Execution {
             packagePath: path.join(storageRoot, "files", path.basename(bounty.file_location)),
             dockerfilePath: path.join(storageRoot, "files", "Dockerfile")
         }
+        // this.executionContext.expectedReward = bounty.amt_node_reward/bounty.min_nodes
+    }
+
+    updateContext(newValues: any ) { //TODO any here is sloppy
+        this.executionContext = {...this.executionContext, ...newValues}
+        database.update(this.executionContext.bounty.id, this)
     }
 
     extractFile() {
+        this.updateContext({phase: "Extract file"})
         const {filesDir, packageName, packagePath, dockerfilePath} = this.executionContext.storage
         shell.cd(filesDir)
         if (packageName.endsWith(".zip")) {
@@ -98,6 +105,7 @@ export class Execution {
     }
 
     async buildImage() {
+        this.updateContext({phase: "Build image"})
         const {bounty} = this.executionContext
         const {filesDir} = this.executionContext.storage
         const imageName = this.executionContext.imageName
@@ -112,18 +120,22 @@ export class Execution {
     }
 
     findResultLine(input: string): string | undefined {
+        this.updateContext({phase: "Scan output for result"})
         return input.split(os.EOL).find(line => line.match(/^\{\s*"bounty_data":/))
     }
 
     async runImage(): Promise<ClientExecutionResult> {
+        this.updateContext({phase: "Build image"})
         const {imageName, containerName} = this.executionContext
         const {config, bounty} = this.executionContext
+
         //TODO Need timeout
         const command = `docker container run \
                         --name ${containerName} \
                         ${config.storage.dockerRemoveContainerAfterRun ? "--rm" : ""} \
                         ${imageName} \
                         ${bounty.runtime_args ? `"${bounty.runtime_args}"` : ""}`
+
         logger.debug(`Running bounty container with the following command: ${command}`)
         const {code, stdout, stderr} = shell.exec(command)
         //Result will be present regardless of whether there's errors, so check for the result line first
@@ -142,6 +154,7 @@ export class Execution {
             console.log("Docker exited with a non-zero code, throwing error")
             throw new ExecutionError(result.bounty_data.message || `docker container run failed with exit code ${code}`)
         }
+        this.updateContext({result: result.bounty_data})
         return result.bounty_data as ClientExecutionResult
     }
 
@@ -149,6 +162,7 @@ export class Execution {
     // Using one of https, git, or ipfs, download the file to BOUNTY_STORAGE_LOCATION
     //All operations are done in execution_path, which is /tmp/bounty_data/<bountyId>/ by default
     async downloadFile() {
+        this.updateContext({phase: "Download file"})
         const {file_location, file_download_protocol, id: bountyId} = this.executionContext.bounty;
         const {root, filesDir, resultDir, packagePath, packageName, dockerfilePath} = this.executionContext.storage
         logger.info(`Creating bounty storage directories for ${bountyId}`)
@@ -182,6 +196,8 @@ export class Execution {
     }
 
     cleanup() {
+        this.updateContext({phase: "Cleanup"})
+        this.executionContext.phase = "cleanup"
         const {config, bounty, imageName, containerName} = this.executionContext
         try {
             if (config.storage.dockerPurgeSystemAfterRun) {
@@ -261,7 +277,7 @@ export class Execution {
             await this.buildImage();
             //TODO Initialize a sandbox to run the image
             const result = await this.runImage();
-
+            this.updateContext({phase: "Work completed"})
             logger.debug(`Successfully executed bounty ${bounty.id}, result:`, result)
             return result;
         } catch (e: any) {

@@ -1,5 +1,6 @@
 # Cutting room floor for Monday:
 ## Planned
+
 * GPU workloads: 
   * ad0ll: (8 points) I'd consider required. **Painful to develop**, needs Linux w/ Nvidia GPU. I'll get one of my old mining rigs set up for this.
 * Download files from IPFS:
@@ -9,13 +10,13 @@
 * Upload to IPFS when creating bounties (Filecoin)
   * ad0ll: (16 points, vote CUT) Would have to support mul
 * Create sandboxes during image build
-  * 
+  * ad0ll: (8 points, on the fence): Basically necessary for rejecting network code
 * Basic execution client ui
-  * 
+  * ad0ll: (8 points, vote include): A basic UI would look much better than a terminal for the demo
 * Reject bounty
   * Separate from failed, this is when a node refuses to do a bounty. For instance, if a node is configured not to access the internet, and the bounty tries to.
 * Allow/disallow internet access
-  * ad0ll
+  * ad0ll: 
 # Unplanned
 * Upload large answers to IPFS (P2P)
     * ad0ll: (16 points, vote CUT) This is decentralized and would be a great way to cut on storage. BUT, it means that answers aren't visible on chain. We currently haven't specced private bounties 

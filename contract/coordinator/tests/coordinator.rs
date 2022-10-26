@@ -99,7 +99,7 @@ pub async fn get_bounty(coordinator_contract: &Contract, bounty_id: AccountId) -
         }))
         .view()
         .await?
-        .borsh()?;
+        .json()?;
     println!("Checked for bounty, received: {:?}", bounty.id);
     return Ok(bounty);
 }
@@ -111,7 +111,7 @@ pub async fn get_bounties(coordinator_contract: &Contract) -> anyhow::Result<Vec
         .args_json(json!({}))
         .view()
         .await?
-        .borsh()?;
+        .json()?;
     println!("Checked for bounty count, received: {}", bounties.len());
     return Ok(bounties);
 }
@@ -157,7 +157,7 @@ pub async fn create_bounties(coordinator_contract: &Contract, creator: Account, 
             .deposit(parse_near!("2N"))
             .transact()
             .await?
-            .borsh()?;
+            .json()?;
     };
 
     //TODO compare against statically created bounties

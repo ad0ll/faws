@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::mem::size_of_val;
 
-use near_sdk::{AccountId, Balance, log, near_bindgen, Promise, require};
+use near_sdk::{AccountId, Balance, log, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
-use near_sdk::env::{attached_deposit, block_timestamp, block_timestamp_ms, current_account_id, predecessor_account_id, signer_account_id, storage_byte_cost};
-use near_sdk::serde::{Deserialize, Serialize, Serializer};
-use near_sdk::serde::ser::{SerializeSeq, SerializeStruct};
-use crate::node::Node;
+use near_sdk::env::{block_timestamp, block_timestamp_ms, predecessor_account_id, signer_account_id};
+use near_sdk::serde::{Deserialize, Deserializer, Serialize, Serializer};
+use near_sdk::serde::de::{Error, MapAccess, Visitor};
+use near_sdk::serde::ser::SerializeStruct;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -106,7 +105,8 @@ pub struct Bounty {
     pub file_location: String,
     //URL/CID. Support ipfs, git, https initially
     pub file_download_protocol: SupportedDownloadProtocols,
-    pub status: BountyStatus, // Pending, Failed, Success, Cancelled
+    pub status: BountyStatus,
+    // Pending, Failed, Success, Cancelled
     //ipfs, git, https
     pub min_nodes: u64,
     // Min number of nodes that must have consensus to complete the bounty
@@ -125,45 +125,218 @@ pub struct Bounty {
     pub timeout_seconds: u64,
     // Bounty timeout in seconds. If 0, no timeout.
     // pub result: String, //TODO This was going to be the single, definitive result. Need to summarize all the responses to get this.
-    pub elected_nodes: Vec<AccountId>, //TODO This can be an unordered set, UnorderedSet.as_vec should be free
+    pub elected_nodes: Vec<AccountId>,
+    //TODO This can be an unordered set, UnorderedSet.as_vec should be free
     //TODO: How can we make this private? //TODO Unrelated to <-, this could be/should be UnorderedSet or merged below with answers
-    pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
+    pub answers: UnorderedMap<AccountId, NodeResponse>,
+    //TODO: How can we make this private?
     pub failed_nodes: UnorderedSet<AccountId>,
     pub successful_nodes: UnorderedSet<AccountId>,
     pub unanswered_nodes: UnorderedSet<AccountId>,
 }
 
 impl Serialize for Bounty {
-fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-{
-    // 3 is the number of fields in the struct.
-    let mut state = serializer.serialize_struct("Bounty", 15)?;
-    state.serialize_field("id", &self.id)?;
-    state.serialize_field("owner_id", &self.owner_id)?;
-    state.serialize_field("coordinator_id", &self.coordinator_id)?;
-    state.serialize_field("file_location", &self.file_location)?;
-    state.serialize_field("file_download_protocol", &self.file_download_protocol)?;
-    state.serialize_field("status", &self.status)?;
-    state.serialize_field("min_nodes", &self.min_nodes)?;
-    state.serialize_field("total_nodes", &self.total_nodes)?;
-    state.serialize_field("bounty_created", &self.bounty_created)?;
-    state.serialize_field("network_required", &self.network_required)?;
-    state.serialize_field("gpu_required", &self.gpu_required)?;
-    state.serialize_field("amt_storage", &self.amt_storage)?;
-    state.serialize_field("amt_node_reward", &self.amt_node_reward)?;
-    state.serialize_field("timeout_seconds", &self.timeout_seconds)?;
-    state.serialize_field("elected_nodes", &self.elected_nodes)?;
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("Bounty", 15)?;
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("owner_id", &self.owner_id)?;
+        state.serialize_field("coordinator_id", &self.coordinator_id)?;
+        state.serialize_field("file_location", &self.file_location)?;
+        state.serialize_field("file_download_protocol", &self.file_download_protocol)?;
+        state.serialize_field("status", &self.status)?;
+        state.serialize_field("min_nodes", &self.min_nodes)?;
+        state.serialize_field("total_nodes", &self.total_nodes)?;
+        state.serialize_field("bounty_created", &self.bounty_created)?;
+        state.serialize_field("network_required", &self.network_required)?;
+        state.serialize_field("gpu_required", &self.gpu_required)?;
+        state.serialize_field("amt_storage", &self.amt_storage)?;
+        state.serialize_field("amt_node_reward", &self.amt_node_reward)?;
+        state.serialize_field("timeout_seconds", &self.timeout_seconds)?;
+        state.serialize_field("elected_nodes", &self.elected_nodes)?;
 
-    //TODO Figure out how to serialize and add these fields
-    // pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
-    // pub failed_nodes: UnorderedSet<AccountId>,
-    // pub successful_nodes: UnorderedSet<AccountId>,
-    // pub unanswered_nodes: UnorderedSet<AccountId>,
-    state.end()
-
+        //TODO Figure out how to serialize and add these fields
+        // pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
+        // pub failed_nodes: UnorderedSet<AccountId>,
+        // pub successful_nodes: UnorderedSet<AccountId>,
+        // pub unanswered_nodes: UnorderedSet<AccountId>,
+        state.end()
+    }
 }
+
+impl<'de> Deserialize<'de> for Bounty {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        struct BountyVisitor;
+
+        impl<'de> Visitor<'de> for BountyVisitor {
+            type Value = Bounty;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                formatter.write_str("struct Bounty")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Bounty, V::Error>
+                where
+                    V: MapAccess<'de>,
+            {
+                let mut id = None;
+                let mut owner_id = None;
+                let mut coordinator_id = None;
+                let mut file_location = None;
+                let mut file_download_protocol = None;
+                let mut status = None;
+                let mut min_nodes = None;
+                let mut total_nodes = None;
+                let mut bounty_created = None;
+                let mut network_required = None;
+                let mut gpu_required = None;
+                let mut amt_storage = None;
+                let mut amt_node_reward = None;
+                let mut timeout_seconds = None;
+                let mut elected_nodes = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        "id" => {
+                            if id.is_some() {
+                                return Err(Error::duplicate_field("id"));
+                            }
+                            id = Some(map.next_value()?);
+                        }
+                        "owner_id" => {
+                            if owner_id.is_some() {
+                                return Err(Error::duplicate_field("owner_id"));
+                            }
+                            owner_id = Some(map.next_value()?);
+                        }
+                        "coordinator_id" => {
+                            if coordinator_id.is_some() {
+                                return Err(Error::duplicate_field("coordinator_id"));
+                            }
+                            coordinator_id = Some(map.next_value()?);
+                        }
+                        "file_location" => {
+                            if file_location.is_some() {
+                                return Err(Error::duplicate_field("file_location"));
+                            }
+                            file_location = Some(map.next_value()?);
+                        }
+                        "file_download_protocol" => {
+                            if file_download_protocol.is_some() {
+                                return Err(Error::duplicate_field("file_download_protocol"));
+                            }
+                            file_download_protocol = Some(map.next_value()?);
+                        }
+                        "status" => {
+                            if status.is_some() {
+                                return Err(Error::duplicate_field("status"));
+                            }
+                            status = Some(map.next_value()?);
+                        }
+                        "min_nodes" => {
+                            if min_nodes.is_some() {
+                                return Err(Error::duplicate_field("min_nodes"));
+                            }
+                            min_nodes = Some(map.next_value()?);
+                        }
+                        "total_nodes" => {
+                            if total_nodes.is_some() {
+                                return Err(Error::duplicate_field("total_nodes"));
+                            }
+                            total_nodes = Some(map.next_value()?);
+                        }
+                        "bounty_created" => {
+                            if bounty_created.is_some() {
+                                return Err(Error::duplicate_field("bounty_created"));
+                            }
+                            bounty_created = Some(map.next_value()?);
+                        }
+                        "network_required" => {
+                            if network_required.is_some() {
+                                return Err(Error::duplicate_field("network_required"));
+                            }
+                            network_required = Some(map.next_value()?);
+                        }
+                        "gpu_required" => {
+                            if gpu_required.is_some() {
+                                return Err(Error::duplicate_field("gpu_required"));
+                            }
+                            gpu_required = Some(map.next_value()?);
+                        }
+                        "amt_storage" => {
+                            if amt_storage.is_some() {
+                                return Err(Error::duplicate_field("amt_storage"));
+                            }
+                            amt_storage = Some(map.next_value()?);
+                        }
+                        "amt_node_reward" => {
+                            if amt_node_reward.is_some() {
+                                return Err(Error::duplicate_field("amt_node_reward"));
+                            }
+                            amt_node_reward = Some(map.next_value()?);
+                        }
+                        "timeout_seconds" => {
+                            if timeout_seconds.is_some() {
+                                return Err(Error::duplicate_field("timeout_seconds"));
+                            }
+                            timeout_seconds = Some(map.next_value()?);
+                        }
+                        "elected_nodes" => {
+                            if elected_nodes.is_some() {
+                                return Err(Error::duplicate_field("elected_nodes"));
+                            }
+                            elected_nodes = Some(map.next_value()?);
+                        }
+                        _ => {}
+                    }
+                }
+                let id = id.ok_or_else(|| Error::missing_field("id"))?;
+                let owner_id = owner_id.ok_or_else(|| Error::missing_field("owner_id"))?;
+                let coordinator_id = coordinator_id.ok_or_else(|| Error::missing_field("coordinator_id"))?;
+                let file_location = file_location.ok_or_else(|| Error::missing_field("file_location"))?;
+                let file_download_protocol = file_download_protocol.ok_or_else(|| Error::missing_field("file_download_protocol"))?;
+                let status = status.ok_or_else(|| Error::missing_field("status"))?;
+                let min_nodes = min_nodes.ok_or_else(|| Error::missing_field("min_nodes"))?;
+                let total_nodes = total_nodes.ok_or_else(|| Error::missing_field("total_nodes"))?;
+                let bounty_created = bounty_created.ok_or_else(|| Error::missing_field("bounty_created"))?;
+                let network_required = network_required.ok_or_else(|| Error::missing_field("network_required"))?;
+                let gpu_required = gpu_required.ok_or_else(|| Error::missing_field("gpu_required"))?;
+                let amt_storage = amt_storage.ok_or_else(|| Error::missing_field("amt_storage"))?;
+                let amt_node_reward = amt_node_reward.ok_or_else(|| Error::missing_field("amt_node_reward"))?;
+                let timeout_seconds = timeout_seconds.ok_or_else(|| Error::missing_field("timeout_seconds"))?;
+                let elected_nodes = elected_nodes.ok_or_else(|| Error::missing_field("elected_nodes"))?;
+                return Ok(Bounty {
+                    id,
+                    owner_id,
+                    coordinator_id,
+                    file_location,
+                    file_download_protocol,
+                    status,
+                    min_nodes,
+                    total_nodes,
+                    bounty_created,
+                    network_required,
+                    gpu_required,
+                    amt_storage,
+                    amt_node_reward,
+                    timeout_seconds,
+                    elected_nodes,
+                    answers: UnorderedMap::new(format!("{}-answers", "test").to_string().as_bytes()),
+                    failed_nodes: UnorderedSet::new(format!("{}-failed", "test").to_string().as_bytes()),
+                    successful_nodes: UnorderedSet::new(format!("{}-successful", "test").to_string().as_bytes()),
+                    unanswered_nodes: UnorderedSet::new(format!("{}-unanswered", "test").to_string().as_bytes()),
+                });
+            }
+        }
+        const FIELDS: &'static [&'static str] = &["id", "owner_id", "coordinator_id", "file_location", "file_download_protocol", "status", "min_nodes", "total_nodes", "bounty_created", "network_required", "gpu_required", "amt_storage", "amt_node_reward", "timeout_seconds", "elected_nodes"];
+        deserializer.deserialize_struct("Bounty", FIELDS, BountyVisitor)
+    }
 }
 
 // impl Serialize for UnorderedSet<AccountId>
@@ -243,7 +416,7 @@ impl Bounty {
     #[init]
     #[payable]
     #[private] // Only allow creating bounties through coordinator
-    pub fn new_bounty(name: String, id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128) -> Self {
+    pub fn new_bounty(id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128) -> Self {
         Self {
             id,
             owner_id: signer_account_id(),
@@ -258,10 +431,10 @@ impl Bounty {
             // result: "".to_string(),
             // elected_nodes: UnorderedSet::new(format!("{}-elected", name).to_string().as_bytes()),
             elected_nodes: Vec::new(),
-            answers: UnorderedMap::new(format!("{}-answers", name).to_string().as_bytes()),
-            failed_nodes: UnorderedSet::new(format!("{}-failed", name).to_string().as_bytes()),
-            successful_nodes: UnorderedSet::new(format!("{}-successful", name).to_string().as_bytes()),
-            unanswered_nodes: UnorderedSet::new(format!("{}-unanswered", name).to_string().as_bytes()),
+            answers: UnorderedMap::new(format!("{}-answers", "test").to_string().as_bytes()),
+            failed_nodes: UnorderedSet::new(format!("{}-failed", "test").to_string().as_bytes()),
+            successful_nodes: UnorderedSet::new(format!("{}-successful", "test").to_string().as_bytes()),
+            unanswered_nodes: UnorderedSet::new(format!("{}-unanswered", "test").to_string().as_bytes()),
             // storage_used: 0,
             network_required,
             gpu_required,

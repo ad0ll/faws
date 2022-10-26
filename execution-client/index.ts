@@ -13,12 +13,21 @@ import {readConfigFromEnv} from "./config"
 import {emitBounty, getAccount, getBounty, getCoordinatorContract} from "./util";
 import {Execution} from "./execution";
 import {ExecutionError, PostExecutionError, PreflightError, SetupError} from "./errors";
+import Fastify, {FastifyInstance} from "fastify";
+import {Database} from "./database";
+import { Server, IncomingMessage, ServerResponse } from 'http'
 
+// @ts-ignore: Unreachable code error                              <-- BigInt does not have `toJSON` method
+BigInt.prototype.toJSON = function (): string {
+    return this.toString();
+};
+
+//Transient storage for bounty executions
+export const database = new Database();
 
 //Global config items
 class ExecutionClient {
     private websocketClient: WebSocket
-    public executions: { [key: string]: Execution } = {} // not deliberate
 
     constructor(public account: Account,
                 public coordinatorContract: CoordinatorContract,
@@ -63,11 +72,14 @@ class ExecutionClient {
         logger.debug(`Publishing answer for bounty ${bountyId} to coordinator contract with res: `, result);
         //Should always check should_post_answer first, since it's a view function and publish_answer is not
         logger.debug(`Checking if we should post answer for bounty ${bountyId}`);
+        let execution = database.get(bountyId);
+        execution.updateContext({phase: "Posting answer to chain"})
         const shouldPostAnswer = await this.coordinatorContract.should_post_answer({
             bounty_id: bountyId,
             node_id: this.config.nodeId
         })
         logger.debug(`Should post answer for bounty ${bountyId}: ${shouldPostAnswer}`);
+        execution.updateContext({shouldPostAnswer})
         if (shouldPostAnswer) {
             logger.info(`Publishing answer for bounty ${bountyId}`);
             const payload = {
@@ -80,7 +92,9 @@ class ExecutionClient {
             logger.debug(`Publishing answer for bounty ${bountyId} with payload: `, payload);
             const res = this.coordinatorContract.post_answer(payload)
             logger.info(`Successfully published answer for bounty ${bountyId} with result: ${JSON.stringify(res)}`);
+            execution.updateContext({phase: "Complete"})
         } else {
+            execution.updateContext({phase: "Skipped, bounty already completed"})
             logger.info(`Not publishing answer for bounty ${bountyId} because should_post_answer returned false`);
         }
     }
@@ -116,7 +130,7 @@ class ExecutionClient {
                                 try {
                                     const bounty = await getBounty(this.config, this.coordinatorContract, bountyId)
                                     const execution = new Execution(this.config, bounty)
-                                    this.executions[bountyId] = execution;
+                                    database.insert(bountyId, execution)
                                     const res = await execution.execute()
                                     await this.publishAnswer(bountyId, res)
                                     logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(res)}`);
@@ -136,7 +150,7 @@ class ExecutionClient {
                                     }
                                     //TODO e will have name and message, post failure to chain
                                 } finally {
-                                    delete this.executions[bountyId]
+                                    //TODO anything to close?
                                 }
                             }
                         }
@@ -173,5 +187,51 @@ const init = async () => {
         await emitBounty(config, coordinatorContract, emitInterval)
     }
 }
+//
+// const server: FastifyInstance = Fastify({logger: true})
+//
+// // Declare a route
+// server.get('/', {}, async (request, reply) => {
+//     return database
+// })
+// const start = async () => {
+// try {
+//     await server.listen({host: "0.0.0.0", port: 8081}) //TODO make configurable
+// } catch (err) {
+//     server.log.error(err)
+//     process.exit(1)
+// }
+// }
 
-(async () => init())()
+//TODO make host and port configurable
+export const server = new WebSocket.Server({
+    host: "0.0.0.0",
+    port: 8081
+});
+
+export const subscribers: Map<WebSocket, WebSocket> = new Map();
+server.on("connection", (ws, req) => {
+    console.log("WS Connection open");
+
+    subscribers.set(ws, ws);
+
+    ws.on("close", () => {
+        subscribers.delete(ws);
+    });
+
+    ws.on("message", (messageAsString) => {
+        try{
+        const message = JSON.parse(messageAsString.toString());
+        logger.debug(`Subscriber received message: `, message)
+        } catch (e) {
+            console.log("Bad message", e);
+        }
+    });
+});
+
+
+
+(async () => {
+    await init()
+    // await start()
+})()

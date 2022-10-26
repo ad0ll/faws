@@ -75,9 +75,13 @@ export type ClientConfig = {
 export type ClientExecutionContext = {
     config: ClientConfig,
     bounty: Bounty,
+    phase: string,
     imageName: string,
     containerName: string,
     failed: boolean,
+    shouldPostAnswer: boolean,
+    result: ClientExecutionResult,
+    expectedReward: BigInt,
     storage: {
         root: string, // config.bountyStorageDir w/ $BOUNTY_ID placeholder replaced
         filesDir: string, // where git repos are checked out, files are downloaded and unpacked, and the root where bounties are run
@@ -145,7 +149,7 @@ type BountyCreatedEventData = {
 
 type BountyCreatedEvent = WSEvent<BountyCreatedEventData>
 export type CreateBountyArgs = {
-    name: string,
+    // name: string,
     file_location: string,
     file_download_protocol: SupportedFileDownloadProtocols,
     min_nodes: number,

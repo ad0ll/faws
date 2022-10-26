@@ -4,7 +4,7 @@ use std::mem::size_of_val;
 use near_sdk::{AccountId, Balance, env, log, near_bindgen, Promise, require};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::env::{attached_deposit, block_timestamp, current_account_id, log_str, signer_account_id, storage_byte_cost};
+use near_sdk::env::{attached_deposit, block_timestamp, current_account_id, log_str, random_seed, signer_account_id, storage_byte_cost};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_units::parse_near;
 
@@ -44,6 +44,7 @@ pub struct Coordinator {
     pub bounties: UnorderedMap<AccountId, Bounty>,
     pub offline_nodes: UnorderedMap<AccountId, Node>, //Offline nodes are moved here, and can be moved back when the node owner themselves brings it back online
     // pub bounties: Map<Bounty, NodeMetadata>,
+    pub universal_bounty_index: u64,
 }
 
 // Define the default, which automatically initializes the contract
@@ -54,6 +55,7 @@ impl Default for Coordinator {
             node_queue: Vec::new(),
             bounties: UnorderedMap::new("coordinator.bounties".as_bytes().to_vec()),
             offline_nodes: UnorderedMap::new("coordinator.offline_nodes".as_bytes().to_vec()),
+            universal_bounty_index: 0,
         }
     }
 }
@@ -70,6 +72,7 @@ impl Coordinator {
             node_queue: Vec::new(),
             bounties: UnorderedMap::new("coordinator.bounties".as_bytes()),
             offline_nodes: UnorderedMap::new("coordinator.bounties".as_bytes()),
+            universal_bounty_index: 0,
         }
     }
 
@@ -174,15 +177,19 @@ impl Coordinator {
         }
         return removed;
     }
-
+#[private]
+pub(crate) fn rand_u64() -> u64 {
+    //TODO Random seed may have security vulnerabilities. This is a risk we will likely have to take, but should read docs
+    let seeds = random_seed();
+    let mut seed: u64 = seeds[0] as u64;
+    for i in  1..(64/8){
+        seed = seed * seeds[i] as u64;
+    }
+    return seed;
+}
     #[payable]
     #[result_serializer(borsh)]
-    pub fn create_bounty(&mut self, name: String, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: String, amt_node_reward: String) -> Bounty {
-        log!("Creating bounty {}", name);
-        log!("Coordinator {}", current_account_id());
-        log!("Coordinator {}", current_account_id().to_string());
-        log!(format!("{}.bounty.{}", name, current_account_id().to_string()));
-        log!(format!("{}.bounty.{}", name, current_account_id().to_string()));
+    pub fn create_bounty(&mut self, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: String, amt_node_reward: String) -> Bounty {
         let amt_storage: u128 = amt_storage.parse().unwrap();
         let amt_node_reward: u128 = amt_node_reward.parse().unwrap();
         require!(attached_deposit() == amt_storage + amt_node_reward, "Attached deposit must be equal to the sum of the storage and node reward amounts");
@@ -190,34 +197,32 @@ impl Coordinator {
         require!(amt_node_reward > MIN_REWARD, "Node reward must be at least 0.1N");
         require!(self.get_node_count() >= total_nodes, "Not enough nodes registered for bounty");
         require!(total_nodes.clone() <= self.nodes.len(), "Total nodes cannot be greater than the number of nodes available in the coordinator");
-        let bounty_key: AccountId = format!("{}.bounty.{}", name, current_account_id()).parse().unwrap();
-        log!("Bounty key is: {}", bounty_key);
+        // Truncate the block timestamp to reduce the overall length of the bounty id
+        let bounty_key: AccountId = format!("{}-{}.bounty.{}", self.universal_bounty_index, (block_timestamp()%1000000000), signer_account_id()).parse().unwrap();
+        log!("Bounty id is: {}", bounty_key);
         require!(self.bounties.get(&bounty_key).is_none(), "Bounty already exists");
-        let mut bounty = Bounty::new_bounty(name.clone(), bounty_key.clone(), file_location, file_download_protocol, min_nodes, total_nodes, timeout_seconds, network_required, gpu_required, amt_storage, amt_node_reward);
+        let mut bounty = Bounty::new_bounty(bounty_key.clone(), file_location, file_download_protocol, min_nodes, total_nodes, timeout_seconds, network_required, gpu_required, amt_storage, amt_node_reward);
         require!(bounty.owner_id == signer_account_id(), "The bounty's owner id must be the signer"); //Cautionary check. We don't want to risk preventing the creator from cancelling the bounty to withdraw their funds
 
-        let seed = env::random_seed()[0];
-        //TODO Random seed may have security vulnerabilities. This is a risk we will likely have to take, but should read docs
-        log!("Seed: {}", seed);
         while bounty.elected_nodes.len() < total_nodes.clone() as usize {
-            let key: AccountId;
+            let mut key: AccountId;
             if self.node_queue.len() == 1 {
                 key = self.node_queue.pop().unwrap();
                 log!("elected {} (only node in queue)", key);
-                //TODO Case for: If asking for all nodes...
             } else {
-                let random_node = seed % self.node_queue.len() as u8;
-                log!("electing node at: {}, node queue len {}", random_node.to_string(), self.node_queue.len());
+                let seed = Coordinator::rand_u64();
+                let random_node = seed % self.node_queue.len() as u64;
+                log!("electing node at: {}, (seed: {}, index: {})", random_node.to_string(), seed, random_node);
                 // let key = self.node_queue.swap_remove(random_node); // O(1) by replacing removed with last element
-                key = self.node_queue.swap_remove(random_node as usize);
                 // Remove node to eliminate possibility of collisions
-                log!("elected {} (was at index {}), node", key, random_node.to_string());
+                key = self.node_queue.swap_remove(random_node as usize);
+                // log!("elected {} (index {})", key, random_node.to_string());
             }
             require!(!bounty.elected_nodes.contains(&key), "Node already elected");
             bounty.elected_nodes.push(key.clone());
         }
 
-        for (_, node) in bounty.elected_nodes.iter().enumerate() {
+        for node in &bounty.elected_nodes {
             self.node_queue.push(node.clone());
             log!("Elected node: {}", node);
         }
@@ -235,6 +240,7 @@ impl Coordinator {
 
 
         self.bounties.insert(&bounty_key, &bounty);
+        self.universal_bounty_index += 1;
         return bounty;
     }
 
@@ -300,7 +306,7 @@ impl Coordinator {
         require!(bounty.answers.get(&node_id).is_none(), "You have already submitted an answer");
         log!("Publishing answer to {} from {} (owner: {}). Answer: {}, Timestamp: {}, Status: {}", &bounty_id, &node_id, signer_account_id(), answer, block_timestamp(), status);
 
-        let node_response = NodeResponse::new_node_response(answer, message, status);
+        let node_response = NodeResponse::new_node_response(answer, message, status.clone());
         let estimated_storage = storage_byte_cost() * size_of_val(&node_response) as u128;
         let used_storage = storage_byte_cost() * size_of_val(&bounty) as u128;
 

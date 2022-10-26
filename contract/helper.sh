@@ -2,9 +2,9 @@
 #Populate below variable
 alias local_near="NEAR_ENV=\"local\" NEAR_CLI_LOCALNET_NETWORK_ID=\"localnet\" NEAR_NODE_URL=\"http://0.0.0.0:3030\"  near"
 ACCOUNT=$ACCOUNT
-REDEPLOY_CONTRACT=yes #Put anything here to redeploy the contract
-BOUNTY_NAME="test-bounty-$(date +%s)"
-REFERENCE_BOUNTY=test-bounty-1666465914.bounty.dev-1666465917611-93368491720914
+REDEPLOY_CONTRACT= #Put anything here to redeploy the contract
+#BOUNTY_NAME="test-bounty-$(date +%s)"
+REFERENCE_BOUNTY=0-572383000.bounty.dev-1666506475610-88274883199945
 
 source_neardev(){
 
@@ -43,18 +43,18 @@ source_neardev
 #local_near view "$CONTRACT_NAME" get_nodes --accountId="$ACCOUNT"
 #local_near view "$CONTRACT_NAME" get_node --accountId="$ACCOUNT" "{\"account_id\": \"node1.node.$ACCOUNT\"}"
 #local_near view "$CONTRACT_NAME" get_bounties --accountId="$ACCOUNT"
-local_near view "$CONTRACT_NAME" get_bounty --accountId="$ACCOUNT" "{\"bounty_id\": \"$REFERENCE_BOUNTY\"}"
+#local_near view "$CONTRACT_NAME" get_bounty --accountId="$ACCOUNT" "{\"bounty_id\": \"$REFERENCE_BOUNTY\"}"
 
 # Below creates, then completes a bounty. Note, if min_nodes > 1, you'll need to run multiple execution clients
-local_near call "$CONTRACT_NAME" create_bounty --accountId="$ACCOUNT" --deposit 2 "{\"name\": \"$BOUNTY_NAME\", \"file_location\": \"https://github.com/ad0ll/docker-hello-world.git\", \"file_download_protocol\": \"GIT\", \"min_nodes\": 1, \"total_nodes\": 3, \"timeout_seconds\": 60, \"network_required\": true, \"gpu_required\": false, \"amt_storage\": \"1000000000000000000000000\", \"amt_node_reward\": \"1000000000000000000000000\"}"
-#local_near call "$CONTRACT_NAME" post_answer "{\"bounty_id\": \"$BOUNTY_NAME.bounty.$CONTRACT_NAME\", \"node_id\": \"node2.node.$ACCOUNT\", \"answer\": \"42\", \"message\": \"STEEEEEEEELLLLLL\", \"status\": \"SUCCESS\"}" --accountId="$ACCOUNT"
-#local_near call "$CONTRACT_NAME" post_answer "{\"bounty_id\": \"$BOUNTY_NAME.bounty.$CONTRACT_NAME\", \"node_id\": \"node3.node.$ACCOUNT\", \"answer\": \"42\", \"message\": \"CRAAAAAAAAB BAAAATTLE\", \"status\": \"SUCCESS\"}" --accountId="$ACCOUNT"
-#local_near view "$CONTRACT_NAME" get_bounties --accountId="$ACCOUNT"
+#local_near call "$CONTRACT_NAME" create_bounty --accountId="$ACCOUNT" --deposit 2 "{\"file_location\": \"https://github.com/ad0ll/docker-hello-world.git\", \"file_download_protocol\": \"GIT\", \"min_nodes\": 1, \"total_nodes\": 3, \"timeout_seconds\": 60, \"network_required\": true, \"gpu_required\": false, \"amt_storage\": \"1000000000000000000000000\", \"amt_node_reward\": \"1000000000000000000000000\"}"
+local_near call "$CONTRACT_NAME" post_answer "{\"bounty_id\": \"$REFERENCE_BOUNTY\", \"node_id\": \"node2.node.$ACCOUNT\", \"answer\": \"42\", \"message\": \"STEEEEEEEELLLLLL\", \"status\": \"SUCCESS\"}" --accountId="$ACCOUNT"
+local_near call "$CONTRACT_NAME" post_answer "{\"bounty_id\": \"$REFERENCE_BOUNTY\", \"node_id\": \"node3.node.$ACCOUNT\", \"answer\": \"42\", \"message\": \"CRAAAAAAAAB BAAAATTLE\", \"status\": \"SUCCESS\"}" --accountId="$ACCOUNT"
 local_near view "$CONTRACT_NAME" get_bounties --accountId="$ACCOUNT"
-
-#local_near call "$CONTRACT_NAME" should_post_answer "{\"node_id\": \"node2.node.$ACCOUNT\", \"bounty_id\": \"$BOUNTY_NAME.bounty.$CONTRACT_NAME\"}" --accountId="$ACCOUNT"
-#local_near call "$CONTRACT_NAME" call_get_answer "{\"node_id\": \"node2.node.$ACCOUNT\", \"bounty_id\": \"$BOUNTY_NAME.bounty.$CONTRACT_NAME\"}" --accountId="$ACCOUNT"
+#local_near view "$CONTRACT_NAME" get_bounties --accountId="$ACCOUNT"
+#
+#local_near call "$CONTRACT_NAME" should_post_answer "{\"node_id\": \"node2.node.$ACCOUNT\", \"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
+#local_near call "$CONTRACT_NAME" call_get_answer "{\"node_id\": \"node2.node.$ACCOUNT\", \"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
 #Bounty should be closed, so we should be able to get the answer now
-#local_near call "$CONTRACT_NAME" get_answer "{\"node_id\": \"node3.node.$ACCOUNT\", \"bounty_id\": \"$BOUNTY_NAME.bounty.$CONTRACT_NAME\"}" --accountId="$ACCOUNT"
-#local_near call "$CONTRACT_NAME" get_bounty_result "{\"bounty_id\": \"$BOUNTY_NAME.bounty.$CONTRACT_NAME\"}" --accountId="$ACCOUNT"
-#local_near call "$CONTRACT_NAME" post_answer "{\"bounty_id\": \"$BOUNTY_NAME.bounty.$CONTRACT_NAME\", \"node_id\": \"node5.node.$ACCOUNT\", \"answer\": \"42\", \"message\": \"slayer\", \"status\": \"SUCCESS\"}" --accountId="$ACCOUNT"
+#local_near call "$CONTRACT_NAME" get_answer "{\"node_id\": \"node3.node.$ACCOUNT\", \"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
+#local_near call "$CONTRACT_NAME" get_bounty_result "{\"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
+#local_near call "$CONTRACT_NAME" post_answer "{\"bounty_id\": \"$REFERENCE_BOUNTY\", \"node_id\": \"node5.node.$ACCOUNT\", \"answer\": \"42\", \"message\": \"slayer\", \"status\": \"SUCCESS\"}" --accountId="$ACCOUNT"

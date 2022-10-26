@@ -73,7 +73,7 @@ export const emitBounty = async (config: ClientConfig, coordinatorContract: Coor
         const name = `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`
         logger.info(`Creating new bounty: ${name}`)
         const bounty = await coordinatorContract.create_bounty({
-                name: `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`,
+                // name: `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`,
                 file_location: process.env.EMIT_BOUNTY__FILE_LOCATION || 'git@github.com:ad0ll/docker-hello-world.git',
                 file_download_protocol:  SupportedFileDownloadProtocols.GIT,
                 min_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "1"),

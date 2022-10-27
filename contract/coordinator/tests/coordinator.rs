@@ -129,21 +129,17 @@ pub async fn get_nodes(coordinator_contract: &Contract) -> anyhow::Result<Vec<No
 }
 
 
-pub async fn create_bounties(coordinator_contract: &Contract, creator: Account, n_bounties: u64, min_nodes: u64, total_nodes: u64, tick: u64) -> anyhow::Result<Vec<Bounty>> {
+pub async fn create_bounties(coordinator_contract: &Contract, creator: Account, n_bounties: u64, min_nodes: u64, total_nodes: u64) -> anyhow::Result<Vec<Bounty>> {
     println!("Creating {} bounties", n_bounties);
     let node_count = get_node_count(coordinator_contract).await?;
     assert!(node_count > 0, "failed to create bounty, no nodes are registered");
     assert!(node_count >= total_nodes, "failed to create bounty, not enough nodes are registered");
     for i in 0..n_bounties {
         println!("creating bounty {}", i);
-        let name = format!("test-bounty{}-{}", i, tick);
-        println!("name: {}", name);
         let location: String = "https://github.com/ad0ll/docker-hello-world.git".to_string();
-        // let bounty = Bounty::new_bounty(name, name.parse. location, )
-        let _bounty: Bounty = creator
+        let bounty: Bounty = creator
             .call(coordinator_contract.id(), "create_bounty")
             .args_json(json!({
-                "name": name,
                 "file_location": location,
                 "file_download_protocol": "GIT",
                 "min_nodes": min_nodes,
@@ -162,37 +158,17 @@ pub async fn create_bounties(coordinator_contract: &Contract, creator: Account, 
 
     //TODO compare against statically created bounties
     let bounties = get_bounties(&coordinator_contract).await?;
-    println!("Fetched bounties from contract, extracting elems with tick {}", tick);
+    println!("finished creating, then fetching bounties, massaging for return");
     let mut res: Vec<Bounty> = vec![];
     for b in bounties {
-        if b.id.to_string().contains(&format!("{}", tick)) {
             res.push(b);
-        }
     }
-
-//    let res = bounties.iter_mut().filter(|b| b.id.to_string().contains(&format!("{}", tick))).collect();
-//    println!("Num bounties from get_bounties{}", bounties.len());
     return Ok(res);
 }
 
-//Tick is a sloppy way to avoid naming collisions. Appended to the end of the bounty id
-pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, min_nodes: u64, total_nodes: u64, tick: u64) -> anyhow::Result<Bounty> {
-    let mut bounties = create_bounties(coordinator_contract, creator, 1, min_nodes, total_nodes, tick).await?;
-    println!("Dumping bounties from create_bounty");
-    let search_string = format!("test-bounty-0-{}", tick);
-
-    // CRYPTIC: create_bounties filters on bounties with the tick in order, so the last element with the tick is the bounty we created
+pub async fn create_bounty(coordinator_contract: &Contract, creator: Account, min_nodes: u64, total_nodes: u64) -> anyhow::Result<Bounty> {
+    let mut bounties = create_bounties(coordinator_contract, creator, 1, min_nodes, total_nodes).await?;
     return Ok(bounties.pop().unwrap());
-
-//    for i in 0..bounties.len() {
-//        //bounty from create_bounty will always be test-bounty0-TICK because with a format string of test-bounty$i ,
-//        //'i' will always be 0 since only one bounty is created
-//        if bounties.get(i).unwrap().id.contains(&search_string) {
-//            println!("Found bounty with id: {}", bounties.get(i).id);
-//            return Ok(bounties.remove(i));
-//        }
-//    }
-//    panic!("failed to find created bounty");
 }
 
 pub async fn complete_bounty(coordinator_contract: Contract, bounty: &Bounty, accounts: HashMap<AccountId, Account>, nodes: &HashMap<AccountId, Node>, n_succeeded: u64, n_failed: u64) -> anyhow::Result<()> {
@@ -349,7 +325,7 @@ async fn test_create_bounty() -> anyhow::Result<()> {
     let account_vec: Vec<Account> = accounts.values().cloned().collect();
     let _nodes = create_nodes(&coordinator_contract, account_vec.clone(), 1).await?;
     let bounty_owner = &account_vec[(random_seed().clone()[0] % 10) as usize];
-    let _bounties = create_bounties(&coordinator_contract, bounty_owner.clone(), 1, 1, 1, 2).await?;
+    let _bounties = create_bounties(&coordinator_contract, bounty_owner.clone(), 1, 1, 1).await?;
     assert_eq!(get_bounty_count(coordinator_contract.clone()).await?, 1, "bounty count should be 1");
     Ok(())
 }
@@ -370,7 +346,7 @@ async fn test_bounty_full_lifecycle() -> anyhow::Result<()> {
     // Success run
     let bounty_owner_id = accounts.keys().next().unwrap().clone();
     let bounty_owner = accounts.get(&bounty_owner_id).unwrap_or_else(|| panic!("failed to remove bounty owner from accounts"));
-    let bounty = create_bounty(&coordinator_contract, bounty_owner.clone(), min_nodes, max_nodes, Utc::now().timestamp() as u64).await?;
+    let bounty = create_bounty(&coordinator_contract, bounty_owner.clone(), min_nodes, max_nodes).await?;
     assert_eq!(get_bounty_count(coordinator_contract.clone()).await?, 1, "bounty count should be 1");
     complete_bounty(coordinator_contract.clone(), &bounty, accounts.clone(), &nodes, min_nodes, 0).await?;
     println!("fetching bounty: {}", bounty.id.clone());
@@ -384,7 +360,7 @@ async fn test_bounty_full_lifecycle() -> anyhow::Result<()> {
     //Fail run
     // let bounty_owner_id = accounts.keys().unwrap().clone().get(1);
     // let bounty_owner = accounts.get(&bounty_owner_id).unwrap_or_else(|| panic!("failed to remove bounty owner from accounts"));
-    let bounty = create_bounty(&coordinator_contract, bounty_owner.clone(), min_nodes, max_nodes, Utc::now().timestamp() as u64).await?;
+    let bounty = create_bounty(&coordinator_contract, bounty_owner.clone(), min_nodes, max_nodes).await?;
     println!("bounty name {}", bounty.id);
     complete_bounty(coordinator_contract.clone(), &bounty, accounts.clone(), &nodes, 1, min_nodes).await?;
     println!("fetching bounty: {}", bounty.id.clone());

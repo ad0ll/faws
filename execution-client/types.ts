@@ -10,7 +10,8 @@ export type NodeResponse = {
 }
 export enum NodeResponseStatuses {
     SUCCESS = "SUCCESS",
-    FAILURE = "FAILURE"
+    FAILURE = "FAILURE",
+    REJECT = "REJECT"
 }
 export enum SupportedFileDownloadProtocols {
     GIT = "GIT",
@@ -36,9 +37,9 @@ export type Bounty = {
     amt_storage: BigInt,
     amt_node_reward: BigInt,
     elected_nodes: string[],
-    //TODO result upload strategy. Either publish to chain, or put into IPFS and upload md5 to chain.
+    // upload_strategy: string // Later add support for publishing solution to IPFS
     answers: { [key: string]: NodeResponse },
-    build_args: string[], //TODO not currently supported by contract
+    build_args: string[], //TODO not currently supported by contract, but used in the client
     runtime_args: string[] //TODO not currently supported by contract
 }
 export type ClientConfig = {
@@ -99,15 +100,13 @@ export type ClientNode = {
     last_run: number,
     last_success: number,
     last_failure: number,
+    last_reject: number,
     successful_runs: number,
     failed_runs: number,
     unanswered_runs: number,
-    gpus: {
-        brand: string,
-        architecture: string,
-        cores: number,
-        memory: number,
-    }[]
+    rejected_runs: number,
+    allow_network: boolean,
+    allow_gpu: boolean,
 }
 
 // Internal answer from an execution that contains additional information for better UX

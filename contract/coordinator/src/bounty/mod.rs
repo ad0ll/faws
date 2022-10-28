@@ -34,6 +34,7 @@ impl Display for SupportedDownloadProtocols {
 pub enum NodeResponseStatus {
     SUCCESS,
     FAILURE,
+    REJECT,
     EMPTY,
 }
 
@@ -42,6 +43,7 @@ impl Display for NodeResponseStatus {
         match self {
             NodeResponseStatus::SUCCESS => write!(f, "SUCCESS"),
             NodeResponseStatus::FAILURE => write!(f, "FAILURE"),
+            NodeResponseStatus::REJECT => write!(f, "REJECT"),
             NodeResponseStatus::EMPTY => write!(f, "EMPTY"),
         }
     }
@@ -126,13 +128,12 @@ pub struct Bounty {
     // Bounty timeout in seconds. If 0, no timeout.
     // pub result: String, //TODO This was going to be the single, definitive result. Need to summarize all the responses to get this.
     pub elected_nodes: Vec<AccountId>,
-    //TODO This can be an unordered set, UnorderedSet.as_vec should be free
-    //TODO: How can we make this private? //TODO Unrelated to <-, this could be/should be UnorderedSet or merged below with answers
-    pub answers: UnorderedMap<AccountId, NodeResponse>,
     //TODO: How can we make this private?
+    pub answers: UnorderedMap<AccountId, NodeResponse>,
     pub failed_nodes: UnorderedSet<AccountId>,
     pub successful_nodes: UnorderedSet<AccountId>,
     pub unanswered_nodes: UnorderedSet<AccountId>,
+    pub rejected_nodes: UnorderedSet<AccountId>,
 }
 
 impl Serialize for Bounty {
@@ -331,6 +332,7 @@ impl<'de> Deserialize<'de> for Bounty {
                     failed_nodes: UnorderedSet::new(format!("{}-failed", "test").to_string().as_bytes()),
                     successful_nodes: UnorderedSet::new(format!("{}-successful", "test").to_string().as_bytes()),
                     unanswered_nodes: UnorderedSet::new(format!("{}-unanswered", "test").to_string().as_bytes()),
+                    rejected_nodes: UnorderedSet::new(format!("{}-rejected", "test").to_string().as_bytes()),
                 });
             }
         }
@@ -376,7 +378,8 @@ impl PartialEq<Self> for Bounty {
             && self.answers.len() == other.answers.len() //TODO: Make this a real comparison
             && self.failed_nodes.len() == other.failed_nodes.len() //TODO: Make this a real comparison
             && self.successful_nodes.len() == other.successful_nodes.len() //TODO: Make this a real comparison
-            && self.unanswered_nodes.len() == other.unanswered_nodes.len(); //TODO: Make this a real comparison
+            && self.unanswered_nodes.len() == other.unanswered_nodes.len() //TODO: Make this a real comparison
+        && self.rejected_nodes.len() == other.rejected_nodes.len(); //TODO: Make this a real comparison
     }
 }
 
@@ -402,6 +405,7 @@ impl Default for Bounty {
             failed_nodes: UnorderedSet::new("bounty-failed-nodes".as_bytes().to_vec()),
             successful_nodes: UnorderedSet::new("bounty-successful-nodes".as_bytes().to_vec()),
             unanswered_nodes: UnorderedSet::new("bounty-unanswered-nodes".as_bytes().to_vec()),
+            rejected_nodes: UnorderedSet::new("bounty-rejected-nodes".as_bytes().to_vec()),
         }
     }
 }
@@ -435,6 +439,7 @@ impl Bounty {
             failed_nodes: UnorderedSet::new(format!("{}-failed", "test").to_string().as_bytes()),
             successful_nodes: UnorderedSet::new(format!("{}-successful", "test").to_string().as_bytes()),
             unanswered_nodes: UnorderedSet::new(format!("{}-unanswered", "test").to_string().as_bytes()),
+            rejected_nodes: UnorderedSet::new(format!("{}-rejected", "test").to_string().as_bytes()),
             // storage_used: 0,
             network_required,
             gpu_required,

@@ -120,7 +120,6 @@ impl Coordinator {
 
     //TODO This NEEDS pagination, can return a huge amount of data
     //also probably not efficient
-    // #[result_serializer(borsh)]
     pub fn get_bounties(&self) -> Vec<Bounty> {
         log!("Fetching all {} bounties", self.bounties.len());
         let mut bounties: Vec<Bounty> = vec![];
@@ -132,48 +131,45 @@ impl Coordinator {
         return bounties;
     }
 
-    pub fn register_node(&mut self, name: String) -> Node {
-        //TODO Require deposit
+    pub fn register_node(&mut self, name: String, allow_network: bool, allow_gpu: bool) -> Node {
         let node_id: AccountId = format!("{}.node.{}", name, signer_account_id())
             .parse()
             .unwrap();
         log!("Registering new node, {}. Owned by: {}", node_id, signer_account_id());
         require!(self.nodes.get(&node_id).is_none(), format!("Node already registered: {}", node_id.clone()));
-        let metadata = Node::new_node(node_id.clone());
+        let metadata = Node::new_node(node_id.clone(), allow_network, allow_gpu);
         self.nodes.insert(&node_id, &metadata);
         self.node_queue.push(node_id.clone());
         log!("finished adding node to coordinator, data: {}", metadata);
         return self.nodes.get(&node_id).unwrap_or_else(|| panic!("Failed to get freshly registered node: {}", node_id));
     }
 
-    //TODO Rename me to node_id
-    //TODO Make sure this doesn't stall bounty indefinitely
-    pub fn remove_node(&mut self, account_id: AccountId) {
+    pub fn remove_node(&mut self, node_id: AccountId) {
         //TODO refund deposit
-        println!("attempting to remove node with id {}", account_id);
-        let node = self.nodes.get(&account_id).unwrap_or_else(|| panic!("Node {} is not registered", account_id));
+        println!("attempting to remove node with id {}", node_id);
+        let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} is not registered", node_id));
         require!(signer_account_id() == node.owner_id || signer_account_id() == current_account_id(), "Only the owner of the node or the coordinator can remove it");
-        self.nodes.remove(&account_id);
-        self.node_queue.retain(|x| x != &account_id);
+        self.nodes.remove(&node_id);
+        self.node_queue.retain(|x| x != &node_id);
         //This is O(N) which hurts and could be avoided by changing the node queue to an UnorderedSet
-        log!("removed node with id {}", account_id);
+        log!("removed node with id {}", node_id);
     }
 
-    //TODO untested, also rename me to node_id
-    pub fn set_node_offline(&mut self, account_id: AccountId, offline: bool) -> Node {
+    //TODO untested
+    pub fn set_node_offline(&mut self, node_id: AccountId, offline: bool) -> Node {
         let removed: Node;
         if offline {
             log!("Moving node {account_id} to offline");
-            let node = self.nodes.get(&account_id).unwrap_or_else(|| panic!("Could not find node to set offline"));
+            let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Could not find node to set offline"));
             require!(node.owner_id == signer_account_id() || signer_account_id() == current_account_id(), "Only the owner of the node or the coordinator can set it offline");
-            removed = self.nodes.remove(&account_id).unwrap();
-            self.offline_nodes.insert(&account_id, &removed);
+            removed = self.nodes.remove(&node_id).unwrap();
+            self.offline_nodes.insert(&node_id, &removed);
         } else {
             log!("Bringing node {account_id} online");
-            let node = self.offline_nodes.get(&account_id).unwrap_or_else(|| panic!("Could not find node to set online"));
+            let node = self.offline_nodes.get(&node_id).unwrap_or_else(|| panic!("Could not find node to set online"));
             require!(node.owner_id == signer_account_id() || signer_account_id() == current_account_id(), "Only the owner of the node or the coordinator can set it offline");
-            removed = self.offline_nodes.remove(&account_id).unwrap();
-            self.nodes.insert(&account_id, &removed);
+            removed = self.offline_nodes.remove(&node_id).unwrap();
+            self.nodes.insert(&node_id, &removed);
         }
         return removed;
     }
@@ -274,6 +270,7 @@ pub(crate) fn rand_u64() -> u64 {
     pub fn cancel_bounty(&mut self, bounty_id: AccountId) {
         let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         require!(bounty.status == BountyStatus::Pending, "Bounty must be pending to be cancelled");
+        require!(bounty.owner_id == signer_account_id() || signer_account_id() == current_account_id(), "Only the bounty owner or the coordinator contract can cancel a bounty");
         self.close_bounty(&bounty_id, PayoutStrategy::AllAnsweredNodes);
     }
 
@@ -282,17 +279,22 @@ pub(crate) fn rand_u64() -> u64 {
         log!("Checking if node {} should post answer for bounty {}", node_id, bounty_id);
         let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
-        //Below is commented out because it requires gas. Evaluating how to keep this data private before moving forward.
-        // require!(signer_account_id() == current_account_id() //Coordinator contract
-        //     || signer_account_id() == bounty.owner_id //Bounty owner
-        //     || signer_account_id() == node.owner_id, "Only the bounty owner, node owner, or the coordinator contract can check if they should post an answer");
-        // require!(bounty.elected_nodes.contains(&node_id), "Node is not elected for this bounty");
-        // if signer_account_id() == bounty.owner_id {
-        //     require!(bounty.get_status() != BountyStatus::Pending, "Bounty must be complete for bounty owner to get answer");
-        // }
-
         //TODO Check if bounty has enough storage!!
         return bounty.should_publish_answer(&node.id) == "yes";
+    }
+
+    pub fn reject_bounty(&mut self, bounty_id: AccountId, node_id: AccountId, message: String) -> NodeResponse {
+        let mut bounty = self.bounties.get(&bounty_id.clone()).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
+        let mut node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", bounty_id));
+        require!(signer_account_id() == node.owner_id, "Only the node owner can reject a bounty");
+        let response = NodeResponse::new_node_response("".to_string(), message, NodeResponseStatus::REJECT);
+        bounty.rejected_nodes.insert(&node_id);
+        bounty.answers.insert(&node_id, &response);
+        node.rejected_runs = node.rejected_runs + 1;
+        node.last_reject = block_timestamp();
+        self.nodes.insert(&node_id, &node);
+        self.bounties.insert(&bounty_id, &bounty);
+        return response;
     }
 
 
@@ -320,7 +322,6 @@ pub(crate) fn rand_u64() -> u64 {
             node.last_success = block_timestamp();
             bounty.successful_nodes.insert(&node_id);
         } else if status == NodeResponseStatus::FAILURE {
-            //TODO Tick node's failure count
             node.failed_runs += 1;
             node.last_failure = block_timestamp();
             bounty.failed_nodes.insert(&node_id);
@@ -374,6 +375,7 @@ pub(crate) fn rand_u64() -> u64 {
                 continue;
             }
             let mut node = node_option.unwrap();
+            node.last_unanswered = block_timestamp();
             node.unanswered_runs += 1;
             self.nodes.insert(&node_id, &node);
         }
@@ -485,7 +487,7 @@ mod tests {
         let account_id: AccountId = format!("{}.node.{}", name, signer_account_id())
             .parse()
             .unwrap();
-        let node = coordinator.register_node(name);
+        let node = coordinator.register_node(name, true, true);
 
         assert_eq!(node.owner_id, signer_account_id(), "Owner id should be current account id");
         assert_eq!(coordinator.get_node_count(), 1, "Node count should be 1");
@@ -500,7 +502,7 @@ mod tests {
         let _account_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
             .parse()
             .unwrap();
-        let _node = coordinator.register_node(name);
+        let _node = coordinator.register_node(name, true, true);
         //TODO
     }
 

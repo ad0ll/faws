@@ -3,6 +3,7 @@ import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
 import ReactDOM from "react-dom/client";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import {BrowserRouter} from "react-router-dom";
 
 const reactRoot = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -52,7 +53,9 @@ window.onload = () => {
       reactRoot.render(
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <App isSignedIn={isSignedIn} contract={contract} wallet={wallet} />
+          <BrowserRouter>
+            <App isSignedIn={isSignedIn} contract={contract} wallet={wallet} />
+          </BrowserRouter>
         </ThemeProvider>
       );
     })

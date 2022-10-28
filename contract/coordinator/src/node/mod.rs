@@ -4,14 +4,6 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 use near_sdk::env::signer_account_id;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug)]
-#[serde(crate = "near_sdk::serde")]
-pub struct Gpu {
-    pub brand: String,
-    pub architecture: String,
-    pub cores: u128,
-    pub memory: u128,
-}
 
 //TODO This struct should be considered when calculating the storage fee.
 #[near_bindgen]
@@ -23,10 +15,14 @@ pub struct Node {
     pub last_run: u64,
     pub last_success: u64,
     pub last_failure: u64,
+    pub last_reject: u64,
+    pub last_unanswered: u64,
     pub successful_runs: u64,
     pub failed_runs: u64,
     pub unanswered_runs: u64,
-    pub gpus: Vec<Gpu>,
+    pub rejected_runs: u64,
+    pub allow_network: bool,
+    pub allow_gpu: bool,
 }
 
 #[near_bindgen]
@@ -34,17 +30,21 @@ impl Node {
     #[init]
     #[private]
     #[payable]
-    pub fn new_node(id: AccountId) -> Self {
+    pub fn new_node(id: AccountId, allow_network: bool, allow_gpu: bool) -> Self {
         Self {
             id,
             owner_id: signer_account_id(),
             last_run: 0,
             last_success: 0,
             last_failure: 0,
+            last_reject: 0,
+            last_unanswered: 0,
             successful_runs: 0,
             failed_runs: 0,
             unanswered_runs: 0,
-            gpus: Vec::new(),
+            rejected_runs: 0,
+            allow_network,
+            allow_gpu
         }
     }
 }
@@ -57,10 +57,14 @@ impl Default for Node {
             last_run: 0,
             last_success: 0,
             last_failure: 0,
+            last_reject: 0,
+            last_unanswered: 0,
             successful_runs: 0,
             failed_runs: 0,
             unanswered_runs: 0,
-            gpus: Vec::new(),
+            rejected_runs: 0,
+            allow_network: true,
+            allow_gpu: false
         }
     }
 }

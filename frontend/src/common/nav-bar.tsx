@@ -39,7 +39,10 @@ export default function NavBar({
   let walletComponent;
   if (isSignedIn) {
     walletComponent = (
-      <SignOutButton accountId={wallet.accountId} onClick={wallet.signOut()} />
+      <SignOutButton
+        accountId={wallet.accountId}
+        onClick={() => wallet.signOut()}
+      />
     );
   } else {
     walletComponent = <SignInPrompt onClick={() => wallet.signIn()} />;

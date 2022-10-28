@@ -3,6 +3,7 @@ import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
 import ReactDOM from "react-dom/client";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import { NetworkId } from "@near-wallet-selector/core";
 
 const reactRoot = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -10,7 +11,11 @@ const reactRoot = ReactDOM.createRoot(
 
 // create the Wallet and the Contract
 const contractId = process.env.CONTRACT_NAME;
-const wallet = new Wallet({ contractId });
+const network = process.env.NETWORK as NetworkId;
+const wallet = new Wallet({
+  contractId,
+  network,
+});
 const contract = new Contract({ wallet });
 
 const theme = createTheme({

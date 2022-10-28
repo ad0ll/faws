@@ -13,6 +13,7 @@ import {
   setupWalletSelector,
   WalletSelector,
   Wallet as NearWallet,
+  NetworkId,
 } from "@near-wallet-selector/core";
 import { setupLedger } from "@near-wallet-selector/ledger";
 import { setupNearWallet } from "@near-wallet-selector/near-wallet";
@@ -29,41 +30,24 @@ export class Wallet {
   wallet: NearWallet;
   accountId: string;
   contractId: string;
-  existingBounties: Bounty[] = [
-    {
-      name: "Bounty 1",
-      id: "1",
-      fileLocation: "https://project.test.com/1",
-      fileDownloadProtocol: "IPFS",
-      threshold: 5,
-      totalNodes: 10,
-      networkRequired: true,
-      gpuRequired: true,
-      amtStorage: 100,
-      amtNodeReward: 100,
-    },
-    {
-      name: "Bounty 2",
-      id: "2",
-      fileLocation: "https://project.test.com/2",
-      fileDownloadProtocol: "GIT",
-      threshold: 5,
-      totalNodes: 10,
-      networkRequired: true,
-      gpuRequired: true,
-      amtStorage: 100,
-      amtNodeReward: 50,
-    },
-  ];
+  network: NetworkId;
+  existingBounties: Bounty[] = [];
 
-  constructor({ contractId }: { contractId: string }) {
+  constructor({
+    contractId,
+    network = "testnet",
+  }: {
+    contractId: string;
+    network?: NetworkId;
+  }) {
     this.contractId = contractId;
+    this.network = network;
   }
 
   // To be called when the website loads
   async startUp() {
     this.walletSelector = await setupWalletSelector({
-      network: "testnet",
+      network: this.network,
       modules: [
         setupNearWallet({ iconUrl: NearIconUrl }),
         setupMyNearWallet({ iconUrl: MyNearIconUrl }),

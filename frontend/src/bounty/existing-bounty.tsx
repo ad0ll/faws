@@ -12,6 +12,15 @@ export default function ExistingBounty({ wallet }: { wallet: Wallet }) {
   return (
     <>
       <div style={{ marginTop: "16px" }}>
+        {wallet.existingBounties.length === 0 && (
+          <Typography
+            id="create-bounty-modal-title"
+            variant="h6"
+            component="h2"
+          >
+            No Existing Bounties
+          </Typography>
+        )}
         {wallet.existingBounties.map((bounty) => (
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>

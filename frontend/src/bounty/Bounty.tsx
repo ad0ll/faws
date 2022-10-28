@@ -1,61 +1,50 @@
 import { Wallet } from "../common/near-wallet";
-import { Box, Grid, Tab, Tabs, Typography } from "@mui/material";
-import CreateBounty from "./CreateBounty";
+import { Box, Button, Modal, Typography } from "@mui/material";
+import CreateBounty from "./create-bounty";
 import React from "react";
-import ExistingBounty from "./ExistingBounty";
+import ExistingBounty from "./existing-bounty";
+import { Add } from "@mui/icons-material";
 
-// name: String, id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, threshold: u64, total_nodes: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          <Typography>{children}</Typography>
-        </Box>
-      )}
-    </div>
-  );
-}
-
-function a11yProps(index: number) {
-  return {
-    id: `simple-tab-${index}`,
-    "aria-controls": `simple-tabpanel-${index}`,
-  };
-}
+const style = {
+  position: "absolute" as "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 800,
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
+};
 
 export default function Bounty({ wallet }: { wallet: Wallet }) {
-  const [value, setValue] = React.useState(0);
-
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
   return (
     <>
-      <Grid container spacing={8}>
-        <Grid item xs={6}>
-          <CreateBounty wallet={wallet} />
-        </Grid>
-        <Grid item xs={6}>
-          <ExistingBounty wallet={wallet} />
-        </Grid>
-      </Grid>
+      <Button variant="contained" onClick={handleOpen} startIcon={<Add />}>
+        Create Bounty
+      </Button>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="create-bounty-modal-title"
+        aria-describedby="create-bounty-modal-description"
+      >
+        <Box sx={style}>
+          <Typography
+            id="create-bounty-modal-title"
+            variant="h5"
+            component="h2"
+          >
+            Create Bounty
+          </Typography>
+          <CreateBounty wallet={wallet} handleClose={handleClose} />
+        </Box>
+      </Modal>
+      <ExistingBounty wallet={wallet} />
     </>
   );
 }

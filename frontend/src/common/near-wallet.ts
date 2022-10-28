@@ -29,7 +29,32 @@ export class Wallet {
   wallet: NearWallet;
   accountId: string;
   contractId: string;
-  existingBounties: Bounty[] = [];
+  existingBounties: Bounty[] = [
+    {
+      name: "Bounty 1",
+      id: "1",
+      fileLocation: "https://project.test.com/1",
+      fileDownloadProtocol: "IPFS",
+      threshold: 5,
+      totalNodes: 10,
+      networkRequired: true,
+      gpuRequired: true,
+      amtStorage: 100,
+      amtNodeReward: 100,
+    },
+    {
+      name: "Bounty 2",
+      id: "2",
+      fileLocation: "https://project.test.com/2",
+      fileDownloadProtocol: "GIT",
+      threshold: 5,
+      totalNodes: 10,
+      networkRequired: true,
+      gpuRequired: true,
+      amtStorage: 100,
+      amtNodeReward: 50,
+    },
+  ];
 
   constructor({ contractId }: { contractId: string }) {
     this.contractId = contractId;
@@ -78,7 +103,7 @@ export class Wallet {
   }
 
   // Make a read-only call to retrieve information from the network
-  async viewMethod({ contractId = this.contractId, method, args = {} }) {
+  async viewMethod(contractId = this.contractId, method, args = {}) {
     const { network } = this.walletSelector.options;
     const provider = new providers.JsonRpcProvider({ url: network.nodeUrl });
 
@@ -93,13 +118,13 @@ export class Wallet {
   }
 
   // Call a method that changes the contract-js's state
-  async callMethod({
+  async callMethod(
     contractId = this.contractId,
     method,
     args = {},
     gas = THIRTY_TGAS,
-    deposit = NO_DEPOSIT,
-  }) {
+    deposit = NO_DEPOSIT
+  ) {
     const { accountId } = this.walletSelector.store.getState().accounts[0];
 
     // Sign a transaction with the "FunctionCall" action

@@ -1,4 +1,4 @@
-import App from "./App";
+import App from "./app";
 import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
 import ReactDOM from "react-dom/client";

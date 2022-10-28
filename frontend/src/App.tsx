@@ -1,12 +1,12 @@
 import "regenerator-runtime/runtime";
 
-import NavBar from "./common/NavBar";
+import NavBar from "./common/nav-bar";
 import Home from "./home/Home";
 import Coordinator from "./coordinator/Coordinator";
 import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
 import Node from "./node/Node";
-import Bounty from "./bounty/Bounty";
+import Bounty from "./bounty/bounty";
 
 export default function App({
   isSignedIn,
@@ -21,8 +21,6 @@ export default function App({
 
   switch (window.location.pathname) {
     case "/":
-      pageComponent = <Home wallet={wallet} />;
-      break;
     case "/bounty":
       pageComponent = <Bounty wallet={wallet} />;
       break;
@@ -37,7 +35,12 @@ export default function App({
     <>
       <NavBar isSignedIn={isSignedIn} wallet={wallet} />
       <main
-        style={{ marginTop: "16px", marginLeft: "32px", marginRight: "32px" }}
+        style={{
+          marginTop: "24px",
+          maxWidth: "1536px",
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
       >
         {pageComponent}
       </main>

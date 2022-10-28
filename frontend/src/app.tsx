@@ -1,8 +1,6 @@
 import "regenerator-runtime/runtime";
 
 import NavBar from "./common/nav-bar";
-import Home from "./home/Home";
-import Coordinator from "./coordinator/Coordinator";
 import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
 import Node from "./node/Node";
@@ -23,9 +21,6 @@ export default function App({
     case "/":
     case "/bounty":
       pageComponent = <Bounty wallet={wallet} />;
-      break;
-    case "/coordinator":
-      pageComponent = <Coordinator wallet={wallet} />;
       break;
     case "/node":
       pageComponent = <Node wallet={wallet} />;

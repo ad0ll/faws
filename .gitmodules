@@ -10,3 +10,6 @@
 [submodule "near-explorer"]
 	path = near-explorer
 	url = https://github.com/near/near-explorer.git
+[submodule "near-wallet"]
+	path = near-wallet
+	url = https://github.com/near/near-wallet.git

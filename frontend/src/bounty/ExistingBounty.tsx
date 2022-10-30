@@ -7,8 +7,11 @@ import {
 } from "@mui/material";
 import { Wallet } from "../common/near-wallet";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {useContext} from "react";
+import {WalletContext} from "../App";
 
-export default function ExistingBounty({ wallet }: { wallet: Wallet }) {
+export default function ExistingBounty() {
+    const wallet = useContext(WalletContext);
   return (
     <>
       <Typography variant="h5">Existing Bounties</Typography>

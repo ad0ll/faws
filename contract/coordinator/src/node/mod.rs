@@ -1,7 +1,7 @@
 use std::fmt;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{near_bindgen, AccountId};
+use near_sdk::{near_bindgen, AccountId, env};
 use near_sdk::env::signer_account_id;
 
 
@@ -23,6 +23,8 @@ pub struct Node {
     pub rejected_runs: u64,
     pub allow_network: bool,
     pub allow_gpu: bool,
+    pub deposit: u128,
+    pub registration_time: u64,
 }
 
 #[near_bindgen]
@@ -44,7 +46,10 @@ impl Node {
             unanswered_runs: 0,
             rejected_runs: 0,
             allow_network,
-            allow_gpu
+            allow_gpu,
+            deposit: env::attached_deposit(),
+            registration_time: env::block_timestamp(),
+
         }
     }
 }
@@ -64,7 +69,9 @@ impl Default for Node {
             unanswered_runs: 0,
             rejected_runs: 0,
             allow_network: true,
-            allow_gpu: false
+            allow_gpu: false,
+            deposit: 0,
+            registration_time: env::block_timestamp(),
         }
     }
 }

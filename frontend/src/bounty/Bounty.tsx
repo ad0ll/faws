@@ -39,21 +39,17 @@ function a11yProps(index: number) {
   };
 }
 
-export default function Bounty({ wallet }: { wallet: Wallet }) {
-  const [value, setValue] = React.useState(0);
+export default function Bounty() {
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
 
   return (
     <>
       <Grid container spacing={8}>
         <Grid item xs={6}>
-          <CreateBounty wallet={wallet} />
+          <CreateBounty />
         </Grid>
         <Grid item xs={6}>
-          <ExistingBounty wallet={wallet} />
+          <ExistingBounty />
         </Grid>
       </Grid>
     </>

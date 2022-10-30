@@ -1,21 +1,13 @@
 import {Account} from "near-api-js";
 import {logger} from "./logger";
-import {
-    ClientConfig,
-    ClientExecutionResult,
-    CoordinatorContract,
-    NodeResponseStatuses,
-    SupportedFileDownloadProtocols
-} from "./types";
+import {ClientConfig, ClientExecutionResult, CoordinatorContract, NodeResponseStatuses} from "./types";
 import WebSocket from "ws";
 import shell from "shelljs";
 import {readConfigFromEnv} from "./config"
 import {emitBounty, getAccount, getBounty, getCoordinatorContract} from "./util";
 import {Execution} from "./execution";
 import {ExecutionError, PostExecutionError, PreflightError, SetupError} from "./errors";
-import Fastify, {FastifyInstance} from "fastify";
 import {Database} from "./database";
-import { Server, IncomingMessage, ServerResponse } from 'http'
 
 // @ts-ignore: Unreachable code error                              <-- BigInt does not have `toJSON` method
 BigInt.prototype.toJSON = function (): string {
@@ -136,12 +128,12 @@ class ExecutionClient {
                                     logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(res)}`);
                                 } catch (e: any) {
                                     logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
-                                    if(e instanceof SetupError) { //TODO remove me once cleaned up
+                                    if (e instanceof SetupError) { //TODO remove me once cleaned up
                                         logger.warning(`Execution of bounty ${bountyId} failed with SetupError, but SetupError is disallowed in execution catch: ${e.message}`);
                                     }
                                     if (e instanceof SetupError
                                         || e instanceof PreflightError
-                                        || e instanceof ExecutionError){
+                                        || e instanceof ExecutionError) {
                                         await this.publishAnswer(bountyId, {
                                             result: "",
                                             message: e.message,
@@ -159,7 +151,7 @@ class ExecutionClient {
                 }
             } catch (e) {
                 e instanceof PostExecutionError
-                ? logger.error(`Error while posting execution result: ${e.message}`)
+                    ? logger.error(`Error while posting execution result: ${e.message}`)
                     : logger.error(`Error while processing message: ${e}`);
             }
         });
@@ -187,26 +179,11 @@ const init = async () => {
         await emitBounty(config, coordinatorContract, emitInterval)
     }
 }
-//
-// const server: FastifyInstance = Fastify({logger: true})
-//
-// // Declare a route
-// server.get('/', {}, async (request, reply) => {
-//     return database
-// })
-// const start = async () => {
-// try {
-//     await server.listen({host: "0.0.0.0", port: 8081}) //TODO make configurable
-// } catch (err) {
-//     server.log.error(err)
-//     process.exit(1)
-// }
-// }
 
 //TODO make host and port configurable
 export const server = new WebSocket.Server({
-    host: "0.0.0.0",
-    port: 8081
+    host: process.env.WEBSOCKET_HOST || "0.0.0.0",
+    port: parseInt(process.env.WEBSOCKET_PORT || "8081")
 });
 
 export const subscribers: Map<WebSocket, WebSocket> = new Map();
@@ -220,15 +197,14 @@ server.on("connection", (ws, req) => {
     });
 
     ws.on("message", (messageAsString) => {
-        try{
-        const message = JSON.parse(messageAsString.toString());
-        logger.debug(`Subscriber received message: `, message)
+        try {
+            const message = JSON.parse(messageAsString.toString());
+            logger.debug(`Subscriber received message: `, message)
         } catch (e) {
             console.log("Bad message", e);
         }
     });
 });
-
 
 
 (async () => {

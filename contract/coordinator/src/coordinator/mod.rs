@@ -41,10 +41,13 @@ pub struct Coordinator {
     pub nodes: UnorderedMap<AccountId, Node>,
     pub node_queue: Vec<AccountId>,
     // Used for 0(1) node selection from queue
-    pub bounties: UnorderedMap<AccountId, Bounty>,
-    pub offline_nodes: UnorderedMap<AccountId, Node>, //Offline nodes are moved here, and can be moved back when the node owner themselves brings it back online
+    bounties: UnorderedMap<AccountId, Bounty>,
+    pub offline_nodes: UnorderedMap<AccountId, Node>,
+    //Offline nodes are moved here, and can be moved back when the node owner themselves brings it back online
     // pub bounties: Map<Bounty, NodeMetadata>,
     pub universal_bounty_index: u64,
+    pub node_by_owner: UnorderedMap<AccountId, Vec<AccountId>>,
+    pub bounty_by_owner: UnorderedMap<AccountId, Vec<AccountId>>,
 }
 
 // Define the default, which automatically initializes the contract
@@ -56,6 +59,8 @@ impl Default for Coordinator {
             bounties: UnorderedMap::new("coordinator.bounties".as_bytes().to_vec()),
             offline_nodes: UnorderedMap::new("coordinator.offline_nodes".as_bytes().to_vec()),
             universal_bounty_index: 0,
+            node_by_owner: UnorderedMap::new("coordinator.node_by_owner".as_bytes().to_vec()),
+            bounty_by_owner: UnorderedMap::new("coordinator.bounty_by_owner".as_bytes().to_vec()),
         }
     }
 }
@@ -73,12 +78,9 @@ impl Coordinator {
             bounties: UnorderedMap::new("coordinator.bounties".as_bytes()),
             offline_nodes: UnorderedMap::new("coordinator.bounties".as_bytes()),
             universal_bounty_index: 0,
+            node_by_owner: UnorderedMap::new("coordinator.node_by_owner".as_bytes()),
+            bounty_by_owner: UnorderedMap::new("coordinator.bounty_by_owner".as_bytes()),
         }
-    }
-
-    #[private]
-    pub fn is_owner_or_coordinator(account_id: AccountId) -> bool { //TODO how can I invoke this function? how can I make it into a trait?
-        return account_id == signer_account_id() || signer_account_id() == current_account_id();
     }
 
 
@@ -95,9 +97,9 @@ impl Coordinator {
         return self.offline_nodes.len();
     }
 
-    pub fn get_node(&self, account_id: AccountId) -> Node {
-        log!("get_node {}", account_id);
-        return self.nodes.get(&account_id).unwrap_or_else(|| panic!("Node {} is not registered", account_id));
+    pub fn get_node(&self, node_id: AccountId) -> Node {
+        log!("get_node {}", node_id);
+        return self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} is not registered", node_id));
     }
 
     pub fn get_bounty(&self, bounty_id: AccountId) -> Bounty {
@@ -117,6 +119,23 @@ impl Coordinator {
         }
         return nodes;
     }
+    pub fn get_nodes_for_owner(&self, owner_id: AccountId) -> Vec<Node> {
+        let node_ids = self.node_by_owner.get(&owner_id);
+        if node_ids.is_none() {
+            return vec![];
+        }
+        log!("Fetching all {} nodes for owner {}", self.nodes.len(), owner_id);
+        let mut nodes: Vec<Node> = vec![];
+        for node_id in node_ids.unwrap() {
+            let node = self.nodes.get(&node_id);
+            if node.is_none() {
+                log!("Node {} not found for owner {}, should clean up later", node_id, owner_id);
+                continue;
+            }
+            nodes.push(node.unwrap());
+        }
+        return nodes;
+    }
 
     //TODO This NEEDS pagination, can return a huge amount of data
     //also probably not efficient
@@ -131,7 +150,24 @@ impl Coordinator {
         return bounties;
     }
 
+    pub fn get_bounties_for_owner(&self, owner_id: AccountId) -> Vec<Bounty> {
+        let bounty_ids = self.bounty_by_owner.get(&owner_id).unwrap_or_else(|| panic!("No bounties found for owner {}", owner_id));
+        log!("Fetching all {} bounties for owner {}", self.bounties.len(), owner_id);
+        let mut bounties: Vec<Bounty> = vec![];
+        for bounty_id in bounty_ids {
+            let bounty = self.bounties.get(&bounty_id);
+            if bounty.is_none() {
+                log!("Bounty {} not found for owner {}, should clean up later", bounty_id, owner_id);
+                continue;
+            }
+            bounties.push(bounty.unwrap());
+        }
+        return bounties;
+    }
+
+    #[payable]
     pub fn register_node(&mut self, name: String, allow_network: bool, allow_gpu: bool) -> Node {
+        require!(env::attached_deposit() >= parse_near!("1N"), "Must include a refundable deposit of 1 NEAR to register a node");
         let node_id: AccountId = format!("{}.node.{}", name, signer_account_id())
             .parse()
             .unwrap();
@@ -140,19 +176,42 @@ impl Coordinator {
         let metadata = Node::new_node(node_id.clone(), allow_network, allow_gpu);
         self.nodes.insert(&node_id, &metadata);
         self.node_queue.push(node_id.clone());
+        let mut owner_nodes = self.node_by_owner.get(&signer_account_id()).unwrap_or_else(|| vec![]);
+        owner_nodes.push(node_id.clone());
+        self.node_by_owner.insert(&signer_account_id(), &owner_nodes);
         log!("finished adding node to coordinator, data: {}", metadata);
+
         return self.nodes.get(&node_id).unwrap_or_else(|| panic!("Failed to get freshly registered node: {}", node_id));
     }
+    pub fn update_node(&mut self, node_id: AccountId, allow_network: bool, allow_gpu: bool) -> Node {
+        let mut node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} is not registered", node_id));
+        require!(&node.owner_id == &signer_account_id() || signer_account_id() == current_account_id(), "Only the owner or the coordinator can update a node");
+        log!("Updating node, {} with values: allow_network={} allow_gpu={}", node_id, allow_network, allow_gpu);
+        node.allow_network = allow_network;
+        node.allow_gpu = allow_gpu;
+        self.nodes.insert(&node_id, &node);
+        return node;
+    }
 
-    pub fn remove_node(&mut self, node_id: AccountId) {
-        //TODO refund deposit
+    pub fn remove_node(&mut self, node_id: AccountId) -> Promise {
         println!("attempting to remove node with id {}", node_id);
         let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} is not registered", node_id));
         require!(signer_account_id() == node.owner_id || signer_account_id() == current_account_id(), "Only the owner of the node or the coordinator can remove it");
         self.nodes.remove(&node_id);
         self.node_queue.retain(|x| x != &node_id);
+        let mut owner_nodes = self.node_by_owner.get(&node.owner_id).unwrap_or_else(|| vec![]);
+        owner_nodes.retain(|x| x != &node_id);
+        if owner_nodes.len() == 0 {
+            log!("owner has no more registered nodes, removing them from owner list");
+            self.node_by_owner.remove(&node.owner_id);
+        } else {
+            self.node_by_owner.insert(&node.owner_id, &owner_nodes);
+        }
+
         //This is O(N) which hurts and could be avoided by changing the node queue to an UnorderedSet
-        log!("removed node with id {}", node_id);
+        log!("removed node with id {}, returning deposit of {}", node_id, node.deposit);
+        return Promise::new(node.owner_id)
+            .transfer(node.deposit);
     }
 
     //TODO untested
@@ -173,35 +232,37 @@ impl Coordinator {
         }
         return removed;
     }
-#[private]
-pub(crate) fn rand_u64() -> u64 {
-    //TODO Random seed may have security vulnerabilities. This is a risk we will likely have to take, but should read docs
-    let seeds = random_seed();
-    let mut seed: u64 = seeds[0] as u64;
-    for i in  1..(64/8){
-        seed = seed * seeds[i] as u64;
+    #[private]
+    pub(crate) fn rand_u64() -> u64 {
+        //TODO Random seed may have security vulnerabilities. This is a risk we will likely have to take, but should read docs
+        let seeds = random_seed();
+        let mut seed: u64 = seeds[0] as u64;
+        for i in 1..(64 / 8) {
+            seed = seed * seeds[i] as u64;
+        }
+        return seed;
     }
-    return seed;
-}
+
     #[payable]
-    #[result_serializer(borsh)]
+    // #[result_serializer(borsh)]
     pub fn create_bounty(&mut self, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: String, amt_node_reward: String) -> Bounty {
         let amt_storage: u128 = amt_storage.parse().unwrap();
         let amt_node_reward: u128 = amt_node_reward.parse().unwrap();
         require!(attached_deposit() == amt_storage + amt_node_reward, "Attached deposit must be equal to the sum of the storage and node reward amounts");
-        require!(amt_storage > MIN_STORAGE, "Refundable storage deposit must be greater than 0.1N"); //0.1N ~10KB, should be more than enough for most
+        require!(amt_storage > MIN_STORAGE, "Refundable storage deposit must be greater than 0.1N");
+        //0.1N ~10KB, should be more than enough for most
         require!(amt_node_reward > MIN_REWARD, "Node reward must be at least 0.1N");
         require!(self.get_node_count() >= total_nodes, "Not enough nodes registered for bounty");
         require!(total_nodes.clone() <= self.nodes.len(), "Total nodes cannot be greater than the number of nodes available in the coordinator");
         // Truncate the block timestamp to reduce the overall length of the bounty id
-        let bounty_key: AccountId = format!("{}-{}.bounty.{}", self.universal_bounty_index, (block_timestamp()%1000000000), signer_account_id()).parse().unwrap();
+        let bounty_key: AccountId = format!("{}-{}.bounty.{}", self.universal_bounty_index, (block_timestamp() % 1000000000), signer_account_id()).parse().unwrap();
         log!("Bounty id is: {}", bounty_key);
         require!(self.bounties.get(&bounty_key).is_none(), "Bounty already exists");
         let mut bounty = Bounty::new_bounty(bounty_key.clone(), file_location, file_download_protocol, min_nodes, total_nodes, timeout_seconds, network_required, gpu_required, amt_storage, amt_node_reward);
         require!(bounty.owner_id == signer_account_id(), "The bounty's owner id must be the signer"); //Cautionary check. We don't want to risk preventing the creator from cancelling the bounty to withdraw their funds
 
         while bounty.elected_nodes.len() < total_nodes.clone() as usize {
-            let mut key: AccountId;
+            let key: AccountId;
             if self.node_queue.len() == 1 {
                 key = self.node_queue.pop().unwrap();
                 log!("elected {} (only node in queue)", key);
@@ -236,10 +297,12 @@ pub(crate) fn rand_u64() -> u64 {
 
 
         self.bounties.insert(&bounty_key, &bounty);
+        let mut owner_bounties = self.bounty_by_owner.get(&signer_account_id()).unwrap_or_else(|| vec![]);
+        owner_bounties.push(bounty.id.clone());
+        self.bounty_by_owner.insert(&signer_account_id(), &owner_bounties);
         self.universal_bounty_index += 1;
         return bounty;
     }
-
 
 
     //View function to fetch an answer that can only be run after the bounty has been completed
@@ -438,7 +501,7 @@ pub(crate) fn rand_u64() -> u64 {
     }
 
     // Returns a map of {Solution: Number of nodes with solution}
-    // Probably not the most optimal way to render the resut
+    // Probably not the most optimal way to render the result
     pub fn get_bounty_result(&self, bounty_id: AccountId) -> HashMap<String, u8> {
         let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         require!(bounty.status != BountyStatus::Pending, "Bounty must be complete or cancelled to get result");

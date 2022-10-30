@@ -1,6 +1,6 @@
 **/node_modules
 .idea
-target
+**/target
 **/dist
 # Parent project
 /node_modules
@@ -16,3 +16,5 @@ target
 # Tests
 /integration-tests-js/node_modules
 
+**/neardev
+**/.parcel*

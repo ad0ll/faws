@@ -107,6 +107,7 @@ export type ClientNode = {
     rejected_runs: number,
     allow_network: boolean,
     allow_gpu: boolean,
+    registration_time: number,
 }
 
 // Internal answer from an execution that contains additional information for better UX

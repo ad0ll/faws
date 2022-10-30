@@ -11,11 +11,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React from "react";
+import React, {useContext} from "react";
 import { Wallet } from "../common/near-wallet";
 import { SupportedDownloadProtocols } from "./types";
+import {WalletContext} from "../App";
 
-export default function CreateBounty({ wallet }: { wallet: Wallet }) {
+export default function CreateBounty() {
+  const wallet = useContext(WalletContext);
   const [protocol, setProtocol] = React.useState("");
 
   const handleChange = (event: SelectChangeEvent) => {

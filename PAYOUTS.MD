@@ -9,9 +9,9 @@ The contract will always try to reimburse gas to nodes who have posted an accept
 
 | condition                                      | storage_fee         | node_fee                                                                      |
 |------------------------------------------------|---------------------|:------------------------------------------------------------------------------|
-| Bounty cancelled by creator                    | Taken               | Nodes that posted answer get payout ((Answered Nodes/Total Nodes) * Node Fee) |
+| Bounty cancelled by creator                    | Taken               | Nodes that posted answer get payout ((Answered Nodes/Total Nodes) * NodeList Fee) |
 | Exit 1 from Docker execute                     | Taken               | Partial(?) Taken(?)                                                           |
 | Bounty times out                               | Partial for metrics | Reimbursed                                                                    |
 | Runtime error when retrieving                  | Partial for metrics |                                                                               |
-| Node rejects election (not enough memory, etc) | Reimbursed          | Reimbursed                                                                    |
+| NodeList rejects election (not enough memory, etc) | Reimbursed          | Reimbursed                                                                    |
 Execution 

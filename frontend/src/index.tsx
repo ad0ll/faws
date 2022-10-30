@@ -4,31 +4,32 @@ import { Contract } from "./common/near-interface";
 import ReactDOM from "react-dom/client";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import {BrowserRouter} from "react-router-dom";
+import {blue} from "@mui/material/colors";
+import {COORDINATOR_ID} from "./coordinator/Coordinator";
 
 const reactRoot = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
 
 // create the Wallet and the Contract
-const contractId = process.env.CONTRACT_NAME;
-const wallet = new Wallet({ contractId });
+const wallet = new Wallet();
 const contract = new Contract({ wallet });
 
 const theme = createTheme({
   palette: {
     mode: "dark",
     action: {
-      active: "rgb(102, 178, 255)",
+      active: "rgb(102, 178, 255)", // Closest MUI: blue[300]
     },
     background: {
-      default: "rgb(0, 30, 60)",
+      default: "rgb(0, 30, 60)", //Closes MUI: blue[900], but looks awful
       paper: "rgb(0, 30, 60)",
     },
     text: {
-      primary: "rgb(189, 189, 189)",
-      secondary: "rgb(204, 204, 204)",
+      primary: "rgb(189, 189, 189)", //MUI grey[300] is the exact same
+      secondary: "rgb(204, 204, 204)", //No good MUI color
     },
-    divider: "rgba(194, 224, 255, 0.08)",
+    divider: "rgba(194, 224, 255, 0.08)", //No good MUI color
   },
   typography: {
     fontFamily: [
@@ -53,9 +54,7 @@ window.onload = () => {
       reactRoot.render(
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <BrowserRouter>
             <App isSignedIn={isSignedIn} contract={contract} wallet={wallet} />
-          </BrowserRouter>
         </ThemeProvider>
       );
     })

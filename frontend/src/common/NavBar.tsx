@@ -41,7 +41,7 @@ export default function NavBar({
   let walletComponent;
   if (isSignedIn) {
     walletComponent = (
-      <SignOutButton accountId={wallet.accountId} onClick={wallet.signOut()} />
+      <SignOutButton accountId={wallet.accountId} onClick={() => wallet.signOut()} />
     );
   } else {
     walletComponent = <SignInPrompt onClick={() => wallet.signIn()} />;
@@ -84,8 +84,8 @@ export default function NavBar({
               <MenuItem key="Bounties" onClick={handleCloseNavMenu}>
                 <Typography textAlign="center">Bounty</Typography>
               </MenuItem>
-              <MenuItem key="Node" onClick={handleCloseNavMenu}>
-                <Typography textAlign="center">Node</Typography>
+              <MenuItem key="NodeList" onClick={handleCloseNavMenu}>
+                <Typography textAlign="center">NodeList</Typography>
               </MenuItem>
             </Menu>
           </Box>
@@ -98,11 +98,11 @@ export default function NavBar({
               Bounty
             </Button>
             <Button
-              key="Node"
+              key="NodeList"
               href="/node"
               sx={{ my: 2, color: "white", display: "block" }}
             >
-              Node
+              NodeList
             </Button>
           </Box>
           <Box sx={{ flexGrow: 0 }}>{walletComponent}</Box>

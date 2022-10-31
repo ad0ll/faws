@@ -19,11 +19,12 @@ export class Database {
     public executions: { [key: string]: Execution } = {} // Not deliberate
 
     notifySubscribers(eventType: string, bountyId: string, data: any) {
-        const execution = this.get(bountyId) || {}
+        const execution = this.get(bountyId)
+        //@ts-ignore-next-line
         const message: ClientMessage = {
             eventType,
             bountyId,
-            context: execution.executionContext || {},
+            context: execution.executionContext,
             data,
             sentAt: Date.now()
         }

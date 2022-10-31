@@ -1,4 +1,5 @@
 import { Wallet } from "../common/near-wallet";
+import React from "react";
 
 //Different parts of the codebase use different names for the coordinator id, which we accommodate here
 //TODO revert me later

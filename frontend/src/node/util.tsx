@@ -1,6 +1,7 @@
-import {ClientExecutionContext, ClientNode} from "../../../execution-client/types"
+import {ClientNode} from "../../../execution-client/types"
 import {ClientMessage} from "../../../execution-client/database"
 import {ReadyState} from "react-use-websocket";
+import React from "react";
 
 const sleep = ms => new Promise(
     resolve => setTimeout(resolve, ms)
@@ -54,13 +55,6 @@ export const readyStateToString = (readyState: ReadyState): string => {
     }
 }
 
-export type ClientMessage = {
-    eventType: string,
-    bountyId: string,
-    context: ClientExecutionContext
-    data: any,
-    sentAt: number,
-}
 
 // export const messageFactory = async (n: number): Promise<Partial<ClientMessage>[]> => {
 export const messageFactory = (n: number): Partial<ClientMessage>[] => {
@@ -76,6 +70,7 @@ export const messageFactory = (n: number): Partial<ClientMessage>[] => {
         res.push({
             eventType: "BountyUpdate",
             bountyId: name,
+            //@ts-ignore-next-line
             context: {
                 phase,
                 imageName: name,

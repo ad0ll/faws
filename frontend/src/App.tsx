@@ -7,14 +7,27 @@ import {Wallet} from "./common/near-wallet";
 import {Contract} from "./common/near-interface";
 import Bounty from "./bounty/Bounty";
 import {createBrowserRouter, RouterProvider} from 'react-router-dom'
-import React, {createContext} from "react";
+import React from "react";
 import {NodeDetail} from "./node/NodeDetail";
 import {NodeList} from "./node/NodeList";
 import {ErrorBoundary} from "react-error-boundary";
-import {LocalStorageValue, Storage} from "./storage";
+import {TransientStorage} from "./storage";
+import {atom, useSetRecoilState} from "recoil";
 
 
-export const WalletContext = createContext<Wallet>(null);
+export const walletState = atom<Wallet>({
+    key: "walletState",
+    default: null
+})
+
+// export const localStorageState = atom<any>({
+//     key: "localStorageState",
+//     default: {}
+// })
+export const localStorageState = atom<TransientStorage>({
+    key: "localStorageState",
+    default: new TransientStorage()
+})
 export default function App({
                                 isSignedIn,
                                 wallet,
@@ -23,6 +36,8 @@ export default function App({
     contract: Contract;
     wallet: Wallet;
 }) {
+    const setWalletState = useSetRecoilState(walletState)
+    setWalletState(wallet)
     const router = createBrowserRouter([
         {
             path: "/",
@@ -45,24 +60,22 @@ export default function App({
             element: <NodeDetail/>
         }
     ]);
-    return (
-            <WalletContext.Provider value={wallet}>
-                <NavBar isSignedIn={isSignedIn} wallet={wallet}/>
-                <main
-                    style={{marginTop: "16px", marginLeft: "32px", marginRight: "32px"}}
-                >
-                    <ErrorBoundary
-                        fallbackRender={({error, resetErrorBoundary}) => (
-                            <div role="alert">
-                                <p>Something went wrong:</p>
-                                <pre>{error.message}</pre>
-                                <button onClick={resetErrorBoundary}>Try again</button>
-                            </div>
-                        )}>
-                        <RouterProvider router={router}/>
-                    </ErrorBoundary>
-                </main>
-            </WalletContext.Provider>
-    )
-        ;
+    return (<>
+            <NavBar isSignedIn={isSignedIn} wallet={wallet}/>
+            <main
+                style={{marginTop: "16px", marginLeft: "32px", marginRight: "32px"}}
+            >
+                <ErrorBoundary
+                    fallbackRender={({error, resetErrorBoundary}) => (
+                        <div role="alert">
+                            <p>Something went wrong:</p>
+                            <pre>{error.message}</pre>
+                            <button onClick={resetErrorBoundary}>Try again</button>
+                        </div>
+                    )}>
+                    <RouterProvider router={router}/>
+                </ErrorBoundary>
+            </main>
+        </>
+    );
 }

@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -8,11 +9,12 @@ import {
 import { Wallet } from "../common/near-wallet";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {useContext} from "react";
-import {WalletContext} from "../App";
-
+import {useRecoilValue} from "recoil";
+import {walletState} from "../App";
 export default function ExistingBounty() {
-    const wallet = useContext(WalletContext);
-  return (
+    const wallet = useRecoilValue(walletState);
+
+    return (
     <>
       <Typography variant="h5">Existing Bounties</Typography>
       <div style={{ marginTop: "16px" }}>

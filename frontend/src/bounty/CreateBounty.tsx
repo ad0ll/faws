@@ -14,10 +14,11 @@ import {
 import React, {useContext} from "react";
 import { Wallet } from "../common/near-wallet";
 import { SupportedDownloadProtocols } from "./types";
-import {WalletContext} from "../App";
+import {useRecoilValue} from "recoil";
+import {walletState} from "../App";
 
 export default function CreateBounty() {
-  const wallet = useContext(WalletContext);
+  const wallet = useRecoilValue(walletState);
   const [protocol, setProtocol] = React.useState("");
 
   const handleChange = (event: SelectChangeEvent) => {

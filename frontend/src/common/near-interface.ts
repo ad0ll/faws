@@ -1,3 +1,4 @@
+
 import { Wallet } from "./near-wallet";
 
 export class Contract {

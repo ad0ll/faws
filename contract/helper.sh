@@ -5,7 +5,7 @@ REDEPLOY_CONTRACT= #Put anything here to redeploy the contract
 #REDEPLOY_CONTRACT= #Put anything here to redeploy the contract
 #BOUNTY_NAME="test-bounty-$(date +%s)"
 REFERENCE_BOUNTY=0-217228470.bounty.garbage0.testnet
-NETWORK=testnet #testnet or localnet
+#NETWORK=testnet #testnet or localnet
 
 # If the network is localnet, then we need to set a bunch of envvars. If it's testnet, we don't need an alias because the envvars are built in to the cli. n
 if [[ -z "$NETWORK" || "$NETWORK" == "localnet" ]]; then

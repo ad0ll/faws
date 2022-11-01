@@ -9,17 +9,18 @@
 * (Med pri) Bounty completed events, possibly including forwarding the results to a contract
 * (Med-low pri) Convert repeating require! preflights to macros: https://doc.rust-lang.org/book/ch19-06-macros.html
 * (Med-low pri) AnswerPosted events in case we want to respond to them (mostly thinking about the front end, to trigger an update)
+
 ## Coordinator
 * (High pri) Create lookup sets of nodes supporting network and gpu loads to avoid assigning them work
 * (Med pri) close_bounty and post_answer functions are quite large and complex. Individual functions should be moved to smaller jobs, and some of the logic should probably be moved back to Bounty (so we can use self instead of re-fetching the bounty)
 * (Med pri) Coordinator often passes ids instead of objects to functions. This is because Bounty doesn't implement serialize. I was unsure of whether I should figure out how to borsh serialize the param, or if I should move some logic back to bounty and use `self`. Med pri because I'm not sure if this consumes more memory or if the performance impact is noteworthy.
 * (Med pri) Analyze answers to cut outliers
 * (Med pri) Allow nodes to reject bounties. This is separate from failing a bounty, it means that the node is refusing to work on it. Due to things like blocking network access or requiring gpus 
+* (Med pri) Create a mechanism for the coordinator to mark a repeatedly failing node as offline
 * (Med-low pri) Instead of accepting deposit w/ yoctoNEAR, let users pass NEAR and convert to yoctoNEAR
 * (Med-low-pri) Find a gas efficient way to prioritize bounties with higher node rewards. Maybe using Vec or TreeMap.
-## NodeList
-* (Med-pri) Add support to indicate that a node supports GPU workloads
-* (Med-pri) Implement allow_network setting that can be changed **only by the node owner** (i.e. coordinator can't change it)
+
+## Node
 * (Someday maybe) Add support to register installed software. Completely unnecessary since jobs are running in docker.
 
 ## Bounty
@@ -35,13 +36,17 @@
 * (Low pri) Reimburse node who closes a bounty for gas, since this is notably more expensive than posting an answer. May be able to make this slightly more equitable by delegating the close to the bounty with the earliest `last_closed` date (if we were to add that field)
 
 ## Events
-* (High pri) Need to add owner_id to events 
-* (High pri) Need to add coordinator_id to events
+* (Med pri) Need to add coordinator_id to events
 * (Med pri) Need to add "AnswerPosted" event, may be critical if the frontend needs it to stay current
 * (Med pri) Need to emit "BountyClosed" event
+* (Low pri) Need to add owner_id to events
 
 # Frontend
-* (High pri) Be able to create bounties
+* (Highest pri) Be able to create bounties
+* (Highest pri) Be able to register node (remember that this requires a 1N deposit)
+* (Highest pri) Must be able to view a list of your bounties
+* (Highest pri) Must be able to see solution to completed bounties (either as a nested table or as a summary)
+* (High pri) Be able to update a node through the UI (contract function exists)
 * (Med pri) Be able to select from one of multiple accounts (when signed in using near-wallet, provide a dropdown in navbar to set value AccountContext)
 * (Low pri) Use JSON RPC in the front end to get a heartbeat from a node
 
@@ -51,7 +56,6 @@
 * (Highest pri) Client must be able to set timeout to prevent malicious actor from blocking their node
 * (Second highest pri) Support for GPU workloads
 * (Third highest pri) Ansible playbook to install the client and all its dependencies (note: MUST include service setup so we can get a restart-always in there)
-* (Third highest pri) shell script to install ansible and all its dependencies
 * (Med-High pri) Client should be able to download from IPFS
 * (Med pri) Allow client to upload results to IPFS and then submit a hash of their answer as the result
 * (Med pri) Allow client to zip or tar results prior to uploading to IPFS

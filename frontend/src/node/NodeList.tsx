@@ -42,6 +42,7 @@ const chainNodesState = selector({
         }
     }
 })
+
 const localNodesState = selector({
     key: "localNodesState",
     get: async ({get}) => {
@@ -60,6 +61,7 @@ const localNodesState = selector({
         return nodes
     },
 })
+
 const nodesState = atom<NodeStorage>({
   key: "nodesState",
   default: localNodesState,

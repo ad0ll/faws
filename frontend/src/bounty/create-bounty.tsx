@@ -188,15 +188,9 @@ export default function CreateBounty({
   );
 }
 
-const THIRTY_TGAS = "30000000000000";
-const NO_DEPOSIT = "0";
-
-// TODO: Load address of our contract
 async function createBounty(wallet: Wallet, bounty: Bounty) {
-  console.log(JSON.stringify(bounty));
   const args = {
     name: bounty.name,
-    id: "",
     file_location: bounty.fileLocation,
     file_download_protocol: bounty.fileDownloadProtocol,
     min_nodes: bounty.threshold,
@@ -207,5 +201,5 @@ async function createBounty(wallet: Wallet, bounty: Bounty) {
     amt_storage: bounty.amtStorage,
     amt_node_reward: bounty.amtNodeReward,
   };
-  return await wallet.callMethod("", "new_bounty", args);
+  return await wallet.callMethod("", "create_bounty", args);
 }

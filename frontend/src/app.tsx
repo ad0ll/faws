@@ -3,7 +3,7 @@ import "regenerator-runtime/runtime";
 import NavBar from "./common/nav-bar";
 import { Wallet } from "./common/near-wallet";
 import { Contract } from "./common/near-interface";
-import Node from "./node/Node";
+import Node from "./node/node";
 import Bounty from "./bounty/bounty";
 
 export default function App({
@@ -31,10 +31,10 @@ export default function App({
       <NavBar isSignedIn={isSignedIn} wallet={wallet} />
       <main
         style={{
-          marginTop: "24px",
           maxWidth: "1536px",
           marginLeft: "auto",
           marginRight: "auto",
+          padding: "24px",
         }}
       >
         {pageComponent}

@@ -20,6 +20,7 @@ import { setupNearWallet } from "@near-wallet-selector/near-wallet";
 import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
 import { CodeResult } from "near-api-js/lib/providers/provider";
 import { Bounty } from "../bounty/types";
+import { Node } from "../node/types";
 
 const THIRTY_TGAS = "30000000000000";
 const NO_DEPOSIT = "0";
@@ -32,6 +33,7 @@ export class Wallet {
   contractId: string;
   network: NetworkId;
   existingBounties: Bounty[] = [];
+  existingNodes: Node[] = [];
 
   constructor({
     contractId,

@@ -17,6 +17,8 @@ ExecutionOutcomeView,
 
 mod configs;
 mod event;
+mod websocket;
+
 use crate::event::Event;
 
 
@@ -325,7 +327,17 @@ async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>
     }
 }
 
+pub async fn ws_handler(ws: warp::ws::Ws, id: String, clients: Clients) -> Result<impl Reply> {
+    let client = clients.read().await.get(&id).cloned();
+    match client {
+        Some(c) => Ok(ws.on_upgrade(move |socket| ws::client_connection(socket, id, clients, c))),
+        None => Err(warp::reject::not_found()),
+    }
+}
+
 fn main() -> Result<()> {
+
+
     // We use it to automatically search the for root certificates to perform HTTPS calls
     // (sending telemetry and downloading genesis)
     openssl_probe::init_ssl_cert_env_vars();
@@ -359,5 +371,20 @@ fn main() -> Result<()> {
         }
         SubCommand::Init(config) => near_indexer::indexer_init_configs(&home_dir, config.into())?,
     }
+    let clients: Clients = Arc::new(RwLock::new(HashMap::new()));
+
+    let ws_route = warp::path("")
+        .and(warp::ws())
+        .and(warp::path::param())
+        .and(with_clients(clients.clone()))
+        .and_then(handler::ws_handler);
+
+    let routes = ws_route
+        .with(warp::cors().allow_any_origin());
+
+    warp::serve(routes).run(([127, 0, 0, 1], 8000));
+
     Ok(())
+
+
 }

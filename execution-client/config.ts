@@ -6,8 +6,13 @@ import {keyStores} from "near-api-js";
 import {logger} from "./logger";
 import * as dotenv from 'dotenv'
 import {fillPlaceholders} from "./util";
+import * as fs from "fs";
 
 dotenv.config()
+if(fs.existsSync("./.env.personal")) {
+    console.log("Loading .env.personal")
+    dotenv.config({path: ".env.personal"})
+}
 
 // Sets up the global config object and does some basic validation
 // Items prefixed with NEAR_ are for NEAR api config, anything else is client config
@@ -16,7 +21,7 @@ export const readConfigFromEnv = (): ClientConfig => {
         WEBSOCKET_URL = 'ws://localhost:7071', //TODO Default should be mainnet or testnet
         UNIVERSAL_TIMEOUT = BigInt(300000), // TODO Reject bounties that have a timeout > this value.?
         ACCOUNT_ID = "test1.test.near", //TODO bad dummy value, should be required
-        NODE_ID = "node1.node.dev-1666212527813-43447711547852", //TODO bad dummy value, should be required
+        NODE_ID = "node1.node.$ACCOUNT_ID", //TODO bad dummy value, should be required
         ACCEPT_NETWORK_WORKLOADS = true,
         ACCEPT_GPU_WORKLOADS = false,
         BOUNTY_STORAGE_DIR = path.join(os.homedir(), ".local/bounty_data/$BOUNTY_ID"),
@@ -24,10 +29,10 @@ export const readConfigFromEnv = (): ClientConfig => {
         DOCKER_CONTAINER_NAME_FORMAT = "bounty-$BOUNTY_ID",
         DOCKER_IMAGE_NAME_FORMAT = "$BOUNTY_ID",
         NEAR_CREDENTIALS_DIR,
-        NEAR_NETWORK_ID = "localnet",
-        NEAR_NODE_URL = "http://0.0.0.0:3030", //TODO not a real URL, should point to testnet
-        NEAR_WALLET_URL = "http://0.0.0.0/wallet", //TODO not a real URL, should point to testnet
-        NEAR_HELPER_URL = "http://0.0.0.0/helper", //TODO not a real URL, should point to testnet
+        NEAR_NETWORK_ID = "testnet",
+        NEAR_NODE_URL = `https://rpc.${NEAR_NETWORK_ID}.near.org`,
+        NEAR_WALLET_URL = `https://wallet.${NEAR_NETWORK_ID}.near.org`,
+        NEAR_HELPER_URL = `https://helper.${NEAR_NETWORK_ID}.near.org`,
         STORAGE_DOCKER_PRUNE_SYSTEM_EACH_RUN = "false",
         STORAGE_DOCKER_PRUNE_IMAGES_EACH_RUN = "false",
         STORAGE_DOCKER_REMOVE_EXECUTION_CONTAINER_EACH_RUN = "true",

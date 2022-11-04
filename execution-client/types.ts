@@ -1,6 +1,7 @@
 // Answer as stored in the Coordinator
 import {ChunkHash} from "near-api-js/lib/providers/provider";
 import {ConnectConfig, Contract} from "near-api-js";
+import {ChangeFunctionCallOptions, ViewFunctionCallOptions} from "near-api-js/lib/account";
 
 export type NodeResponse = {
     solution: string,
@@ -164,7 +165,7 @@ export type CreateBountyArgs = {
 export type CoordinatorContract = Contract & {
     get_bounty: ({bounty_id}: { bounty_id: string }) => Promise<Bounty>;
     should_post_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<boolean>;
-    get_node: ({account_id}: { account_id: string }) => Promise<ClientNode>;
+    get_node: ({node_id}: { node_id: string }) => Promise<ClientNode>;
     create_bounty: (args: CreateBountyArgs, gas: string, deposit: string) => Promise<Bounty>;
     //Note that this is the "view" version, can only be run when the bounty is complete/cancelled. use call_get_answer to get answers from hot bounties.
     get_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<NodeResponse>;

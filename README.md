@@ -1,3 +1,8 @@
+# 
+
+## Installation:
+
+
 ## Contracts
 
 There is one contract, the coordinator contract, which is used to create and manage both nodes and bounties.

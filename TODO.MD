@@ -53,6 +53,8 @@
 
 # Client
 ## Disorganized
+* (Highest pri) Need to pull lightweight indexer and websocket relay out of nearcore fork and into here
+
 * (Highest pri) Client must be able to set timeout to prevent malicious actor from blocking their node
 * (Second highest pri) Support for GPU workloads
 * (Third highest pri) Ansible playbook to install the client and all its dependencies (note: MUST include service setup so we can get a restart-always in there)

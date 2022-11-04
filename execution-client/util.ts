@@ -2,6 +2,7 @@ import {Bounty, ClientConfig, CoordinatorContract, SupportedFileDownloadProtocol
 import {Account, connect, Contract} from "near-api-js";
 import {logger} from "./logger";
 import {BountyNotFoundError} from "./errors";
+import axios, {AxiosResponse} from "axios";
 
 export const getAccount = async (config: ClientConfig, accountId: string): Promise<Account> => {
     const nearConnection = await connect(config.nearConnection);
@@ -18,7 +19,7 @@ export const getCoordinatorContract = async (config: ClientConfig, account: Acco
         config.coordinatorContractId, // the contract id
         {
             // make sure the ContractCoordinator type matches the contract
-            viewMethods: ["get_bounty", "get_bounties", "should_post_answer", "get_node", "get_answer"], // view methods do not change state but usually return a value
+            viewMethods: ["get_bounty", "should_post_answer", "get_node", "get_answer"], // view methods do not change state but usually return a value
             changeMethods: ["post_answer", "create_bounty"], // change methods modify state, or otherwise require gas (such as when using borsh result_serializer)
         }
     );
@@ -30,7 +31,10 @@ export const getBounty = async (config: ClientConfig, coordinatorContract: Coord
     logger.debug(`Downloading bounty data for ${bountyId} from chain`)
     console.log(`Downloading bounty data for ${bountyId} from chain`)
     // formatNEAR()
-    const bounty: Bounty = await coordinatorContract.get_bounty({bounty_id: bountyId});
+    const bounty: Bounty = await coordinatorContract.get_bounty({
+            bounty_id: bountyId
+        }
+    );
     if (!bounty) {
         throw new BountyNotFoundError(`Bounty ${bountyId} not found in coordinator contract ${config.coordinatorContractId}`)
     }
@@ -62,33 +66,68 @@ export const fillPlaceholders = (input: string, placeholders: SupportedPlacehold
 /*
 Used to emit a bounty every X milliseconds. Useful for testing and development, but will always cost gas in production since the bounty creator is the bounty owner
 */
+
+const createBounty = async (config: ClientConfig, coordinatorContract: CoordinatorContract) => {
+    const amtStorage = BigInt(process.env.EMIT_BOUNTY__AMT_STORAGE || "1000000000000000000000000")
+    const amtReward = BigInt(process.env.EMIT_BOUNTY__AMT_NODE_REWARD || "1000000000000000000000000")
+    const deposit = (amtStorage + amtReward).toString()
+
+    const name = `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`
+    logger.info(`Creating new bounty: ${name}`)
+    const bounty = await coordinatorContract.create_bounty({
+            // name: `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`,
+            file_location: process.env.EMIT_BOUNTY__FILE_LOCATION || 'git@github.com:ad0ll/docker-hello-world.git',
+            file_download_protocol: SupportedFileDownloadProtocols.GIT,
+            min_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "1"),
+            total_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "3"),
+            timeout_seconds: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "60"), //1 minute
+            network_required: process.env.EMIT_BOUNTY__NETWORK_REQUIRED !== "false",
+            gpu_required: process.env.EMIT_BOUNTY__GPU_REQUIRED !== "false",
+            amt_storage: amtStorage.toString(),
+            amt_node_reward: amtReward.toString(),
+        },
+        "300000000000000",
+        deposit.toString()
+    )
+    logger.info(`automatically created bounty ${bounty.id}`)
+    return bounty
+}
+
 export const emitBounty = async (config: ClientConfig, coordinatorContract: CoordinatorContract, emitInterval: number) => {
 //Lots of would-be-debug logs are at info since you can't get here accidentally
     logger.info(`EMIT_BOUNTY has been set by the user. Client will create a bounty against ${config.nearConnection.networkId} every ${emitInterval}ms`)
-    const createBounty = async () => {
-        const amtStorage = BigInt(process.env.EMIT_BOUNTY__AMT_STORAGE || "1000000000000000000000000")
-        const amtReward = BigInt(process.env.EMIT_BOUNTY__AMT_NODE_REWARD || "1000000000000000000000000")
-        const deposit = (amtStorage + amtReward).toString()
 
-        const name = `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`
-        logger.info(`Creating new bounty: ${name}`)
-        const bounty = await coordinatorContract.create_bounty({
-                // name: `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`,
-                file_location: process.env.EMIT_BOUNTY__FILE_LOCATION || 'git@github.com:ad0ll/docker-hello-world.git',
-                file_download_protocol:  SupportedFileDownloadProtocols.GIT,
-                min_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "1"),
-                total_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "3"),
-                timeout_seconds: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "60"), //1 minute
-                network_required: process.env.EMIT_BOUNTY__NETWORK_REQUIRED !== "false",
-                gpu_required: process.env.EMIT_BOUNTY__GPU_REQUIRED !== "false",
-                amt_storage: amtStorage.toString(),
-                amt_node_reward: amtReward.toString(),
-            },
-            "300000000000000",
-            deposit.toString())
-        logger.info(`automatically created bounty ${bounty.id}`)
+    //Dev only, used to publish a message to the websocket relay for when you don't have an indexer that can send events
+    const publishEventToEmitter = async (bounty: Bounty, event: any): Promise<AxiosResponse> => {
+        const bountyEmitterUrl = process.env.EMIT_BOUNTY__WS_RELAY_URL || "http://localhost:8000/publish"
+        logger.info(`Posting bounty ${bounty.id} to bounty emitter at ${bountyEmitterUrl}`)
+        console.log(JSON.stringify(event))
+        return axios.post(bountyEmitterUrl, event)
     }
 
-    await createBounty()
-    setInterval(createBounty, emitInterval)
+
+
+    const bounty = await createBounty(config, coordinatorContract)
+    console.log(bounty)
+    if (process.env.EMIT_BOUNTY__PUBLISH) {
+        const event = {
+            "block_height": 0,
+            "block_hash": "bseefewiwi",
+            "block_timestamp": 567778870005,
+            "block_epoch_id": "esesiwiwiw",
+            "receipt_id": "esefeferer",
+            "log_index": 0,
+            "predecessor_id": "esesiwiw",
+            "account_id": "esesewiwi",
+            "status": "Success",
+            event: `{
+                "event": "bounty_created",
+                "data": {
+                    "node_ids": ["${config.nodeId}"],
+                    "bounty_id": "${bounty.id}"
+                }
+            }`
+        }
+        await publishEventToEmitter(bounty, event)
+    }
 }

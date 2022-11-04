@@ -1,4 +1,4 @@
-import {Account} from "near-api-js";
+import {Account, Contract} from "near-api-js";
 import {logger} from "./logger";
 import {ClientConfig, ClientExecutionResult, CoordinatorContract, NodeResponseStatuses} from "./types";
 import WebSocket from "ws";
@@ -38,7 +38,9 @@ class ExecutionClient {
     // Checks if the node has all the required software installed
     async validateNode() {
         logger.info("Fetching node info from coordinator contract");
-        const node = await this.coordinatorContract.get_node({account_id: this.config.nodeId});
+        const node = await this.coordinatorContract.get_node(
+             {node_id: this.config.nodeId}
+            );
         //TODO Check if account is owner of the node
         logger.info(`Node ${this.config.nodeId} is registered with the following properties: ${JSON.stringify(node)}`);
         if (!node) {
@@ -61,15 +63,17 @@ class ExecutionClient {
     }
 
     async publishAnswer(bountyId: string, result: ClientExecutionResult) {
-        logger.debug(`Publishing answer for bounty ${bountyId} to coordinator contract with res: `, result);
+        logger.debug(`Attempting to publish answer for bounty ${bountyId} to coordinator contract with res: `, result);
         //Should always check should_post_answer first, since it's a view function and publish_answer is not
         logger.debug(`Checking if we should post answer for bounty ${bountyId}`);
         let execution = database.get(bountyId);
         execution.updateContext({phase: "Posting answer to chain"})
+
         const shouldPostAnswer = await this.coordinatorContract.should_post_answer({
-            bounty_id: bountyId,
-            node_id: this.config.nodeId
-        })
+                bounty_id: bountyId,
+                node_id: this.config.nodeId
+            }
+        )
         logger.debug(`Should post answer for bounty ${bountyId}: ${shouldPostAnswer}`);
         execution.updateContext({shouldPostAnswer})
         if (shouldPostAnswer) {
@@ -82,7 +86,7 @@ class ExecutionClient {
                 status: result.errorType ? NodeResponseStatuses.FAILURE : NodeResponseStatuses.SUCCESS
             }
             logger.debug(`Publishing answer for bounty ${bountyId} with payload: `, payload);
-            const res = this.coordinatorContract.post_answer(payload)
+            const res = await this.coordinatorContract.post_answer(payload)
             logger.info(`Successfully published answer for bounty ${bountyId} with result: ${JSON.stringify(res)}`);
             execution.updateContext({phase: "Complete"})
         } else {
@@ -109,45 +113,46 @@ class ExecutionClient {
         }
         this.websocketClient.on('message', async (data) => {
             try {
+                // logger.debug(data)
                 const message = JSON.parse(data.toString())
-                logger.debug(`Received message: `, message);
-                if (message.events) {
-                    for (const eventData of message.events) {
-                        if (eventData.event.event === "bounty_created") {
-                            const bountyData = eventData.event.data;
-                            const bountyId = bountyData.bounty_id;
-                            logger.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);
-                            if (bountyData.node_ids.includes(this.config.nodeId)) {
-                                logger.info(`We're elected! Executing bounty ${bountyId}...`);
-                                try {
-                                    const bounty = await getBounty(this.config, this.coordinatorContract, bountyId)
-                                    const execution = new Execution(this.config, bounty)
-                                    database.insert(bountyId, execution)
-                                    const res = await execution.execute()
-                                    await this.publishAnswer(bountyId, res)
-                                    logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(res)}`);
-                                } catch (e: any) {
-                                    logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
-                                    if (e instanceof SetupError) { //TODO remove me once cleaned up
-                                        logger.warning(`Execution of bounty ${bountyId} failed with SetupError, but SetupError is disallowed in execution catch: ${e.message}`);
-                                    }
-                                    if (e instanceof SetupError
-                                        || e instanceof PreflightError
-                                        || e instanceof ExecutionError) {
-                                        await this.publishAnswer(bountyId, {
-                                            result: "",
-                                            message: e.message,
-                                            errorType: e.constructor.name
-                                        })
-                                    }
-                                    //TODO e will have name and message, post failure to chain
-                                } finally {
-                                    //TODO anything to close?
+                if (message.event) {
+                    //Below is extremely noisy, make sure it's commented out in prod
+                    // logger.debug(`Received message: `, message);
+                    const eventData = JSON.parse(message.event)
+                    if (eventData.event === "bounty_created") {
+                        console.log(eventData)
+                        const bountyData = eventData.data;
+                        const bountyId = bountyData.bounty_id;
+                        logger.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);
+                        if (bountyData.node_ids.includes(this.config.nodeId)) {
+                            logger.info(`We're elected! Executing bounty ${bountyId}...`);
+                            try {
+                                const bounty = await getBounty(this.config, this.coordinatorContract, bountyId)
+                                const execution = new Execution(this.config, bounty)
+                                database.insert(bountyId, execution)
+                                const res = await execution.execute()
+                                await this.publishAnswer(bountyId, res)
+                                logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(res)}`);
+                            } catch (e: any) {
+                                logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
+                                if (e instanceof SetupError) { //TODO remove me once cleaned up
+                                    logger.warning(`Execution of bounty ${bountyId} failed with SetupError, but SetupError is disallowed in execution catch: ${e.message}`);
                                 }
+                                if (e instanceof SetupError
+                                    || e instanceof PreflightError
+                                    || e instanceof ExecutionError) {
+                                    await this.publishAnswer(bountyId, {
+                                        result: "",
+                                        message: e.message,
+                                        errorType: e.constructor.name
+                                    })
+                                }
+                                //TODO e will have name and message, post failure to chain
+                            } finally {
+                                //TODO anything to close?
                             }
                         }
                     }
-
                 }
             } catch (e) {
                 e instanceof PostExecutionError
@@ -174,9 +179,9 @@ const init = async () => {
     // Creates a bounty at a defined interval. Used for development to keep a constant stream of bounty events going
     // Default block when attempting to run against mainnet since it'll cost real near. Pass EMIT_BOUNTY__ALLOW_MAINNET to override
     if ((config.nearConnection.networkId !== "mainnet" || process.env.EMIT_BOUNTY__ALLOW_MAINNET) && process.env.EMIT_BOUNTY) {
-        const emitInterval = parseInt(process.env.EMIT_BOUNTY__INTERVAL || "30000")
+        const emitInterval = parseInt(process.env.EMIT_BOUNTY__INTERVAL || "60000")
         logger.info(`Emitting bounties every ${emitInterval}ms`);
-        await emitBounty(config, coordinatorContract, emitInterval)
+        await emitBounty(client.config, client.coordinatorContract, emitInterval)
     }
 }
 
@@ -196,8 +201,10 @@ server.on("connection", (ws, req) => {
         subscribers.delete(ws);
     });
 
+
     ws.on("message", (messageAsString) => {
         try {
+            logger.debug(messageAsString)
             const message = JSON.parse(messageAsString.toString());
             logger.debug(`Subscriber received message: `, message)
         } catch (e) {

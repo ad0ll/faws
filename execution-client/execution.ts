@@ -284,8 +284,8 @@ export class Execution {
             logger.error(`Error executing bounty ${bounty.id}: ${e}`)
             return {
                 result: "NONE",
-                message: e.message,
-                errorType: e.name
+                message: e.message || "no message",
+                errorType: e.name || "UnknownError"
             }
         } finally {
             this.cleanup();

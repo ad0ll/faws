@@ -51,9 +51,7 @@ export class Wallet {
         //     indexerUrl: "http://0.0.0.0:8081"
         // }
 
-        // garbage1.testnet: speed jaguar word fork steak afraid knock riot skull exchange world rent
-        // garbage0.testnet: ice stove chimney plastic custom burden trash tongue quote barrel try sister
-        // garbage2.testnet: piano lobster milk peace ripple wonder spread fee hood run purpose immune
+        //garbage3.testnet: crowd desk cup wink social pudding spot twin pulse tag online cupboard
         this.walletSelector = await setupWalletSelector({
             network: "testnet",
             // network, //TODO make this configurable, see network config in execution client

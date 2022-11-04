@@ -448,28 +448,7 @@ impl Bounty {
         }
     }
 
-    // TODO maybe not currently implemented
-    // View function that returns yes, no, maybe for the client to check if they should spend gas to publish an answer
-    #[private]
-    pub fn should_publish_answer(&self, node_id: &AccountId) -> String { //Return as string so we can return "maybe" later
-        if self.status != BountyStatus::Pending {
-            log!("Should not publish, bounty is complete ({})", self.status);
-            return "no".to_string();
-        } else if !self.elected_nodes.contains(&node_id) {
-            log!("Should not publish, {} is not an elected node", &node_id);
-            return "no".to_string(); // You aren't an elected node
-        } else if self.answers.get(&node_id).is_some() {
-            log!("Should not publish, {} has already submitted an answer", &node_id);
-            return "no".to_string(); // You have already posted an answer
-        } else if self.successful_nodes.len() >= self.min_nodes {
-            log!("Should not publish, we have enough successful nodes to close the bounty")
-        } else if self.failed_nodes.len() >= self.min_nodes {
-            log!("Should not publish, we have enough failed nodes to close the bounty")
-        }
-        //TODO Should check if we have enough successful answers and return no if we're evaluating them
-        log!("Should publish, {} is elected, has not submitted an answer, and the bounty isn't complete", node_id);
-        return "yes".to_string();
-    }
+
 
     //Dumps the result as {$value: $number_of_nodes_with_value}, requiring the bounty creator to manually verify the result
     #[private]

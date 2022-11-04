@@ -284,6 +284,13 @@ impl Coordinator {
             log!("Elected node: {}", node);
         }
 
+
+        let mut owner_bounties = self.bounty_by_owner.get(&signer_account_id()).unwrap_or_else(|| vec![]);
+        owner_bounties.push(bounty.id.clone());
+        self.universal_bounty_index += 1;
+        self.bounty_by_owner.insert(&signer_account_id(), &owner_bounties);
+        self.bounties.insert(&bounty_key, &bounty);
+
         let bounty_created_log: EventLog = EventLog {
             standard: EVENT_STANDARD_NAME.to_string(),
             version: EVENT_STANDARD_SPEC.to_string(),
@@ -293,14 +300,8 @@ impl Coordinator {
                 message: None,
             }),
         };
+
         log_str(&bounty_created_log.to_string());
-
-
-        self.bounties.insert(&bounty_key, &bounty);
-        let mut owner_bounties = self.bounty_by_owner.get(&signer_account_id()).unwrap_or_else(|| vec![]);
-        owner_bounties.push(bounty.id.clone());
-        self.bounty_by_owner.insert(&signer_account_id(), &owner_bounties);
-        self.universal_bounty_index += 1;
         return bounty;
     }
 
@@ -336,14 +337,39 @@ impl Coordinator {
         require!(bounty.owner_id == signer_account_id() || signer_account_id() == current_account_id(), "Only the bounty owner or the coordinator contract can cancel a bounty");
         self.close_bounty(&bounty_id, PayoutStrategy::AllAnsweredNodes);
     }
+    pub fn cancel_all_my_bounties(&mut self) {
+        let owner_bounties = self.bounty_by_owner.get(&signer_account_id()).unwrap_or_else(|| vec![]);
+        for bounty_id in owner_bounties {
+            self.cancel_bounty(bounty_id.clone());
+        }
+    }
 
 
     pub fn should_post_answer(&self, bounty_id: AccountId, node_id: AccountId) -> bool {
         log!("Checking if node {} should post answer for bounty {}", node_id, bounty_id);
         let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
-        let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
+        self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
+
         //TODO Check if bounty has enough storage!!
-        return bounty.should_publish_answer(&node.id) == "yes";
+        if bounty.status != BountyStatus::Pending {
+            log!("Should not publish, bounty is complete ({})", bounty.status);
+            return false;
+        } else if !bounty.elected_nodes.contains(&node_id) {
+            log!("Should not publish, {} is not an elected node", &node_id);
+            return false; // You aren't an elected node
+        } else if bounty.answers.get(&node_id).is_some() {
+            log!("Should not publish, {} has already submitted an answer", &node_id);
+            return false; // You have already posted an answer
+        } else if bounty.successful_nodes.len() >= bounty.min_nodes {
+            log!("Should not publish, we have enough successful nodes to close the bounty");
+            return false;
+        } else if bounty.failed_nodes.len() >= bounty.min_nodes {
+            log!("Should not publish, we have enough failed nodes to close the bounty");
+            return false;
+        }
+        //TODO Should check if we have enough successful answers and return no if we're evaluating them
+        log!("Should publish, {} is elected, has not submitted an answer, and the bounty isn't complete", node_id);
+        return true;
     }
 
     pub fn reject_bounty(&mut self, bounty_id: AccountId, node_id: AccountId, message: String) -> NodeResponse {
@@ -393,7 +419,7 @@ impl Coordinator {
         }
         self.nodes.insert(&node_id, &node); // Node had failure or success ticked, so update it now.
 
-
+        self.bounties.insert(&bounty_id, &bounty);
         if bounty.successful_nodes.len() >= bounty.min_nodes {
             log!("Bounty is complete, at least {} nodes have responded successfully. Closing bounty now.", bounty.min_nodes);
             bounty.status = BountyStatus::Success;
@@ -413,6 +439,7 @@ impl Coordinator {
     }
 
     #[private]
+    // pub fn close_bounty(&mut self, bounty_id: &AccountId, payout_strategy: PayoutStrategy) -> Promise {
     pub fn close_bounty(&mut self, bounty_id: &AccountId, payout_strategy: PayoutStrategy) -> Promise {
 
         // If you make the below mutable, please make sure to re-insert it into the coordinator at the end
@@ -443,13 +470,8 @@ impl Coordinator {
             self.nodes.insert(&node_id, &node);
         }
 
-
         let storage_used = storage_byte_cost() * size_of_val(&bounty) as u128;
         log!("Bounty used {} storage, will refund {} of {} deposit", storage_used, bounty.amt_storage - storage_used, bounty.amt_storage);
-
-        //TODO we want to skim a very small amount of the storage cost for the coordinator, maybe 1-2% with a cap to cover storage contingencies in the future
-        let mut main_promise = Promise::new(bounty.owner_id.clone()).transfer(bounty.amt_storage - storage_used); //Storage refund promise
-
 
         let payout_per_node = match payout_strategy {
             PayoutStrategy::AllAnsweredNodes => bounty.amt_storage / bounty.answers.len() as u128,
@@ -465,6 +487,14 @@ impl Coordinator {
             PayoutStrategy::SuccessfulNodes => bounty.successful_nodes.as_vector(),
             PayoutStrategy::AllAnsweredNodes => bounty.answers.keys_as_vector(),
         };
+
+        //TODO we want to skim a very small amount of the storage cost for the coordinator, maybe 1-2% with a cap to cover storage contingencies in the future
+        // let mut _main_promise = Promise::new(bounty.owner_id.clone())
+        //     .transfer(bounty.amt_storage - storage_used);
+
+
+        let mut main_promise = Promise::new(bounty.owner_id.clone())
+            .transfer(bounty.amt_storage - storage_used);
         for node_id in target_collection.iter() {
             // If the node posted an ACCEPTED answer, they should get paid whether or not the bounty was cancelled.
             // Currently we don't have a function to detect and decline answers
@@ -486,6 +516,7 @@ impl Coordinator {
                 || (payout_strategy == PayoutStrategy::SuccessfulNodes && node_response.status == NodeResponseStatus::SUCCESS)
                 || (payout_strategy == PayoutStrategy::FailedNodes && node_response.status == NodeResponseStatus::FAILURE) {
                 log!("paying {} reward of {}", node_id, payout_per_node);
+
                 let reward_promise = Promise::new(node.owner_id)
                     .transfer(payout_per_node);
                 main_promise = main_promise.then(reward_promise);
@@ -493,12 +524,26 @@ impl Coordinator {
                 log!("The bounty succeeded, but node w/ ID {} failed. {} does not receive a payout for this bounty,", node_id, payout_per_node);
             }
         }
+        log!("Finished evaluating answers for rewards");
         if additional_bounty_refund > 0 {
             log!("Refunding bounty owner {} for payout to deleted nodes", additional_bounty_refund);
-            main_promise = main_promise.then(Promise::new(bounty.owner_id.clone()).transfer(additional_bounty_refund));
+            // main_promise = main_promise.then(Promise::new(bounty.owner_id.clone()).transfer(additional_bounty_refund));
+            main_promise = main_promise.transfer(additional_bounty_refund);
         }
+        // main_promise.into();
+        log!("Returning promise");
         return main_promise;
     }
+    #[private]
+    pub fn pay(&self, to: AccountId, amount: u128) -> Promise {
+        Promise::new(to).transfer(amount)
+    }
+
+    // pub fn payout_node(&mut self, node_id: &AccountId) {
+    //
+    // }
+
+    // pub fn claim_reward(&mut self, bounty_id: AccountId, node_id: N)
 
     // Returns a map of {Solution: Number of nodes with solution}
     // Probably not the most optimal way to render the result

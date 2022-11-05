@@ -1,0 +1,12 @@
+---
+# https://docs.docker.com/engine/security/rootless/
+- hosts: docker
+  tasks:
+    - name: Install Docker
+      ansible.builtin.shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
+      become: true
+    - name: enable docker service
+      service:
+        name: docker
+        enabled: yes
+        state: started

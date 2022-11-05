@@ -1,0 +1,13 @@
+- name: install execution client
+  hosts: localhost
+  tasks:
+    - name: install system
+      include_tasks: install-system.yaml
+    - name: install docker
+      include_tasks: install-docker.yaml
+    - name: install nodejs
+      include_tasks: install-nodejs.yaml
+    - name: install execution client
+      include_tasks: install-client.yaml
+
+

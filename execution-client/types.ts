@@ -1,18 +1,23 @@
 // Answer as stored in the Coordinator
 import {ChunkHash} from "near-api-js/lib/providers/provider";
 import {ConnectConfig, Contract} from "near-api-js";
+import {ChangeFunctionCallOptions, ViewFunctionCallOptions} from "near-api-js/lib/account";
 
 export type NodeResponse = {
     solution: string,
     timestamp: string,
     gas_used: BigInt,
-    status: "SUCCESS" | "FAILURE"
+    status: NodeResponseStatuses
 }
-
+export enum NodeResponseStatuses {
+    SUCCESS = "SUCCESS",
+    FAILURE = "FAILURE",
+    REJECT = "REJECT"
+}
 export enum SupportedFileDownloadProtocols {
-    GIT = "git",
-    // IPFS = "ipfs",
-    HTTP = "http",
+    GIT = "GIT",
+    IPFS = "IPFS",
+    HTTP = "HTTP",
 }
 
 // Must match contract
@@ -21,7 +26,7 @@ export type Bounty = {
     owner_id: string,
     coordinator_id: string,
     file_location: string,
-    file_download_protocol: "git" | "ipfs" | "http",
+    file_download_protocol: SupportedFileDownloadProtocols,
     success: boolean,
     complete: boolean,
     cancelled: boolean,
@@ -33,9 +38,9 @@ export type Bounty = {
     amt_storage: BigInt,
     amt_node_reward: BigInt,
     elected_nodes: string[],
-    //TODO result upload strategy. Either publish to chain, or put into IPFS and upload md5 to chain.
+    // upload_strategy: string // Later add support for publishing solution to IPFS
     answers: { [key: string]: NodeResponse },
-    build_args: string[], //TODO not currently supported by contract
+    build_args: string[], //TODO not currently supported by contract, but used in the client
     runtime_args: string[] //TODO not currently supported by contract
 }
 export type ClientConfig = {
@@ -72,9 +77,13 @@ export type ClientConfig = {
 export type ClientExecutionContext = {
     config: ClientConfig,
     bounty: Bounty,
+    phase: string,
     imageName: string,
     containerName: string,
     failed: boolean,
+    shouldPostAnswer: boolean,
+    result: ClientExecutionResult,
+    expectedReward: BigInt,
     storage: {
         root: string, // config.bountyStorageDir w/ $BOUNTY_ID placeholder replaced
         filesDir: string, // where git repos are checked out, files are downloaded and unpacked, and the root where bounties are run
@@ -85,6 +94,22 @@ export type ClientExecutionContext = {
     }
 }
 
+// Node overlaps with @types/node, so this is called ClientNode instead
+export type ClientNode = {
+    id: string,
+    owner_id: string,
+    last_run: number,
+    last_success: number,
+    last_failure: number,
+    last_reject: number,
+    successful_runs: number,
+    failed_runs: number,
+    unanswered_runs: number,
+    rejected_runs: number,
+    allow_network: boolean,
+    allow_gpu: boolean,
+    registration_time: number,
+}
 
 // Internal answer from an execution that contains additional information for better UX
 export type InternalResultStatuses = "SUCCESS" | "FAILURE" | "UNELECTED" | "UNIMPLEMENTED" | "ERROR" | "TIMEOUT"
@@ -124,15 +149,31 @@ type BountyCreatedEventData = {
 }
 
 type BountyCreatedEvent = WSEvent<BountyCreatedEventData>
-
+export type CreateBountyArgs = {
+    // name: string,
+    file_location: string,
+    file_download_protocol: SupportedFileDownloadProtocols,
+    min_nodes: number,
+    total_nodes: number,
+    timeout_seconds: number,
+    network_required: boolean,
+    gpu_required: boolean,
+    amt_storage: string,
+    amt_node_reward: string,
+}
+//Convenience type to give completions and checks for coordinator contract calls
 export type CoordinatorContract = Contract & {
     get_bounty: ({bounty_id}: { bounty_id: string }) => Promise<Bounty>;
-    should_publish_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<boolean>;
-    get_node: ({account_id}: { account_id: string }) => Promise<any>; //TODO should return node instead
-    get_answer: ({bounty_id,}: { bounty_id: string }) => Promise<NodeResponse>;
-    publish_answer: ({
+    should_post_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<boolean>;
+    get_node: ({node_id}: { node_id: string }) => Promise<ClientNode>;
+    create_bounty: (args: CreateBountyArgs, gas: string, deposit: string) => Promise<Bounty>;
+    //Note that this is the "view" version, can only be run when the bounty is complete/cancelled. use call_get_answer to get answers from hot bounties.
+    get_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<NodeResponse>;
+    post_answer: ({
                          bounty_id,
                          node_id,
-                         result
-                     }: { bounty_id: string, node_id: string, result: NodeResponse }) => Promise<void>;
+                         answer,
+                         message,
+                         status
+                     }: { bounty_id: string, node_id: string, answer: string, message?: string, status: NodeResponseStatuses }) => Promise<void>;
 }

@@ -1,0 +1,22 @@
+---
+# https://docs.docker.com/engine/security/rootless/
+- hosts: docker
+  tasks:
+    - name: install dependencies
+      apt:
+        name: dbus-user-session
+        state: present
+        update_cache: yes
+    - name: install debian dependencies
+      apt:
+        name: fuse-overlayfs #Required for rootless docker
+        state: present
+        update_cache: yes
+
+    - name: Install Docker
+      ansible.builtin.shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
+      become: true
+    - name: shut down docker
+      ansible.builtin.shell: sudo systemctl stop docker
+      become: true
+    - name: setup rootless

@@ -179,7 +179,7 @@ const init = async () => {
     // Creates a bounty at a defined interval. Used for development to keep a constant stream of bounty events going
     // Default block when attempting to run against mainnet since it'll cost real near. Pass EMIT_BOUNTY__ALLOW_MAINNET to override
     if ((config.nearConnection.networkId !== "mainnet" || process.env.EMIT_BOUNTY__ALLOW_MAINNET) && process.env.EMIT_BOUNTY) {
-        const emitInterval = parseInt(process.env.EMIT_BOUNTY__INTERVAL || "60000")
+        const emitInterval = parseInt(process.env.EMIT_BOUNTY__INTERVAL || "20000")
         logger.info(`Emitting bounties every ${emitInterval}ms`);
         await emitBounty(client.config, client.coordinatorContract, emitInterval)
     }

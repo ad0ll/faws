@@ -43,13 +43,13 @@ export type Bounty = {
     build_args: string[], //TODO not currently supported by contract, but used in the client
     runtime_args: string[] //TODO not currently supported by contract
 }
+
+// Stored locally in environment variables
 export type ClientConfig = {
-    universalTimeout: BigInt, //Universal timeout in MS. Overrules bounty level timeout.
+    // universalTimeout: BigInt, //Universal timeout in MS. Overrules bounty level timeout.
     nodeId: string, //Every client is a node
     accountId: string, //Owner of the node. Must be able to sign transactions with this account.
     websocketUrl: string, // will be localhost or $(TODO ENTER TESTNET URL) in dev, or $(TODO insert mainnet url) in prod
-    acceptNetworkWorkloads: boolean, // If true, client makes reasonable efforts to block network access, default opt-out
-    acceptGpuWorkloads: boolean, // If true, client accepts gpu workloads, default opt-in
     bountyStorageDir: string, // $BOUNTY_ID and $NODE_ID can be passed as placeholders, and $BOUNTY_ID is required to avoid collisions
     containerNameFormat: string,
     imageNameFormat: string,
@@ -71,6 +71,14 @@ export type ClientConfig = {
     //     cpuRejectThreshold: number //Reject jobs until memory is below this threshold
     //     memoryDelayThreshold: number //Delay jobs until memory is below this threshold
     // }
+}
+
+// Stored on chain
+export type NodeConfig = {
+    absoluteTimeout: number, //Universal timeout in MS. Overrules bounty level timeout.
+    allowGpu: boolean,
+    allowNetwork: boolean,
+
 }
 
 
@@ -108,6 +116,7 @@ export type ClientNode = {
     rejected_runs: number,
     allow_network: boolean,
     allow_gpu: boolean,
+    absolute_timeout: number,
     registration_time: number,
 }
 

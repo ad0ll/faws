@@ -3,7 +3,7 @@ import {
     Bounty,
     ClientConfig,
     ClientExecutionContext,
-    ClientExecutionResult,
+    ClientExecutionResult, NodeConfig,
     SupportedFileDownloadProtocols
 } from "./types";
 import shell from "shelljs";
@@ -15,35 +15,6 @@ import {ExecutionError, PreflightError, SetupError} from "./errors";
 import {fillPlaceholders} from "./util";
 import {database} from "./index";
 
-
-// const exampleBounty: Bounty = {
-//     id: "example-bounty",
-//     owner_id: "example-owner",
-//     coordinator_id: "example-coordinator",
-//     file_location: "git@github.com:ad0ll/docker-hello-world.git",
-//     file_download_protocol: "git",
-//     success: false,
-//     complete: false,
-//     cancelled: false,
-//     min_nodes: 2,
-//     total_nodes: 5,
-//     network_required: true,
-//     gpu_required: false,
-//     bounty_created: 0,
-//     amt_storage: BigInt(10000000000000000000),
-//     amt_node_reward: BigInt(10000000000000000000),
-//     elected_nodes: [config.nodeId],
-//     answers: {}
-// }
-
-
-// Check if there is a dockerfile at the root
-export const verifyFileStructure = async (unpackedPath: string) => {
-    // TODO
-    // Verify file structure
-}
-
-
 export class Execution {
     public result: ClientExecutionResult = {} as ClientExecutionResult;
     private startTime = new Date().getTime();
@@ -51,6 +22,7 @@ export class Execution {
     public executionContext: ClientExecutionContext = {} as ClientExecutionContext;
     constructor(
         config: ClientConfig,
+        nodeConfig: NodeConfig,
         bounty: Bounty,
     ) {
 
@@ -73,7 +45,6 @@ export class Execution {
             packagePath: path.join(storageRoot, "files", path.basename(bounty.file_location)),
             dockerfilePath: path.join(storageRoot, "files", "Dockerfile")
         }
-        // this.executionContext.expectedReward = bounty.amt_node_reward/bounty.min_nodes
     }
 
     updateContext(newValues: any ) { //TODO any here is sloppy

@@ -47,6 +47,7 @@ type SupportedPlaceholders = {
     BOUNTY_ID?: string,
     ACCOUNT_ID?: string
     TIMESTAMP?: string,
+    HOME?: string,
 }
 
 /*
@@ -59,6 +60,7 @@ export const fillPlaceholders = (input: string, placeholders: SupportedPlacehold
     base = placeholders.BOUNTY_ID ? base.replace("$BOUNTY_ID", placeholders.BOUNTY_ID) : base
     base = placeholders.ACCOUNT_ID ? base.replace("$ACCOUNT_ID", placeholders.ACCOUNT_ID) : base
     base = placeholders.TIMESTAMP ? base.replace("$TIMESTAMP", placeholders.TIMESTAMP) : base
+    base = placeholders.HOME ? base.replace("$HOME", placeholders.HOME) : base
     logger.debug(`Filled placeholders in ${input} to ${base}`)
     return base
 }
@@ -90,26 +92,14 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
         deposit.toString()
     )
     logger.info(`automatically created bounty ${bounty.id}`)
-    return bounty
-}
-
-export const emitBounty = async (config: ClientConfig, coordinatorContract: CoordinatorContract, emitInterval: number) => {
-//Lots of would-be-debug logs are at info since you can't get here accidentally
-    logger.info(`EMIT_BOUNTY has been set by the user. Client will create a bounty against ${config.nearConnection.networkId} every ${emitInterval}ms`)
-
-    //Dev only, used to publish a message to the websocket relay for when you don't have an indexer that can send events
-    const publishEventToEmitter = async (bounty: Bounty, event: any): Promise<AxiosResponse> => {
-        const bountyEmitterUrl = process.env.EMIT_BOUNTY__WS_RELAY_URL || "http://localhost:8000/publish"
-        logger.info(`Posting bounty ${bounty.id} to bounty emitter at ${bountyEmitterUrl}`)
-        console.log(JSON.stringify(event))
-        return axios.post(bountyEmitterUrl, event)
+    if (process.env.EMIT_BOUNTY__PUBLISH) {
+        await publishEventToEmitter(config, bounty)
     }
 
-
-
-    const bounty = await createBounty(config, coordinatorContract)
-    console.log(bounty)
-    if (process.env.EMIT_BOUNTY__PUBLISH) {
+    return bounty
+}
+//Dev only, used to publish a message to the websocket relay for when you don't have an indexer that can send events
+const publishEventToEmitter = async (config: ClientConfig, bounty: Bounty): Promise<AxiosResponse> => {
         const event = {
             "block_height": 0,
             "block_hash": "bseefewiwi",
@@ -128,6 +118,22 @@ export const emitBounty = async (config: ClientConfig, coordinatorContract: Coor
                 }
             }`
         }
-        await publishEventToEmitter(bounty, event)
-    }
+        const bountyEmitterUrl = process.env.EMIT_BOUNTY__WS_RELAY_URL || "http://localhost:8000/publish"
+        logger.info(`Posting bounty ${bounty.id} to bounty emitter at ${bountyEmitterUrl}`)
+        console.log(JSON.stringify(event))
+        return axios.post(bountyEmitterUrl, event)
+}
+
+export const emitBounty = async (config: ClientConfig, coordinatorContract: CoordinatorContract, emitInterval: number) => {
+//Lots of would-be-debug logs are at info since you can't get here accidentally
+    logger.info(`EMIT_BOUNTY has been set by the user. Client will create a bounty against ${config.nearConnection.networkId} every ${emitInterval}ms`)
+
+
+
+
+
+    const bounty = await createBounty(config, coordinatorContract)
+    console.log(bounty)
+
+    setInterval(createBounty, 20000, config, coordinatorContract)
 }

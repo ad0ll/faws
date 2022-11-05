@@ -19,11 +19,8 @@ if(fs.existsSync("./.env.personal")) {
 export const readConfigFromEnv = (): ClientConfig => {
     const {
         WEBSOCKET_URL = 'ws://localhost:7071', //TODO Default should be mainnet or testnet
-        UNIVERSAL_TIMEOUT = BigInt(300000), // TODO Reject bounties that have a timeout > this value.?
         ACCOUNT_ID = "test1.test.near", //TODO bad dummy value, should be required
         NODE_ID = "node1.node.$ACCOUNT_ID", //TODO bad dummy value, should be required
-        ACCEPT_NETWORK_WORKLOADS = true,
-        ACCEPT_GPU_WORKLOADS = false,
         BOUNTY_STORAGE_DIR = path.join(os.homedir(), ".local/bounty_data/$BOUNTY_ID"),
         COORDINATOR_CONTRACT_ID = "dev-1665283011588-97304367585179",
         DOCKER_CONTAINER_NAME_FORMAT = "bounty-$BOUNTY_ID",
@@ -46,12 +43,12 @@ export const readConfigFromEnv = (): ClientConfig => {
     //Create the config object, defaults are assigned when reading envvars
     const config: ClientConfig = {
         websocketUrl: WEBSOCKET_URL,
-        universalTimeout: BigInt(UNIVERSAL_TIMEOUT),
+        // universalTimeout: BigInt(UNIVERSAL_TIMEOUT),
         accountId: ACCOUNT_ID,
         nodeId: fillPlaceholders(NODE_ID, {ACCOUNT_ID}),
-        acceptNetworkWorkloads: ACCEPT_NETWORK_WORKLOADS === "true",
-        acceptGpuWorkloads: ACCEPT_GPU_WORKLOADS === "true",
-        bountyStorageDir: fillPlaceholders(BOUNTY_STORAGE_DIR, {ACCOUNT_ID, NODE_ID}),
+        // acceptNetworkWorkloads: ACCEPT_NETWORK_WORKLOADS === "true",
+        // acceptGpuWorkloads: ACCEPT_GPU_WORKLOADS === "true",
+        bountyStorageDir: fillPlaceholders(BOUNTY_STORAGE_DIR, {ACCOUNT_ID, NODE_ID, HOME: os.homedir()}),
         coordinatorContractId: COORDINATOR_CONTRACT_ID,
         containerNameFormat: fillPlaceholders(DOCKER_CONTAINER_NAME_FORMAT, {ACCOUNT_ID, NODE_ID}),
         imageNameFormat: fillPlaceholders(DOCKER_IMAGE_NAME_FORMAT, {ACCOUNT_ID, NODE_ID}),
@@ -71,7 +68,6 @@ export const readConfigFromEnv = (): ClientConfig => {
     }
     logger.debug(`Validating specific configuration elements`); //?
     assert(config.bountyStorageDir.includes("$BOUNTY_ID"), "The $BOUNTY_ID placeholder must appear in BOUNTY_STORAGE_DIR to avoid collisions")
-    assert(config.universalTimeout > BigInt(0), "UNIVERSAL_TIMEOUT must be greater than 0")
     logger.debug("Finished bootstrapping client configuration:", config); /*?*/
     return config
 

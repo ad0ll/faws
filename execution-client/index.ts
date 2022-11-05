@@ -1,6 +1,13 @@
 import {Account, Contract} from "near-api-js";
 import {logger} from "./logger";
-import {ClientConfig, ClientExecutionResult, CoordinatorContract, NodeResponseStatuses} from "./types";
+import {
+    ClientConfig,
+    ClientExecutionResult,
+    ClientNode,
+    CoordinatorContract,
+    NodeConfig,
+    NodeResponseStatuses
+} from "./types";
 import WebSocket from "ws";
 import shell from "shelljs";
 import {readConfigFromEnv} from "./config"
@@ -20,6 +27,11 @@ export const database = new Database();
 //Global config items
 class ExecutionClient {
     private websocketClient: WebSocket
+    public nodeConfig: NodeConfig = {
+        absoluteTimeout: 0,
+        allowGpu: false,
+        allowNetwork: true,
+    };
 
     constructor(public account: Account,
                 public coordinatorContract: CoordinatorContract,
@@ -30,17 +42,23 @@ class ExecutionClient {
     }
 
     async initialize() {
-        await this.validateNode()
+        const node = await this.coordinatorContract.get_node(
+            {node_id: this.config.nodeId}
+        );
+        await this.validateNode(node)
+        this.nodeConfig = {
+            absoluteTimeout: node.absolute_timeout,
+            allowGpu: node.allow_gpu,
+            allowNetwork: node.allow_gpu,
+        };
         this.addWebsocketListeners()
     }
 
 
     // Checks if the node has all the required software installed
-    async validateNode() {
+    async validateNode(node: ClientNode) {
         logger.info("Fetching node info from coordinator contract");
-        const node = await this.coordinatorContract.get_node(
-             {node_id: this.config.nodeId}
-            );
+
         //TODO Check if account is owner of the node
         logger.info(`Node ${this.config.nodeId} is registered with the following properties: ${JSON.stringify(node)}`);
         if (!node) {
@@ -60,6 +78,7 @@ class ExecutionClient {
             logger.error(`Could not start node, missing the following software: ${missingSoftware.join(", ")}`);
             process.exit(1);
         }
+        return node
     }
 
     async publishAnswer(bountyId: string, result: ClientExecutionResult) {
@@ -128,7 +147,7 @@ class ExecutionClient {
                             logger.info(`We're elected! Executing bounty ${bountyId}...`);
                             try {
                                 const bounty = await getBounty(this.config, this.coordinatorContract, bountyId)
-                                const execution = new Execution(this.config, bounty)
+                                const execution = new Execution(this.config, this.nodeConfig, bounty)
                                 database.insert(bountyId, execution)
                                 const res = await execution.execute()
                                 await this.publishAnswer(bountyId, res)

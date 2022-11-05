@@ -3,14 +3,15 @@ import {Checkbox, Chip, Grid, Table, TableBody, TableCell, TableHead, TableRow, 
 import {FCWithChildren} from "../types";
 import {Link} from "react-router-dom";
 import Button from "@mui/material/Button";
-import {localStorageState, walletState} from "../App";
+import {localStorageState} from "../App";
 import {ClientNode} from "../../../execution-client/types"; //TODO fix me later
 import {BountyExecutionState, BountyMonitor, ExecutionMessageSummaryValue} from "../bounty/BountyMonitor";
 import {NodeStorage, NodeStorageValue, TransientStorage} from "../storage";
 import {messageFactory, readyStateToString} from "./util";
 import useWebSocket, {ReadyState} from "react-use-websocket";
 import {ClientMessage} from "../../../execution-client/database";
-import {atom, selector, useRecoilState, useRecoilValue} from "recoil"; //TODO fix me later
+import {atom, selector, useRecoilState, useRecoilValue} from "recoil";
+import {wallet} from "../index"; //TODO fix me later
 
 const viewMineOnlyState = atom<boolean>({
     key: "viewMineOnly",
@@ -20,19 +21,18 @@ const viewMineOnlyState = atom<boolean>({
 const chainNodesState = selector({
     key: "chainNodes",
     get: async ({get}) => {
-        const wallet = get(walletState)
         const viewMineOnly = get(viewMineOnlyState)
         // The contract currently returns a vector of nodes, so we have to massage it into an object here
-        const massage = (fetchedNodes: ClientNode[]) => {
-            const nodesObject = {};
-            fetchedNodes.forEach((node) => {
-                nodesObject[node.id] = {
-                    ...node,
-                    bountiesVisible: false
-                }
-            })
-            return nodesObject
-        }
+        // const massage = (fetchedNodes: ClientNode[]) => {
+        //     const nodesObject = {};
+        //     fetchedNodes.forEach((node) => {
+        //         nodesObject[node.id] = {
+        //             ...node,
+        //             bountiesVisible: false
+        //         }
+        //     })
+        //     return nodesObject
+        // }
         if (viewMineOnly) {
             console.log(`fetching nodes owned by ${wallet.accountId}`)
             return await wallet.getNodesOwnedBySelf()
@@ -153,7 +153,7 @@ export const NodeList: React.FC = () => {
                         const bounty: ExecutionMessageSummaryValue = {
                             nodeId: node.id,
                             bountyId,
-                            phase: data.phase || current.phase,
+                            phase: data.phase || current?.phase || "new",
                             lastUpdate: sentAt
                         }
                         setBountyState({...bountyState, [node.id + bountyId]: bounty})

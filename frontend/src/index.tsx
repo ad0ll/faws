@@ -11,7 +11,7 @@ const reactRoot = ReactDOM.createRoot(
 );
 
 // create the Wallet and the Contract
-const wallet = new Wallet();
+export const wallet = new Wallet();
 const contract = new Contract({wallet});
 
 const theme = createTheme({

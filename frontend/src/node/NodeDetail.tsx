@@ -5,11 +5,11 @@ import {ClientNode} from "../../../execution-client/types"
 
 import {nanoTimestampToDate} from "../util";
 import {useRecoilValue} from "recoil";
-import {localStorageState, walletState} from "../App";
+import {localStorageState, WalletContext} from "../App";
 
 
 export const NodeDetail: React.FC = () => {
-    const wallet = useRecoilValue(walletState);
+    const wallet = useContext(WalletContext)
     const storage = useRecoilValue(localStorageState)
 
     const {id} = useParams() //Gets :id from the url

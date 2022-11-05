@@ -52,6 +52,7 @@ export class Wallet {
         // }
 
         //garbage3.testnet: crowd desk cup wink social pudding spot twin pulse tag online cupboard
+        //garbage4.testnet: brother fire ladder embark renew grass decide dad mercy final calm diamond
         this.walletSelector = await setupWalletSelector({
             network: "testnet",
             // network, //TODO make this configurable, see network config in execution client

@@ -20,6 +20,7 @@ export const nodeFactory = (n: number): ClientNode[] => {
             last_success: Date.now(),
             last_failure: Date.now(),
             last_reject: Date.now(),
+            absolute_timeout: 30000,
             successful_runs: Math.floor(Math.random() * 100),
             failed_runs: Math.floor(Math.random() * 100),
             rejected_runs: Math.floor(Math.random() * 100),

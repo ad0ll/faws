@@ -1,25 +1,19 @@
 import "regenerator-runtime/runtime";
 
-import NavBar from "./common/NavBar";
+import NavBar from "./common/nav-bar";
 import Home from "./home/Home";
 import Coordinator from "./coordinator/Coordinator";
 import {Wallet} from "./common/near-wallet";
-import {Contract} from "./common/near-interface";
 import Bounty from "./bounty/Bounty";
-import {createBrowserRouter, Link, RouterProvider} from 'react-router-dom'
-import React, {useEffect} from "react";
+import {createBrowserRouter, RouterProvider} from 'react-router-dom'
+import React from "react";
 import {NodeDetail} from "./node/NodeDetail";
 import {NodeList} from "./node/NodeList";
 import {ErrorBoundary} from "react-error-boundary";
 import {TransientStorage} from "./storage";
-import {atom, useSetRecoilState} from "recoil";
+import {atom} from "recoil";
 
 
-
-// export const localStorageState = atom<any>({
-//     key: "localStorageState",
-//     default: {}
-// })
 export const localStorageState = atom<TransientStorage>({
     key: "localStorageState",
     default: new TransientStorage()
@@ -31,7 +25,6 @@ export default function App({
                                 wallet,
                             }: {
     isSignedIn: boolean;
-    contract: Contract;
     wallet: Wallet;
 }) {
     const router = createBrowserRouter([

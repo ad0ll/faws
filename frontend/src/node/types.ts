@@ -1,3 +1,7 @@
+//Converge w/ Types
+// ClientNode now, a
+//TODO probably drop or merge w/ types
+
 export interface Node {
   name: string;
   id?: string;

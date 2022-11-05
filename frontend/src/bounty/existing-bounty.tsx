@@ -1,26 +1,22 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Button,
-  Grid,
-  Typography,
-} from "@mui/material";
-import { Wallet } from "../common/near-wallet";
+import React from "react";
+import {Accordion, AccordionDetails, AccordionSummary, Box, Button, Grid, Typography,} from "@mui/material";
+import {Wallet} from "../common/near-wallet";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-
+import {BountyStatuses} from "../../../execution-client/types";
 export default function ExistingBounty({ wallet }: { wallet: Wallet }) {
   const cancelBounty = (bountyId: string) => {
-    wallet.callMethod("", "cancel_bounty", { bounty_id: bountyId });
+    //TODO WARNING COMMENTED
+    // wallet.callMethod("", "cancel_bounty", { bounty_id: bountyId });
   };
 
   const addStorage = (bountyId: string) => {
-    wallet.callMethod("", "add_storage_deposit", { bounty_id: bountyId });
+    //TODO WARNING COMMENTED
+    // wallet.callMethod("", "add_storage_deposit", { bounty_id: bountyId });
   };
 
   const addReward = (bountyId: string) => {
-    wallet.callMethod("", "add_node_reward_deposit", { bounty_id: bountyId });
+    //TODO WARNING COMMENTED
+    // wallet.callMethod("", "add_node_reward_deposit", { bounty_id: bountyId });
   };
 
   return (
@@ -34,7 +30,7 @@ export default function ExistingBounty({ wallet }: { wallet: Wallet }) {
         {wallet.existingBounties.map((bounty) => (
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>{bounty.name}</Typography>
+              <Typography>{bounty.id}</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Grid container rowSpacing={1} spacing={4}>
@@ -43,59 +39,61 @@ export default function ExistingBounty({ wallet }: { wallet: Wallet }) {
                     <Box fontWeight="700" display="inline">
                       File Location:
                     </Box>{" "}
-                    {bounty.fileLocation}
+                    {bounty.file_location}
                   </Typography>
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       Download Protocol:
                     </Box>{" "}
-                    {bounty.fileDownloadProtocol}
+                    {bounty.file_download_protocol}
                   </Typography>
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       Threshold:
                     </Box>{" "}
-                    {bounty.threshold}
+                    {bounty.min_nodes}
                   </Typography>
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       Total Nodes:
                     </Box>{" "}
-                    {bounty.totalNodes}
+                    {bounty.total_nodes}
                   </Typography>
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       Network Required:
                     </Box>{" "}
-                    {String(bounty.networkRequired)}
+                    {String(bounty.network_required)}
                   </Typography>
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       GPU Required:
                     </Box>{" "}
-                    {String(bounty.gpuRequired)}
+                    {String(bounty.gpu_required)}
                   </Typography>
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       Storage Amount:
                     </Box>{" "}
-                    {bounty.amtStorage} bytes
+                    {bounty.amt_storage.toString()} bytes
                   </Typography>
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       Reward:
                     </Box>{" "}
-                    {bounty.amtNodeReward} NEAR
+                    {bounty.amt_node_reward.toString()} NEAR
                   </Typography>
+                  {/*TODO toString shouldnt be required. May want to change this control to grid*/}
+
                   <Typography>
                     <Box fontWeight="700" display="inline">
                       Status:
                     </Box>{" "}
-                    {bounty.status}
+                    {bounty.status.toString()}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  {bounty.status === "Pending" ? (
+                  {bounty.status === BountyStatuses.Pending ? (
                     <>
                       <Button
                         variant="contained"

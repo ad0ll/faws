@@ -1,7 +1,6 @@
 import App from "./App";
 import React from "react";
 import {Wallet} from "./common/near-wallet";
-import {Contract} from "./common/near-interface";
 import ReactDOM from "react-dom/client";
 import {createTheme, CssBaseline, ThemeProvider} from "@mui/material";
 import {RecoilRoot} from "recoil";
@@ -12,7 +11,6 @@ const reactRoot = ReactDOM.createRoot(
 
 // create the Wallet and the Contract
 export const wallet = new Wallet();
-const contract = new Contract({wallet});
 
 const theme = createTheme({
     palette: {
@@ -54,7 +52,7 @@ window.onload = () => {
                 <RecoilRoot>
                     <ThemeProvider theme={theme}>
                         <CssBaseline/>
-                        <App isSignedIn={isSignedIn} contract={contract} wallet={wallet}/>
+                        <App isSignedIn={isSignedIn} wallet={wallet}/>
                     </ThemeProvider>
                 </RecoilRoot>
             );

@@ -9,6 +9,7 @@ export type ExecutionMessageSummaryValue = {
 }
 export type BountyExecutionState = { [key: string]: ExecutionMessageSummaryValue }
 
+//TODO consider deleting this component
 
 // Draftwork component that renders what bounties are running, and their current phase
 // Data is fed to it from NodeList currently (this is what renders when you click "show details" on a node)

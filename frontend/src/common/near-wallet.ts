@@ -20,8 +20,7 @@ import {setupLedger} from "@near-wallet-selector/ledger";
 import {setupNearWallet} from "@near-wallet-selector/near-wallet";
 import {setupMyNearWallet} from "@near-wallet-selector/my-near-wallet";
 import {CodeResult} from "near-api-js/lib/providers/provider";
-import {Bounty} from "../bounty/types";
-import {ClientNode} from "../../../execution-client/types";
+import {Bounty, ClientNode} from "../../../execution-client/types";
 import {COORDINATOR_ID} from "../coordinator/Coordinator";
 import {FinalExecutionOutcome} from "near-api-js/lib/providers";
 

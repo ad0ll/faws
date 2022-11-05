@@ -50,9 +50,11 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, "src", "index.html"),
         }),
+        //  Polyfill cheatsheet: https://gist.github.com/ef4/d2cf5672a93cf241fd47c020b9b3066a
         new webpack.ProvidePlugin({
             // you must `npm install buffer` to use this.
-            Buffer: ['buffer', 'Buffer']
+            Buffer: ['buffer', 'Buffer'],
+            process: "process/browser"
         })
     ],
 }

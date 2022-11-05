@@ -1,7 +1,6 @@
 // Answer as stored in the Coordinator
 import {ChunkHash} from "near-api-js/lib/providers/provider";
 import {ConnectConfig, Contract} from "near-api-js";
-import {ChangeFunctionCallOptions, ViewFunctionCallOptions} from "near-api-js/lib/account";
 
 export type NodeResponse = {
     solution: string,
@@ -19,6 +18,12 @@ export enum SupportedFileDownloadProtocols {
     IPFS = "IPFS",
     HTTP = "HTTP",
 }
+export enum BountyStatuses {
+Pending = "PENDING",
+Failed = "FAILED",
+Success = "SUCCESS",
+    Cancelled = "CANCELLED"
+}
 
 // Must match contract
 export type Bounty = {
@@ -27,7 +32,7 @@ export type Bounty = {
     coordinator_id: string,
     file_location: string,
     file_download_protocol: SupportedFileDownloadProtocols,
-    success: boolean,
+    success: boolean,   //TODO should probably be dropped since we have status
     complete: boolean,
     cancelled: boolean,
     min_nodes: number,
@@ -35,6 +40,7 @@ export type Bounty = {
     bounty_created: number,
     network_required: boolean,
     gpu_required: boolean,
+    status: BountyStatuses,
     amt_storage: BigInt,
     amt_node_reward: BigInt,
     elected_nodes: string[],
@@ -78,7 +84,6 @@ export type NodeConfig = {
     absoluteTimeout: number, //Universal timeout in MS. Overrules bounty level timeout.
     allowGpu: boolean,
     allowNetwork: boolean,
-
 }
 
 

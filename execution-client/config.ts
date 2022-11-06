@@ -10,8 +10,8 @@ import * as fs from "fs";
 
 dotenv.config()
 if(fs.existsSync("./.env.personal")) {
-    console.log("Loading .env.personal")
-    dotenv.config({path: ".env.personal"})
+    logger.info("Loading .env.personal")
+    dotenv.config({path: ".env.personal", override: true})
 }
 
 // Sets up the global config object and does some basic validation

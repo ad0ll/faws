@@ -1,15 +1,20 @@
-import winston from "winston";
+// winston.format.colorize(),
+//     winston.format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+import {createLogger, format, transports} from "winston";
 
 const LOG_LEVEL = process.env.LOG_LEVEL || "debug";
 
-export const logger = winston.createLogger({
+
+export const logger = createLogger({
     level: LOG_LEVEL,
-    format: winston.format.json(),
+    format: format.combine(
+        format.colorize(),
+        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+    ),
     transports: [
-        new winston.transports.Console({
-            format: winston.format.simple(),
-        }),
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'combined.log', level: 'info'}),
+        new transports.Console({}),
+        new transports.File({ filename: 'error.log', level: 'error' }),
+        new transports.File({ filename: 'combined.log', level: 'info'}),
     ],
 });

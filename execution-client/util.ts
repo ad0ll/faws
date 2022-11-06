@@ -36,7 +36,7 @@ export const getCoordinatorContract = async (config: ClientConfig, account: Acco
 
 export const getBounty = async (config: ClientConfig, coordinatorContract: CoordinatorContract, bountyId: string): Promise<Bounty> => {
     logger.debug(`Downloading bounty data for ${bountyId} from chain`)
-    console.log(`Downloading bounty data for ${bountyId} from chain`)
+    logger.info(`Downloading bounty data for ${bountyId} from chain`)
     // formatNEAR()
     const bounty: Bounty = await coordinatorContract.get_bounty({
             bounty_id: bountyId
@@ -98,8 +98,9 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
         "300000000000000",
         deposit.toString()
     )
-    logger.info(`automatically created bounty ${bounty.id}`)
+    logger.info(`automatically created bounty ${bounty.id}`, bounty)
     if (process.env.EMIT_BOUNTY__PUBLISH_CREATE_EVENT) {
+        logger.info(`Publishing bounty created event for ${bounty.id}`)
         const bce: BountyCreatedEvent = {
             event: "bounty_created",
             data: {
@@ -141,12 +142,6 @@ export const emitBounty = async (config: ClientConfig, coordinatorContract: Coor
 //Lots of would-be-debug logs are at info since you can't get here accidentally
     logger.info(`EMIT_BOUNTY has been set by the user. Client will create a bounty against ${config.nearConnection.networkId} every ${emitInterval}ms`)
 
-
-
-
-
     const bounty = await createBounty(config, coordinatorContract)
-    console.log(bounty)
-
     setInterval(createBounty, 20000, config, coordinatorContract)
 }

@@ -111,7 +111,7 @@ class ExecutionClient {
             }
             logger.debug(`Publishing answer for bounty ${bountyId} with payload: `, payload);
             const res = await this.coordinatorContract.post_answer(payload)
-            logger.info(`Successfully published answer for bounty ${bountyId} with result: ${JSON.stringify(res)}`);
+            logger.info(`Successfully published answer for bounty ${bountyId} with result: `, res);
             execution.updateContext({phase: "Complete"})
         } else {
             execution.updateContext({phase: "Skipped, bounty already completed"})
@@ -174,10 +174,7 @@ class ExecutionClient {
                                         errorType: e.constructor.name
                                     })
                                 }
-
                                 await this.emitBountyCompleteEvent(bountyId)
-
-
                             } finally {
                                 //TODO anything to close?
                             }
@@ -210,6 +207,7 @@ class ExecutionClient {
     //Dev only function that posts events to websocket in absence of an indexer
     async emitBountyCompleteEvent(bounty_id: string){
         if ((this.config.nearConnection.networkId !== "mainnet" || process.env.EMIT_BOUNTY__ALLOW_MAINNET) && process.env.EMIT_BOUNTY__PUBLISH_COMPLETE_EVENT) {
+            logger.info(`Publishing bounty_completed event for ${bounty_id}`)
             const bounty = await this.coordinatorContract.get_bounty({bounty_id})
             if(bounty.status !== BountyStatuses.Pending){
                 logger.info(`Bounty ${bounty_id} is not pending, not emitting bounty_completed event`)
@@ -225,6 +223,7 @@ class ExecutionClient {
                     outcome: BountyStatuses.Success,
                 }
             }
+            logger.info(`Emitting bounty_completed event for ${bounty_id} with payload: `, bce)
             await publishEventToWebsocketRelay(this.config, bounty.id, bce);
         }
     }
@@ -256,7 +255,7 @@ export const server = new WebSocket.Server({
 
 export const subscribers: Map<WebSocket, WebSocket> = new Map();
 server.on("connection", (ws, req) => {
-    console.log("WS Connection open");
+    logger.error(`"WS Connection open"`);
 
     subscribers.set(ws, ws);
 
@@ -271,7 +270,7 @@ server.on("connection", (ws, req) => {
             const message = JSON.parse(messageAsString.toString());
             logger.debug(`Subscriber received message: `, message)
         } catch (e) {
-            console.log("Bad message", e);
+            logger.error("Bad message", e);
         }
     });
 });

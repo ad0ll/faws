@@ -195,7 +195,7 @@ export type CoordinatorContract = Contract & {
                          answer,
                          message,
                          status
-                     }: { bounty_id: string, node_id: string, answer: string, message?: string, status: NodeResponseStatuses }) => Promise<void>;
+                     }: { bounty_id: string, node_id: string, answer: string, message?: string, status: NodeResponseStatuses }) => Promise<NodeResponse>;
 }
 
 export type ChainEvent = {

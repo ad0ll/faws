@@ -606,6 +606,9 @@ impl Coordinator {
         return response;
     }
 
+    // Post your answer, and then if the bounty is complete, close the bounty
+    // Closing the bounty should be separate from posting the answer in the final product, but bounty creators
+    // aren't necessarily running nodes, so we need to figure out a way to delegate it to someone in the pool
     pub fn post_answer(
         &mut self,
         bounty_id: AccountId,
@@ -635,8 +638,8 @@ impl Coordinator {
             block_timestamp(),
             status
         );
-
-        let node_response = NodeResponse::new_node_response(answer, message, status.clone());
+        //
+        let mut node_response = NodeResponse::new_node_response(answer.clone(), message.clone(), status.clone());
         let estimated_storage = storage_byte_cost() * size_of_val(&node_response) as u128;
         let used_storage = storage_byte_cost() * size_of_val(&bounty) as u128;
 
@@ -648,7 +651,7 @@ impl Coordinator {
         require!(estimated_storage < (bounty.amt_storage),
             "Not enough storage left to store answer");
 
-        bounty.answers.insert(&node_id, &node_response);
+        bounty.answers.insert(&node_id, &node_response.clone());
         bounty.unanswered_nodes.remove(&node_id);
         if status == NodeResponseStatus::SUCCESS {
             node.successful_runs += 1;
@@ -671,14 +674,13 @@ impl Coordinator {
 
 
         if bounty.successful_nodes.len() == bounty.min_nodes || bounty.failed_nodes.len() == bounty.min_nodes {
-            //Closes the bounty in place
             self.close_bounty(&mut bounty, false);
         }
 
         // After changing the nested vec (bounty.bounties) we MUST reinsert it into the map (self.bounties) to register the change in storage.
         self.nodes.insert(&node_id, &node); // Node had failure or success ticked, so update it now.
         self.bounties.insert(&bounty_id, &bounty);
-        return bounty.answers.get(&node_id).unwrap();
+        return node_response;
     }
 
     pub fn should_collect_reward(&self, node_id: AccountId, bounty_id: AccountId) -> bool {

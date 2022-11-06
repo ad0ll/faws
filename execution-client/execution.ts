@@ -122,7 +122,7 @@ export class Execution {
         logger.info(`bounty has finished executing with the following result: ${JSON.stringify(result)}`)
         //After checking for the result line, check if it exited with an error, then throw so we can publish the failure
         if (code !== 0) {
-            console.log("Docker exited with a non-zero code, throwing error")
+            logger.error("Docker exited with a non-zero code, throwing error")
             throw new ExecutionError(result.bounty_data.message || `docker container run failed with exit code ${code}`)
         }
         this.updateContext({result: result.bounty_data})

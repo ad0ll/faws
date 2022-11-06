@@ -33,7 +33,7 @@ impl Display for SupportedDownloadProtocols {
     }
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Copy, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub enum NodeResponseStatus {
     SUCCESS,
@@ -74,12 +74,12 @@ impl Display for BountyStatus {
 }
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct NodeResponse {
     pub solution: String,
     pub message: String,
-    pub timestamp: u64,
+    // pub timestamp: u64,
     pub status: NodeResponseStatus,
     pub payout_claimed: bool,
 }
@@ -96,7 +96,7 @@ impl NodeResponse {
         Self {
             solution,
             message,
-            timestamp: block_timestamp(),
+            // timestamp: block_timestamp(),
             status,
             payout_claimed: false,
         }
@@ -106,7 +106,7 @@ impl NodeResponse {
 // TODO Add a timeout to a bounty
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct Bounty {
     pub id: AccountId,
     pub owner_id: AccountId,
@@ -385,21 +385,7 @@ impl<'de> Deserialize<'de> for Bounty {
     }
 }
 
-// impl Serialize for UnorderedSet<AccountId>
-//     where
-//         AccountId: Serialize,
-// {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//         where
-//             S: Serializer,
-//     {
-//         let mut seq = serializer.serialize_seq(Some(self.len() as usize))?;
-//         for e in self {
-//             seq.serialize_element(e)?;
-//         }
-//         seq.end()
-//     }
-// }
+
 
 impl PartialEq<Self> for Bounty {
     fn eq(&self, other: &Self) -> bool {
@@ -444,11 +430,11 @@ impl Default for Bounty {
             amt_storage: 0,
             amt_node_reward: 0,
             elected_nodes: Vec::new(),
-            answers: UnorderedMap::new("bounty-answers".as_bytes().to_vec()),
-            failed_nodes: UnorderedSet::new("bounty-failed-nodes".as_bytes().to_vec()),
-            successful_nodes: UnorderedSet::new("bounty-successful-nodes".as_bytes().to_vec()),
-            unanswered_nodes: UnorderedSet::new("bounty-unanswered-nodes".as_bytes().to_vec()),
-            rejected_nodes: UnorderedSet::new("bounty-rejected-nodes".as_bytes().to_vec()),
+            answers: UnorderedMap::new("bounty-answers".as_bytes()),
+            failed_nodes: UnorderedSet::new("bounty-failed-nodes".as_bytes()),
+            successful_nodes: UnorderedSet::new("bounty-successful-nodes".as_bytes()),
+            unanswered_nodes: UnorderedSet::new("bounty-unanswered-nodes".as_bytes()),
+            rejected_nodes: UnorderedSet::new("bounty-rejected-nodes".as_bytes()),
         }
     }
 }
@@ -471,7 +457,7 @@ impl Bounty {
         amt_node_reward: u128,
     ) -> Self {
         Self {
-            id,
+            id: id.clone(),
             owner_id: signer_account_id(),
             coordinator_id: predecessor_account_id(), //predecessor_account_id OR whatever the user specifies
             file_location,
@@ -484,16 +470,16 @@ impl Bounty {
             // result: "".to_string(),
             // elected_nodes: UnorderedSet::new(format!("{}-elected", name).to_string().as_bytes()),
             elected_nodes: Vec::new(),
-            answers: UnorderedMap::new(format!("{}-answers", "test").to_string().as_bytes()),
-            failed_nodes: UnorderedSet::new(format!("{}-failed", "test").to_string().as_bytes()),
+            answers: UnorderedMap::new(format!("{}-answers", &id.clone()).as_bytes()),
+            failed_nodes: UnorderedSet::new(format!("{}-failed", &id.clone()).as_bytes()),
             successful_nodes: UnorderedSet::new(
-                format!("{}-successful", "test").to_string().as_bytes(),
+                format!("{}-successful", &id.clone()).as_bytes(),
             ),
             unanswered_nodes: UnorderedSet::new(
-                format!("{}-unanswered", "test").to_string().as_bytes(),
+                format!("{}-unanswered", &id.clone()).as_bytes(),
             ),
             rejected_nodes: UnorderedSet::new(
-                format!("{}-rejected", "test").to_string().as_bytes(),
+                format!("{}-rejected", &id.clone()).as_bytes(),
             ),
             // storage_used: 0,
             network_required,

@@ -1,17 +1,22 @@
-import {Account, Contract} from "near-api-js";
+import {Account} from "near-api-js";
 import {logger} from "./logger";
 import {
+    BountyCompletedEvent,
+    BountyCreatedEvent,
+    BountyStatuses,
+    ChainEvent,
     ClientConfig,
     ClientExecutionResult,
     ClientNode,
     CoordinatorContract,
     NodeConfig,
-    NodeResponseStatuses
+    NodeResponseStatuses,
+    PayoutStrategies
 } from "./types";
 import WebSocket from "ws";
 import shell from "shelljs";
 import {readConfigFromEnv} from "./config"
-import {emitBounty, getAccount, getBounty, getCoordinatorContract} from "./util";
+import {emitBounty, getAccount, getBounty, getCoordinatorContract, publishEventToWebsocketRelay} from "./util";
 import {Execution} from "./execution";
 import {ExecutionError, PostExecutionError, PreflightError, SetupError} from "./errors";
 import {Database} from "./database";
@@ -112,8 +117,8 @@ class ExecutionClient {
             execution.updateContext({phase: "Skipped, bounty already completed"})
             logger.info(`Not publishing answer for bounty ${bountyId} because should_post_answer returned false`);
         }
-    }
 
+    }
     private addWebsocketListeners() {
         this.websocketClient = new WebSocket(this.config.websocketUrl);
         this.websocketClient.onopen = () => {
@@ -135,12 +140,14 @@ class ExecutionClient {
                 // logger.debug(data)
                 const message = JSON.parse(data.toString())
                 if (message.event) {
-                    //Below is extremely noisy, make sure it's commented out in prod
+
+                    //Below is extremely noisy, make sure it's commented out in prod or increase to logger.trace
                     // logger.debug(`Received message: `, message);
                     const eventData = JSON.parse(message.event)
                     if (eventData.event === "bounty_created") {
-                        console.log(eventData)
-                        const bountyData = eventData.data;
+                        const event = eventData as BountyCreatedEvent;
+                        //TODO Check that event was emitted by the coordinator contract
+                        const bountyData = event.data;
                         const bountyId = bountyData.bounty_id;
                         logger.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);
                         if (bountyData.node_ids.includes(this.config.nodeId)) {
@@ -152,6 +159,7 @@ class ExecutionClient {
                                 const res = await execution.execute()
                                 await this.publishAnswer(bountyId, res)
                                 logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(res)}`);
+
                             } catch (e: any) {
                                 logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
                                 if (e instanceof SetupError) { //TODO remove me once cleaned up
@@ -166,10 +174,24 @@ class ExecutionClient {
                                         errorType: e.constructor.name
                                     })
                                 }
-                                //TODO e will have name and message, post failure to chain
+
+                                await this.emitBountyCompleteEvent(bountyId)
+
+
                             } finally {
                                 //TODO anything to close?
                             }
+                        }
+                    }
+                    if (eventData.event == "bounty_completed") {
+                        logger.info(`Received bounty_completed event for ${eventData.data.bounty_id}`)
+                        const event = eventData as BountyCompletedEvent;
+                        const {data} = event
+                        const {bounty_id, payout_node_ids} = data
+                        if (payout_node_ids.includes(this.config.nodeId)) {
+                            logger.info(`We're elected to receive payout for bounty ${bounty_id}!`)
+                            await this.coordinatorContract.collect_reward({bounty_id, node_id: this.config.nodeId})
+                            logger.info(`Successfully collected reward for bounty ${bounty_id}`)
                         }
                     }
                 }
@@ -182,6 +204,28 @@ class ExecutionClient {
 
         this.websocketClient.onerror = (error) => {
             logger.error(`WebSocket error: `, error);
+        }
+    }
+
+    //Dev only function that posts events to websocket in absence of an indexer
+    async emitBountyCompleteEvent(bounty_id: string){
+        if ((this.config.nearConnection.networkId !== "mainnet" || process.env.EMIT_BOUNTY__ALLOW_MAINNET) && process.env.EMIT_BOUNTY__PUBLISH_COMPLETE_EVENT) {
+            const bounty = await this.coordinatorContract.get_bounty({bounty_id})
+            if(bounty.status !== BountyStatuses.Pending){
+                logger.info(`Bounty ${bounty_id} is not pending, not emitting bounty_completed event`)
+            }
+            const bce: BountyCompletedEvent = {
+                event: "bounty_completed",
+                data: {
+                    bounty_id: bounty_id,
+                    coordinator_id: this.config.coordinatorContractId,
+                    node_ids: bounty.elected_nodes,
+                    payout_node_ids: [this.config.nodeId],
+                    payout_strategy: PayoutStrategies.SuccessfulNodes,
+                    outcome: BountyStatuses.Success,
+                }
+            }
+            await publishEventToWebsocketRelay(this.config, bounty.id, bce);
         }
     }
 }

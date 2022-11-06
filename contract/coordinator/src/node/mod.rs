@@ -1,9 +1,10 @@
 use std::fmt;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{near_bindgen, AccountId, env};
-use near_sdk::env::signer_account_id;
 
+use near_sdk::{AccountId, env, near_bindgen};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::env::signer_account_id;
+use near_sdk::serde::{Deserialize, Serialize};
+use crate::bounty::NodeResponseStatus;
 
 //TODO This struct should be considered when calculating the storage fee.
 #[near_bindgen]
@@ -23,9 +24,23 @@ pub struct Node {
     pub rejected_runs: u64,
     pub allow_network: bool,
     pub allow_gpu: bool,
+    pub absolute_timeout: u64,
+    pub lifetime_earnings: u128,
     pub deposit: u128,
     pub registration_time: u64,
+
+    // pub run_count: u128;
+    // pub outcomes: UnorderedMap<u128, Outcome>;
 }
+
+//Currently omitted because would require nodes to acknowledge that they've received the bounty
+// Also storage isn't currently accounting for this, would need simplified storage to be implemented first
+// pub struct Outcome{
+//     time_started: u64,
+//     time_ended: u64,
+//     bounty_id: AccountId,
+//     status: NodeResponseStatus,
+// }
 
 #[near_bindgen]
 impl Node {
@@ -47,9 +62,10 @@ impl Node {
             rejected_runs: 0,
             allow_network,
             allow_gpu,
+            lifetime_earnings: 0,
+            absolute_timeout: 60000,
             deposit: env::attached_deposit(),
             registration_time: env::block_timestamp(),
-
         }
     }
 }
@@ -70,6 +86,8 @@ impl Default for Node {
             rejected_runs: 0,
             allow_network: true,
             allow_gpu: false,
+            absolute_timeout: 60000,
+            lifetime_earnings: 0,
             deposit: 0,
             registration_time: env::block_timestamp(),
         }
@@ -82,3 +100,4 @@ impl fmt::Display for Node {
         write!(f, "Node {{ id: {}, owner_id: {}, last_run: {}, last_success: {}, last_failure: {}, successful_runs: {}, failed_runs: {}, GPUS_LOL}}", self.id, self.owner_id, self.last_run, self.last_success, self.last_failure, self.successful_runs, self.failed_runs)
     }
 }
+

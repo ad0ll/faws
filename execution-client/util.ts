@@ -1,4 +1,11 @@
-import {Bounty, ClientConfig, CoordinatorContract, SupportedFileDownloadProtocols} from "./types";
+import {
+    Bounty,
+    ClientConfig,
+    CoordinatorContract,
+    SupportedFileDownloadProtocols,
+    ChainEvent,
+    BountyCreatedEvent, BountyCompletedEvent
+} from "./types";
 import {Account, connect, Contract} from "near-api-js";
 import {logger} from "./logger";
 import {BountyNotFoundError} from "./errors";
@@ -20,7 +27,7 @@ export const getCoordinatorContract = async (config: ClientConfig, account: Acco
         {
             // make sure the ContractCoordinator type matches the contract
             viewMethods: ["get_bounty", "should_post_answer", "get_node", "get_answer"], // view methods do not change state but usually return a value
-            changeMethods: ["post_answer", "create_bounty"], // change methods modify state, or otherwise require gas (such as when using borsh result_serializer)
+            changeMethods: ["post_answer", "create_bounty", "collect_reward"], // change methods modify state, or otherwise require gas (such as when using borsh result_serializer)
         }
     );
     logger.info(`Connected to coordinator contract at ${config.coordinatorContractId}`, contract);
@@ -92,36 +99,42 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
         deposit.toString()
     )
     logger.info(`automatically created bounty ${bounty.id}`)
-    if (process.env.EMIT_BOUNTY__PUBLISH) {
-        await publishEventToEmitter(config, bounty)
+    if (process.env.EMIT_BOUNTY__PUBLISH_CREATE_EVENT) {
+        const bce: BountyCreatedEvent = {
+            event: "bounty_created",
+            data: {
+                coordinator_id: config.coordinatorContractId,
+                node_ids: [config.nodeId],
+                bounty_id: bounty.id
+            }
+        }
+        await publishEventToWebsocketRelay(config, bounty.id, bce)
     }
 
     return bounty
 }
 //Dev only, used to publish a message to the websocket relay for when you don't have an indexer that can send events
-const publishEventToEmitter = async (config: ClientConfig, bounty: Bounty): Promise<AxiosResponse> => {
-        const event = {
-            "block_height": 0,
-            "block_hash": "bseefewiwi",
-            "block_timestamp": 567778870005,
-            "block_epoch_id": "esesiwiwiw",
-            "receipt_id": "esefeferer",
-            "log_index": 0,
-            "predecessor_id": "esesiwiw",
-            "account_id": "esesewiwi",
-            "status": "Success",
-            event: `{
-                "event": "bounty_created",
-                "data": {
-                    "node_ids": ["${config.nodeId}"],
-                    "bounty_id": "${bounty.id}"
-                }
-            }`
-        }
+export const publishEventToWebsocketRelay = async (config: ClientConfig, bounty_id: string, eventData: BountyCreatedEvent | BountyCompletedEvent): Promise<AxiosResponse> => {
+
+        const event = generatePlaceholderChainEvent(eventData)
         const bountyEmitterUrl = process.env.EMIT_BOUNTY__WS_RELAY_URL || "http://localhost:8000/publish"
-        logger.info(`Posting bounty ${bounty.id} to bounty emitter at ${bountyEmitterUrl}`)
-        console.log(JSON.stringify(event))
+        logger.info(`Posting bounty ${bounty_id} to bounty emitter at ${bountyEmitterUrl}`)
         return axios.post(bountyEmitterUrl, event)
+}
+
+export const generatePlaceholderChainEvent = (event: BountyCreatedEvent | BountyCompletedEvent): ChainEvent => {
+    return {
+        block_height: 0,
+        block_hash: "bseefewiwi",
+        block_timestamp: 567778870005,
+        block_epoch_id: "esesiwiwiw",
+        receipt_id: "esefeferer",
+        log_index: 0,
+        predecessor_id: "esesiwiw",
+        account_id: "esesewiwi",
+        status: "Success",
+        event: JSON.stringify(event)
+    }
 }
 
 export const emitBounty = async (config: ClientConfig, coordinatorContract: CoordinatorContract, emitInterval: number) => {

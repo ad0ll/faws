@@ -1,10 +1,12 @@
-//TODO Update documentation in here, all pointing to NFT stuffs from where this was copied
-
 use std::fmt;
+
 use near_sdk::{AccountId, serde_json};
+use near_sdk::serde::{Deserialize, Serialize};
+use crate::bounty::BountyStatus;
+use crate::coordinator::PayoutStrategy;
 
 // This is heavily influenced by: https://github.com/near-examples/nft-tutorial/blob/7.events/nft-contract/src/events.rs#L1-L79
-use near_sdk::serde::{Deserialize, Serialize};
+
 
 /// Enum that represents the data type of the EventLog.
 /// The enum can either be an NftMint or an NftTransfer.
@@ -43,7 +45,7 @@ impl fmt::Display for EventLog {
     }
 }
 
-/// An event log to capture token minting
+/// An event log for when a bounty is created.
 ///
 /// Arguments
 /// * `bounty_id`: "bounty.id.test.near"
@@ -52,19 +54,16 @@ impl fmt::Display for EventLog {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct BountyCreatedLog {
+    pub coordinator_id: AccountId,
     pub bounty_id: AccountId,
-    // pub creator_id: AccountId, //TODO Need to implement this for filtering
     pub node_ids: Vec<AccountId>,
-    // pub network_required: bool, //TODO Need to implement this for filtering
-    // pub gpu_required: bool, //TODO Need to implement this for filtering
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
 
-//TODO Implement post answer logs
 
-/// An event log to capture token transfer
-///
+/// An event log to capture bounty closure
+/// TODO update this comment
 /// Arguments
 /// * `authorized_id`: approved account to transfer
 /// * `old_owner_id`: "owner.near"
@@ -74,11 +73,13 @@ pub struct BountyCreatedLog {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct BountyCompletedLog {
-    pub solution: String,
-    pub success: bool,
-    // pub creator_id: AccountId, //TODO We need this for filtering
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nodes: Option<Vec<String>>,
+    pub coordinator_id: AccountId,
+    pub bounty_id: AccountId,
+    pub node_ids: Vec<AccountId>,
+    pub reward_recipients: Vec<AccountId>,
+    pub outcome: BountyStatus,
+    pub payout_strategy: PayoutStrategy,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }

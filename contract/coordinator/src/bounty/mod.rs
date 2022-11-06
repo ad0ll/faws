@@ -4,10 +4,14 @@ use std::fmt::{Display, Formatter};
 use near_sdk::{AccountId, Balance, log, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
-use near_sdk::env::{block_timestamp, block_timestamp_ms, predecessor_account_id, signer_account_id};
+use near_sdk::env::{
+    block_timestamp, block_timestamp_ms, predecessor_account_id, signer_account_id,
+};
 use near_sdk::serde::{Deserialize, Deserializer, Serialize, Serializer};
 use near_sdk::serde::de::{Error, MapAccess, Visitor};
 use near_sdk::serde::ser::SerializeStruct;
+
+use crate::coordinator::PayoutStrategy;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -69,7 +73,6 @@ impl Display for BountyStatus {
     }
 }
 
-
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug)]
 #[serde(crate = "near_sdk::serde")]
@@ -78,18 +81,24 @@ pub struct NodeResponse {
     pub message: String,
     pub timestamp: u64,
     pub status: NodeResponseStatus,
+    pub payout_claimed: bool,
 }
 
 #[near_bindgen]
 impl NodeResponse {
     #[init]
     #[private]
-    pub fn new_node_response(solution: String, message: String, status: NodeResponseStatus) -> Self {
+    pub fn new_node_response(
+        solution: String,
+        message: String,
+        status: NodeResponseStatus,
+    ) -> Self {
         Self {
             solution,
             message,
             timestamp: block_timestamp(),
             status,
+            payout_claimed: false,
         }
     }
 }
@@ -299,19 +308,28 @@ impl<'de> Deserialize<'de> for Bounty {
                 }
                 let id = id.ok_or_else(|| Error::missing_field("id"))?;
                 let owner_id = owner_id.ok_or_else(|| Error::missing_field("owner_id"))?;
-                let coordinator_id = coordinator_id.ok_or_else(|| Error::missing_field("coordinator_id"))?;
-                let file_location = file_location.ok_or_else(|| Error::missing_field("file_location"))?;
-                let file_download_protocol = file_download_protocol.ok_or_else(|| Error::missing_field("file_download_protocol"))?;
+                let coordinator_id =
+                    coordinator_id.ok_or_else(|| Error::missing_field("coordinator_id"))?;
+                let file_location =
+                    file_location.ok_or_else(|| Error::missing_field("file_location"))?;
+                let file_download_protocol = file_download_protocol
+                    .ok_or_else(|| Error::missing_field("file_download_protocol"))?;
                 let status = status.ok_or_else(|| Error::missing_field("status"))?;
                 let min_nodes = min_nodes.ok_or_else(|| Error::missing_field("min_nodes"))?;
                 let total_nodes = total_nodes.ok_or_else(|| Error::missing_field("total_nodes"))?;
-                let bounty_created = bounty_created.ok_or_else(|| Error::missing_field("bounty_created"))?;
-                let network_required = network_required.ok_or_else(|| Error::missing_field("network_required"))?;
-                let gpu_required = gpu_required.ok_or_else(|| Error::missing_field("gpu_required"))?;
+                let bounty_created =
+                    bounty_created.ok_or_else(|| Error::missing_field("bounty_created"))?;
+                let network_required =
+                    network_required.ok_or_else(|| Error::missing_field("network_required"))?;
+                let gpu_required =
+                    gpu_required.ok_or_else(|| Error::missing_field("gpu_required"))?;
                 let amt_storage = amt_storage.ok_or_else(|| Error::missing_field("amt_storage"))?;
-                let amt_node_reward = amt_node_reward.ok_or_else(|| Error::missing_field("amt_node_reward"))?;
-                let timeout_seconds = timeout_seconds.ok_or_else(|| Error::missing_field("timeout_seconds"))?;
-                let elected_nodes = elected_nodes.ok_or_else(|| Error::missing_field("elected_nodes"))?;
+                let amt_node_reward =
+                    amt_node_reward.ok_or_else(|| Error::missing_field("amt_node_reward"))?;
+                let timeout_seconds =
+                    timeout_seconds.ok_or_else(|| Error::missing_field("timeout_seconds"))?;
+                let elected_nodes =
+                    elected_nodes.ok_or_else(|| Error::missing_field("elected_nodes"))?;
                 return Ok(Bounty {
                     id,
                     owner_id,
@@ -328,15 +346,41 @@ impl<'de> Deserialize<'de> for Bounty {
                     amt_node_reward,
                     timeout_seconds,
                     elected_nodes,
-                    answers: UnorderedMap::new(format!("{}-answers", "test").to_string().as_bytes()),
-                    failed_nodes: UnorderedSet::new(format!("{}-failed", "test").to_string().as_bytes()),
-                    successful_nodes: UnorderedSet::new(format!("{}-successful", "test").to_string().as_bytes()),
-                    unanswered_nodes: UnorderedSet::new(format!("{}-unanswered", "test").to_string().as_bytes()),
-                    rejected_nodes: UnorderedSet::new(format!("{}-rejected", "test").to_string().as_bytes()),
+                    answers: UnorderedMap::new(
+                        format!("{}-answers", "test").to_string().as_bytes(),
+                    ),
+                    failed_nodes: UnorderedSet::new(
+                        format!("{}-failed", "test").to_string().as_bytes(),
+                    ),
+                    successful_nodes: UnorderedSet::new(
+                        format!("{}-successful", "test").to_string().as_bytes(),
+                    ),
+                    unanswered_nodes: UnorderedSet::new(
+                        format!("{}-unanswered", "test").to_string().as_bytes(),
+                    ),
+                    rejected_nodes: UnorderedSet::new(
+                        format!("{}-rejected", "test").to_string().as_bytes(),
+                    ),
                 });
             }
         }
-        const FIELDS: &'static [&'static str] = &["id", "owner_id", "coordinator_id", "file_location", "file_download_protocol", "status", "min_nodes", "total_nodes", "bounty_created", "network_required", "gpu_required", "amt_storage", "amt_node_reward", "timeout_seconds", "elected_nodes"];
+        const FIELDS: &'static [&'static str] = &[
+            "id",
+            "owner_id",
+            "coordinator_id",
+            "file_location",
+            "file_download_protocol",
+            "status",
+            "min_nodes",
+            "total_nodes",
+            "bounty_created",
+            "network_required",
+            "gpu_required",
+            "amt_storage",
+            "amt_node_reward",
+            "timeout_seconds",
+            "elected_nodes",
+        ];
         deserializer.deserialize_struct("Bounty", FIELDS, BountyVisitor)
     }
 }
@@ -356,7 +400,6 @@ impl<'de> Deserialize<'de> for Bounty {
 //         seq.end()
 //     }
 // }
-
 
 impl PartialEq<Self> for Bounty {
     fn eq(&self, other: &Self) -> bool {
@@ -379,7 +422,7 @@ impl PartialEq<Self> for Bounty {
             && self.failed_nodes.len() == other.failed_nodes.len() //TODO: Make this a real comparison
             && self.successful_nodes.len() == other.successful_nodes.len() //TODO: Make this a real comparison
             && self.unanswered_nodes.len() == other.unanswered_nodes.len() //TODO: Make this a real comparison
-        && self.rejected_nodes.len() == other.rejected_nodes.len(); //TODO: Make this a real comparison
+            && self.rejected_nodes.len() == other.rejected_nodes.len(); //TODO: Make this a real comparison
     }
 }
 
@@ -409,18 +452,24 @@ impl Default for Bounty {
         }
     }
 }
-// impl Serialize for Bounty {
-//     fn serialize<S>(&self, serializer: S) -> Result<serde::ser::Ok, serde::ser::Error> where S: Serializer {
-//         todo!()
-//     }
-// }
 
 #[near_bindgen]
 impl Bounty {
     #[init]
     #[payable]
     #[private] // Only allow creating bounties through coordinator
-    pub fn new_bounty(id: AccountId, file_location: String, file_download_protocol: SupportedDownloadProtocols, min_nodes: u64, total_nodes: u64, timeout_seconds: u64, network_required: bool, gpu_required: bool, amt_storage: u128, amt_node_reward: u128) -> Self {
+    pub fn new_bounty(
+        id: AccountId,
+        file_location: String,
+        file_download_protocol: SupportedDownloadProtocols,
+        min_nodes: u64,
+        total_nodes: u64,
+        timeout_seconds: u64,
+        network_required: bool,
+        gpu_required: bool,
+        amt_storage: u128,
+        amt_node_reward: u128,
+    ) -> Self {
         Self {
             id,
             owner_id: signer_account_id(),
@@ -437,9 +486,15 @@ impl Bounty {
             elected_nodes: Vec::new(),
             answers: UnorderedMap::new(format!("{}-answers", "test").to_string().as_bytes()),
             failed_nodes: UnorderedSet::new(format!("{}-failed", "test").to_string().as_bytes()),
-            successful_nodes: UnorderedSet::new(format!("{}-successful", "test").to_string().as_bytes()),
-            unanswered_nodes: UnorderedSet::new(format!("{}-unanswered", "test").to_string().as_bytes()),
-            rejected_nodes: UnorderedSet::new(format!("{}-rejected", "test").to_string().as_bytes()),
+            successful_nodes: UnorderedSet::new(
+                format!("{}-successful", "test").to_string().as_bytes(),
+            ),
+            unanswered_nodes: UnorderedSet::new(
+                format!("{}-unanswered", "test").to_string().as_bytes(),
+            ),
+            rejected_nodes: UnorderedSet::new(
+                format!("{}-rejected", "test").to_string().as_bytes(),
+            ),
             // storage_used: 0,
             network_required,
             gpu_required,
@@ -448,8 +503,6 @@ impl Bounty {
         }
     }
 
-
-
     //Dumps the result as {$value: $number_of_nodes_with_value}, requiring the bounty creator to manually verify the result
     #[private]
     pub fn get_result(&self) -> HashMap<String, u8> {
@@ -457,11 +510,57 @@ impl Bounty {
         let mut res: HashMap<String, u8> = HashMap::new();
         for (_, value) in self.answers.iter() {
             if res.contains_key(&value.solution.clone()) {
-                res.insert(value.solution.clone(), res.get(&value.solution.clone()).unwrap() + 1);
+                res.insert(
+                    value.solution.clone(),
+                    res.get(&value.solution.clone()).unwrap() + 1,
+                );
             } else {
                 res.insert(value.solution.clone(), 1);
             }
         }
         return res;
+    }
+
+    pub fn get_payout_strategy(&self) -> PayoutStrategy {
+        if self.successful_nodes.len() >= self.min_nodes {
+            return PayoutStrategy::SuccessfulNodes;
+        } else if self.failed_nodes.len() >= self.min_nodes {
+            return PayoutStrategy::FailedNodes;
+        } else if self.status == BountyStatus::Cancelled {
+            return PayoutStrategy::AllAnsweredNodes;
+        } else {
+            panic!("Bounty {} is not complete, can't determine payout strategy", self.id);
+        }
+    }
+
+    pub fn get_amt_reward_per_node(&self) -> Balance {
+        return match self.get_payout_strategy() {
+            PayoutStrategy::AllAnsweredNodes => self.amt_node_reward / self.answers.len() as u128,
+            PayoutStrategy::FailedNodes => self.amt_node_reward / self.failed_nodes.len() as u128,
+            PayoutStrategy::SuccessfulNodes => self.amt_node_reward / self.successful_nodes.len() as u128, //Technically could be amt_node_reward/min_nodes
+        };
+    }
+    pub fn get_payout_recipient_ids(&self) -> Vec<AccountId> {
+        return match self.get_payout_strategy() {
+            PayoutStrategy::AllAnsweredNodes => self.answers.keys().collect(),
+            PayoutStrategy::FailedNodes => self.failed_nodes.iter().collect(),
+            PayoutStrategy::SuccessfulNodes => self.successful_nodes.iter().collect(),
+        };
+    }
+    pub fn get_payout_recipients_by_payout_claimed(&self, payout_claimed: bool) -> Vec<AccountId> {
+        let mut paid_recipients: Vec<AccountId> = Vec::new();
+        for id in self.get_payout_recipient_ids() {
+            if self.answers.get(&id).unwrap().payout_claimed == payout_claimed {
+                paid_recipients.push(id);
+            }
+        }
+        return paid_recipients;
+    }
+    pub fn get_paid_recipients(&self) -> Vec<AccountId> {
+        return self.get_payout_recipients_by_payout_claimed(true);
+    }
+
+    pub fn get_unpaid_recipients(&self) -> Vec<AccountId> {
+        return self.get_payout_recipients_by_payout_claimed(false);
     }
 }

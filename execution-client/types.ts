@@ -24,6 +24,13 @@ Failed = "FAILED",
 Success = "SUCCESS",
     Cancelled = "CANCELLED"
 }
+export enum PayoutStrategies {
+    SuccessfulNodes,
+    //If min_nodes+ succeeds, only successful nodes should get paid
+    FailedNodes,
+    //If min_nodes+ fails, only failed nodes should get paid
+    AllAnsweredNodes, //If a bounty is cancelled, all nodes should get paid
+}
 
 // Must match contract
 export type Bounty = {
@@ -32,7 +39,6 @@ export type Bounty = {
     coordinator_id: string,
     file_location: string,
     file_download_protocol: SupportedFileDownloadProtocols,
-    success: boolean,   //TODO should probably be dropped since we have status
     complete: boolean,
     cancelled: boolean,
     min_nodes: number,
@@ -46,8 +52,8 @@ export type Bounty = {
     elected_nodes: string[],
     // upload_strategy: string // Later add support for publishing solution to IPFS
     answers: { [key: string]: NodeResponse },
-    build_args: string[], //TODO not currently supported by contract, but used in the client
-    runtime_args: string[] //TODO not currently supported by contract
+    build_args: string[], //Not currently supported by contract, but used by client for tests
+    runtime_args: string[] //Not currently supported by contract, but used by client for tests
 }
 
 // Stored locally in environment variables
@@ -162,7 +168,6 @@ type BountyCreatedEventData = {
     node_ids: string[],
 }
 
-type BountyCreatedEvent = WSEvent<BountyCreatedEventData>
 export type CreateBountyArgs = {
     // name: string,
     file_location: string,
@@ -181,6 +186,7 @@ export type CoordinatorContract = Contract & {
     should_post_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<boolean>;
     get_node: ({node_id}: { node_id: string }) => Promise<ClientNode>;
     create_bounty: (args: CreateBountyArgs, gas: string, deposit: string) => Promise<Bounty>;
+    collect_reward: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<void>;
     //Note that this is the "view" version, can only be run when the bounty is complete/cancelled. use call_get_answer to get answers from hot bounties.
     get_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<NodeResponse>;
     post_answer: ({
@@ -190,4 +196,38 @@ export type CoordinatorContract = Contract & {
                          message,
                          status
                      }: { bounty_id: string, node_id: string, answer: string, message?: string, status: NodeResponseStatuses }) => Promise<void>;
+}
+
+export type ChainEvent = {
+        block_height: number,
+        block_hash: string, //Should this be a hash type?
+        block_timestamp: number,
+        block_epoch_id: string,
+        receipt_id: string,
+        log_index: 0,
+        predecessor_id: string,
+        account_id: string,
+        status: "Success" | "Failure",
+        event: string,
+}
+
+export type BountyCreatedEvent = {
+    event: "bounty_created",
+    data: {
+        coordinator_id: string,
+        node_ids: string[],
+        bounty_id: string,
+    }
+}
+
+export type BountyCompletedEvent = {
+    event: "bounty_completed",
+    data: {
+        coordinator_id: string,
+        bounty_id: string,
+        node_ids: string[],
+        payout_node_ids: string[],
+        payout_strategy: PayoutStrategies,
+        outcome: BountyStatuses,
+    }
 }

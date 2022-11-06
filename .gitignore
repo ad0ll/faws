@@ -9,3 +9,5 @@ target
 node_modules
 .env.personal
 .DS_Store
+.password
+dist

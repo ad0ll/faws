@@ -1,16 +1,15 @@
-import {Bounty, ClientConfig, SupportedFileDownloadProtocols} from "../types";
+import {Bounty, BountyStatuses, ClientConfig, SupportedFileDownloadProtocols} from "../types";
 import * as fs from "fs";
 import shell from "shelljs";
 import {readConfigFromEnv} from "../config";
 import {Execution} from "../execution";
 import anyTest, {ExecutionContext, TestFn} from "ava";
 
-
 type TypedAvaExecutionContext = ExecutionContext<{ config: ClientConfig }>;
 const test = anyTest as TestFn<{
     config: ClientConfig
-
 }>;
+
 const getExampleBounty = (config: ClientConfig, {
     id = `example-bounty`,
     owner_id = "example-owner",
@@ -37,7 +36,6 @@ const getExampleBounty = (config: ClientConfig, {
     coordinator_id,
     file_location,
     file_download_protocol,
-    success,
     complete,
     cancelled,
     min_nodes,
@@ -51,11 +49,13 @@ const getExampleBounty = (config: ClientConfig, {
     answers,
     build_args,
     runtime_args,
+    status: BountyStatuses.Pending
 })
 
 const downloadFileTest = async (t: TypedAvaExecutionContext, file_location: string, file_download_protocol: SupportedFileDownloadProtocols, forceRemove=false) => {
     const {config} = t.context;
-    const execution = new Execution(config, getExampleBounty(config, {
+    //TODO nodeConfig should come from context
+    const execution = new Execution(config, {absoluteTimeout: 60000, allowGpu: false, allowNetwork: true}, getExampleBounty(config, {
         file_location,
         file_download_protocol,
     }))
@@ -82,7 +82,7 @@ const downloadFileTest = async (t: TypedAvaExecutionContext, file_location: stri
 
 const downloadAndExtractFileTest = async (t: TypedAvaExecutionContext, file_location: string, file_download_protocol: SupportedFileDownloadProtocols, forceRemove=false): Promise<Execution> => {
     const {config} = t.context
-    const execution = new Execution(config, getExampleBounty(config, {
+    const execution = new Execution(config, {absoluteTimeout: 60000, allowGpu: false, allowNetwork: true}, getExampleBounty(config, {
         file_location,
         file_download_protocol,
     }))

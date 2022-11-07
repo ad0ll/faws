@@ -1,14 +1,14 @@
 - name: Install nvm
   ansible.builtin.shell:
     cmd: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-    creates: /home/{{ ansible_user_id }}/.nvm/nvm.sh
+    creates: {{ home }}/.nvm/nvm.sh
 - include: source_nvm.yaml
 - name: Install node and set version
   ansible.builtin.shell:
     cmd: |
       nvm install stable 
       nvm alias default stable
-    creates: /home/{{ ansible_user_id }}/.nvm/alias
+    creates: {{ home }}/.nvm/alias
 - name: Install yarn
   # become: true
   # TODO Dest path belkow doesn't exist

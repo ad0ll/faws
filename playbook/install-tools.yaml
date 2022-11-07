@@ -4,6 +4,7 @@
     account_id: "garbage8.testnet"
     node_name: "node0"
     coordinator_id: "dev-1667685039748-17418812844752"
+    home: "/root"
   tasks:
     - name: install system
       include: tasks/install-system.yaml

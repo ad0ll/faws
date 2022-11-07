@@ -1,2 +1,2 @@
 - name: Source nvm
-  ansible.builtin.shell:  . {{ lookup('env', 'HOME') }}/.nvm/nvm.sh
+  ansible.builtin.shell:  . {{ home }}/.nvm/nvm.sh

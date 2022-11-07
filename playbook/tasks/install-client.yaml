@@ -2,9 +2,9 @@
 - name: Fetch repo
   ansible.builtin.git:
     repo: git@github.com:ad0ll/near-isnt-decentralized.git
-    dest: /home/{{ ansible_user_id }}/near-isnt-decentralized2
+    dest: {{ home }}/near-isnt-decentralized2
     version: frontend-develop-ad0ll # TODO Should be main before submission
-    key_file: /home/{{ ansible_user_id }}/.ssh/id_rsa # TODO Should be removed before submission
+    key_file: {{ home }}/.ssh/id_rsa # TODO Should be removed before submission
     force: true
 - name: Create storage directory
   ansible.builtin.file:
@@ -16,13 +16,12 @@
     cmd: | 
       yarn install
       yarn tsc
-    chdir: /home/{{ ansible_user_id }}/near-isnt-decentralized2/execution-client
+    chdir: {{ home }}/near-isnt-decentralized2/execution-client
 - name: Install default .env
   ansible.builtin.template:
     src: ../files/default.env.j2
-    dest: /home/{{ ansible_user_id }}/near-isnt-decentralized2/execution-client/.env
+    dest: {{ home }}/near-isnt-decentralized2/execution-client/.env
     force: true
-
 - name: Copy ecosystem.config.js to directory
   ansible.builtin.template:
     src: ../files/ecosystem.config.js.j2

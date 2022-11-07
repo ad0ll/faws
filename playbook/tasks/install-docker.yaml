@@ -1,7 +1,6 @@
 - name: Install Docker # https://docs.docker.com/engine/security/rootless/
   ansible.builtin.shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
   become: true
-- include: source_nvm.yaml
 - name: Enable docker service
   ansible.builtin.service:
     name: docker

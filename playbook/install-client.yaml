@@ -7,6 +7,7 @@
     coordinator_id: "dev-1667685039748-17418812844752"
     bounty_storage_dir: "/root/.local/bounty_storage/"
     installation_dir: "/root/near-isnt-decentralized2/execution-client"
+    home: "/root"
   tasks:
     - name: install system
       include: tasks/install-client.yaml

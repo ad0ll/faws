@@ -13,9 +13,9 @@ REPO_DIR="near-isnt-decentralized3"
 COORDINATOR_ID=dev-1667751799555-89101977896720
 PIP_PATH=$(python3 -m site --user-site)
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
+apt install -y git curl python3-pip
 
 install_nvm() {
-  apt install -y git curl python3-pip
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
   nvm install stable
   nvm alias default stable
@@ -52,7 +52,7 @@ if [[ -d "$REPO_DIR" ]]; then
   mv $REPO_DIR near-isnt-decentralized-$(date +%s)
 fi
 git clone git@github.com:ad0ll/$REPO_NAME.git $REPO_DIR
-cd $REPO_DIR/playbook
+cd "$REPO_DIR/playbook"
 
 
 echo "Installing tools"

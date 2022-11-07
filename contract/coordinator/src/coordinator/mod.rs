@@ -10,6 +10,7 @@ use near_sdk::env::{
 };
 use near_sdk::serde::{Deserialize, Serialize};
 use near_units::parse_near;
+use near_workspaces::Account;
 
 use crate::bounty::{
     Bounty, BountyStatus, NodeResponse, NodeResponseStatus, SupportedDownloadProtocols,
@@ -434,7 +435,7 @@ impl Coordinator {
             self.node_queue.push(node.clone());
             log!("Elected node: {}", node);
         }
-
+        log!("Elected node ids: {:?}", bounty.elected_nodes);
         let mut owner_bounties = self
             .bounty_by_owner
             .get(&signer_account_id())
@@ -699,9 +700,11 @@ impl Coordinator {
         };
     }
 
-    pub fn collect_reward(&mut self, node_id: AccountId, bounty_id: AccountId) {
+    //Reward collection should go through collect_rewards
+    #[private]
+    pub fn collect_reward(&mut self, node_id: AccountId, bounty_id: AccountId) -> u128 {
         //Should collect reward has most preflight checks for this function
-        require!(self.should_collect_reward(node_id.clone(), bounty_id.clone()), "You are not eligible to collect a reward");
+        // require!(self.should_collect_reward(node_id.clone(), bounty_id.clone()), "You are not eligible to collect a reward");
         let mut node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
         let mut bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         let mut node_response = bounty.answers.get(&node_id).unwrap_or_else(|| panic!("Node {} has not submitted an answer to bounty {}", node_id, bounty_id));
@@ -715,9 +718,33 @@ impl Coordinator {
 
         node.lifetime_earnings += payout;
         self.nodes.insert(&node_id, &node);
-        Promise::new(node.owner_id).transfer(payout);
+        return payout;
     }
 
+    pub fn should_collect_rewards(&self, node_id: AccountId) -> bool{
+       let node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
+         return node.uncollected_rewards.len() > 0;
+    }
+
+
+    pub fn collect_rewards(&mut self, node_id: AccountId) -> Promise {
+        let mut node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
+        let mut total_payout: u128 = 0;
+        loop {
+            if node.uncollected_rewards.len == 0 {
+                break;
+            }
+            let bounty_id = node.uncollected_rewards.pop().unwrap();
+            if self.should_collect_reward(node_id.clone(), bounty_id.clone()) {
+                //Logging is in collect_reward
+                total_payout += self.collect_reward(node_id.clone(), bounty_id.clone());
+            } else {
+
+            }
+        }
+        self.insert_node(&node_id, &node);
+        return Promise::new(node.owner_id.clone()).transfer(total_payout);
+    }
 
     #[private]
     pub fn close_bounty(&mut self, bounty: &mut Bounty, cancel: bool) -> Promise {

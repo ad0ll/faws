@@ -28,7 +28,7 @@ pub struct Node {
     pub lifetime_earnings: u128,
     pub deposit: u128,
     pub registration_time: u64,
-
+    pub uncollected_rewards: Vec<AccountId>
     // pub run_count: u128;
     // pub outcomes: UnorderedMap<u128, Outcome>;
 }
@@ -66,6 +66,7 @@ impl Node {
             absolute_timeout: 60000,
             deposit: env::attached_deposit(),
             registration_time: env::block_timestamp(),
+            uncollected_rewards: vec![]
         }
     }
 }
@@ -90,6 +91,7 @@ impl Default for Node {
             lifetime_earnings: 0,
             deposit: 0,
             registration_time: env::block_timestamp(),
+            uncollected_rewards: vec![]
         }
     }
 }

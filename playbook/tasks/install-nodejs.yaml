@@ -1,0 +1,25 @@
+- name: Install nvm
+  ansible.builtin.shell:
+    cmd: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+    creates: /home/{{ ansible_user_id }}/.nvm/nvm.sh
+- include: source_nvm.yaml
+- name: Install node and set version
+  ansible.builtin.shell:
+    cmd: |
+      nvm install stable 
+      nvm alias default stable
+    creates: /home/{{ ansible_user_id }}/.nvm/alias
+- name: Install yarn
+  # become: true
+  # TODO Dest path belkow doesn't exist
+  ansible.builtin.shell:
+    cmd: npm install -g yarn"
+    creates: "{{ lookup('env', 'NVM_BIN') }}/yarn"
+- name: Install pm2
+  ansible.builtin.shell:
+    cmd: npm install -g pm2
+    creates: "{{ lookup('env', 'NVM_BIN') }}/pm2"
+- name: Install near-cli
+  ansible.builtin.shell: 
+    cmd: npm install -g near-cli
+    creates: "{{ lookup('env', 'NVM_BIN') }}/near-cli"

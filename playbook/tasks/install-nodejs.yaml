@@ -1,23 +1,21 @@
-- name: Install nvm
-  ansible.builtin.shell:
-    cmd: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-    creates: "{{ home }}/.nvm/nvm.sh"
+- name: Source bashrc
+  ansible.builtin.shell: ". {{ home }}/.bashrc"
 - include: source_nvm.yaml
+- shell: "cat {{ home }}/.nvm/nvm.sh > testing"
 - name: Install node and set version
   ansible.builtin.shell:
-    cmd: |
-      nvm install stable 
-      nvm alias default stable
-    creates: "{{ home }}/.nvm/alias"
+    cmd: bash -c "source {{ home }}/.nvm/nvm.sh && nvm install stable && nvm alias default stable && nvm use stable"
+    #creates: "{{ home }}/.nvm/alias"
+- include: source_nvm.yaml
 - name: Install yarn
   ansible.builtin.shell:
-    cmd: "npm install -g yarn"
+    cmd: npm install -g yarn
     creates: "{{ lookup('env', 'NVM_BIN') }}/yarn"
 - name: Install pm2
   ansible.builtin.shell:
-    cmd: "npm install -g pm2"
+    cmd: npm install -g pm2
     creates: "{{ lookup('env', 'NVM_BIN') }}/pm2"
 - name: Install near-cli
   ansible.builtin.shell: 
-    cmd: "npm install -g near-cli"
+    cmd: npm install -g near-cli
     creates: "{{ lookup('env', 'NVM_BIN') }}/near-cli"

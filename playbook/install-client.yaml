@@ -5,7 +5,7 @@
     account_id: "garbage7.testnet"
     node_name: "node1"
     coordinator_id: "dev-1667685039748-17418812844752"
-    bounty_storage_dir: "{{ home }}/.local/bounty_storage/"
+    bounty_storage_dir: "{{ home }}/.local/bounty_storage/$BOUNTY_ID" # $BOUNTY_ID must appear in this path
     home: "/root"
     repo_name: "near-isnt-decentralized"
     repo_dir: "near-isnt-decentralized3"

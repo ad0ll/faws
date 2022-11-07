@@ -17,8 +17,11 @@ export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
 install_nvm() {
   apt install -y git curl python3-pip
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-  source $HOME/.bashrc
-  source $HOME/.nvm/nvm.sh
+  nvm install stable
+  nvm alias default stable
+  nvm use default
+  source "$HOME/.bashrc"
+  source "$HOME/.nvm/nvm.sh"
 }
 
 install_pip() {
@@ -67,12 +70,12 @@ ansible-playbook install-tools.yaml --become-password-file .password --extra-var
 ACCOUNT_ID=garbage9.testnet
 NODE_NAME=node1
 DEV_BOX=y
-WEBSOCKET_RELAY=ws://localhost:3030
+WEBSOCKET_URL=ws://localhost:3030
 
 if [[ -z "$DEV_BOX" ]]; then
-  read -sr "What is the url for the websocket relay? (ex: ws://localhost:8000/ws): " WEBSOCKET_RELAY
+  WEBSOCKET_URL=ws://localhost:8000/ws
 else
-  WEBSOCKET_URL=ws://localhost:3030
+  read -sr "What is the url for the websocket relay? (ex: ws://localhost:8000/ws): " WEBSOCKET_URL
 fi
 
 #Check if key file exists, and if it doesn't, run near login

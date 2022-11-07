@@ -16,5 +16,3 @@
     - software-properties-common
     - unattended-upgrades
     - net-tools
-    #- pkg-install
-    

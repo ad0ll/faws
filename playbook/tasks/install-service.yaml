@@ -1,0 +1,19 @@
+- name: Install pm2
+  ansible.builtin.shell: echo "Installing PM2"
+#- name: Get pm2 startup script
+#  ansible.builtin.shell:
+#    cmd: pm2 startup
+#    chdir: "{{ installation_dir }}"
+#  register: pm2_startup
+#- name: Register startup script
+#  ansible.builtin.shell:
+#    cmd: "{{ pm2_startup.stdout_lines[-1] }}"
+#  become: true
+#- name: Start execution client
+#  ansible.builtin.shell:
+#    cmd: pm2 restart index
+#    chdir: "{{ installation_dir }}"
+#- name: Start execution client
+#  ansible.builtin.shell:
+#    cmd: pm2 start
+#    chdir: "{{ installation_dir }}"

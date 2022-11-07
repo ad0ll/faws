@@ -5,23 +5,25 @@
 # Non-debian systems may work, but note that the node software makes
 # This will be converted to a playbook in the future
 
+# Run with sudo su - root -s $HOME/install.sh
 set -e
 
-apt install -y git curl python3-pip
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-source ~/.bashrc
-source ~/.nvm/nvm.sh
-#PIP_PATH=$(python3 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
-COORDINATOR_ID=$(cat ../contract/neardev/dev-account) #TODO Swap this for the actual coordinator id
+REPO_NAME="near-isnt-decentralized"
+REPO_DIR="near-isnt-decentralized3"
+COORDINATOR_ID=dev-1667751799555-89101977896720
 PIP_PATH=$(python3 -m site --user-site)
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
-echo $PATH
-echo $PIP_PATH
+
+install_nvm() {
+  apt install -y git curl python3-pip
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+  source $HOME/.bashrc
+  source $HOME/.nvm/nvm.sh
+}
+
 install_pip() {
   if [[ -z "$(which pip)" ]]; then
     echo "Installing pip"
-#    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-#    python3 get-pip.py --user
     pip3 install --user setuptools wheel
   fi
 }
@@ -29,36 +31,56 @@ install_pip() {
 install_ansible() {
   if [[ -z "$(which ansible)" ]]; then
     echo "Installing ansible"
-#    python3 -m pip install --user ansible
-  pip3 install ansible
-  #pip3 install ansible-lint
-  pip3 install ansible-modules-pm2
+    pip3 install ansible
+    pip3 install ansible-modules-pm2
   fi
 }
 
+install_development_tools() {
+  echo "Installing development tools"
+  pip3 install ansible-lint
+}
 
-echo "Installing ansible..."
 install_pip
 install_ansible
 
-
-git clone git@github.com:ad0ll/near-isnt-decentralized.git
-cd near-isnt-decentralized/playbook
+#if [[ -d "$REPO_DIR" ]]; then
+#  mv $REPO_DIR near-isnt-decentralized-$(date +%s)
+#fi
+#git clone git@github.com:ad0ll/$REPO_NAME.git $REPO_DIR
+#cd $REPO_DIR/playbook
 
 
 echo "Installing tools"
-#ansible-playbook install-tools.yaml --ask-become-pass
-ansible-playbook install-tools.yaml --become-password-file .password
+#ansible-playbook install-tools.yaml --ask-become-pass --extra-vars "home=$HOME"
+ansible-playbook install-tools.yaml --become-password-file .password --extra-vars "home=$HOME"
 
 #We now have near installed and can check that the provided contract, account id, and node name/id are all valid
-source ~/.nvm/nvm.sh
 
-#read -s "What is your near account id? (ex: account1.testnet): "
-#read -s "What is the name of your node? (ex: node1): "
-#ansible-playbook install-client.yaml --become-password-file .password
+#near login
+#read -sr "What is your near account id? (ex: account1.testnet): " ACCOUNT_ID
+#read -sr "What is the name of your node? (ex: node1): " NODE_NAME
+#read -sr "Is this a development box? (y/n): " DEV_BOX
+#read -sr "What websocket are you listening to? (ex: ws://localhost:800/ws): " WEBSOCKET_URL
+
+ACCOUNT_ID=garbage9.testnet
+NODE_NAME=node1
+DEV_BOX=y
+WEBSOCKET_RELAY=ws://localhost:3030
+
+if [[ -z "$DEV_BOX" ]]; then
+  read -sr "What is the url for the websocket relay? (ex: ws://localhost:8000/ws): " WEBSOCKET_RELAY
+else
+  WEBSOCKET_URL=ws://localhost:3030
+fi
+
 #Check if key file exists, and if it doesn't, run near login
-#near login --accountId garbage8.testnet
-#cd /home/parallels/near-isnt-decentralized2/execution-client
+ansible-playbook install-client.yaml --become-password-file .password --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
+
+cd $HOME/$REPO_DIR/execution-client
+yarn
+yarn tsc
+yarn start
 #near login
 #pm2 startup
 #pm2 restart index

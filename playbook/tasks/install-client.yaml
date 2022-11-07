@@ -1,8 +1,7 @@
-- include: source_nvm.yaml
 - name: Fetch repo
   ansible.builtin.git:
-    repo: git@github.com:ad0ll/near-isnt-decentralized.git
-    dest: "{{ home }}/near-isnt-decentralized2"
+    repo: git@github.com:ad0ll/{{ repo_name }}.git
+    dest: "{{ home }}/{{ repo_dir }}"
     version: main
     key_file: "{{ home }}/.ssh/id_rsa" # TODO Should be removed before submission
     force: true
@@ -16,30 +15,14 @@
     cmd: | 
       yarn install
       yarn tsc
-    chdir: "{{ home }}/near-isnt-decentralized2/execution-client"
+    chdir: "{{ home }}/{{ repo_dir }}/execution-client"
 - name: Install default .env
   ansible.builtin.template:
     src: ../files/default.env.j2
-    dest: "{{ home }}/near-isnt-decentralized2/execution-client/.env"
+    dest: "{{ home }}/{{ repo_dir }}/execution-client/.env"
     force: true
 - name: Copy ecosystem.config.js to directory
   ansible.builtin.template:
     src: ../files/ecosystem.config.js.j2
     dest: "{{ installation_dir }}/ecosystem.config.js"
-#- name: Get pm2 startup script
-#  ansible.builtin.shell: 
-#    cmd: pm2 startup
-#    chdir: "{{ installation_dir }}"
-#  register: pm2_startup
-#- name: Register startup script
-#  ansible.builtin.shell:
-#    cmd: "{{ pm2_startup.stdout_lines[-1] }}"
-#  become: true
-#- name: Start execution client
-#  ansible.builtin.shell:
-#    cmd: pm2 restart index
-#    chdir: "{{ installation_dir }}"
-#- name: Start execution client
-#  ansible.builtin.shell:
-#    cmd: pm2 start
-#    chdir: "{{ installation_dir }}"
+

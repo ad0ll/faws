@@ -27,6 +27,7 @@ source_neardev(){
 
 sed -i.bak "s/COORDINATOR_CONTRACT_ID=.*/COORDINATOR_CONTRACT_ID=\"$CONTRACT_NAME\"/g" ../execution-client/.env
 sed -i.bak "s/COORDINATOR_ID=.*/COORDINATOR_ID=\"$CONTRACT_NAME\"/g" ../frontend/.env
+sed -i.bak "s/COORDINATOR_ID=.*/COORDINATOR_ID=\"$CONTRACT_NAME\"/g" ../playbook/install.sh
 
 }
 

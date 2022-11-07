@@ -1,12 +1,9 @@
-- name: Source bashrc
-  ansible.builtin.shell: ". {{ home }}/.bashrc"
-- include: source_nvm.yaml
-- shell: "cat {{ home }}/.nvm/nvm.sh > testing"
+#- name: Source bashrc
+#  ansible.builtin.shell: ". {{ home }}/.bashrc"
 - name: Install node and set version
   ansible.builtin.shell:
     cmd: bash -c "source {{ home }}/.nvm/nvm.sh && nvm install stable && nvm alias default stable && nvm use stable"
-    #creates: "{{ home }}/.nvm/alias"
-- include: source_nvm.yaml
+    creates: "{{ home }}/.nvm/alias"
 - name: Install yarn
   ansible.builtin.shell:
     cmd: npm install -g yarn
@@ -18,4 +15,4 @@
 - name: Install near-cli
   ansible.builtin.shell: 
     cmd: npm install -g near-cli
-    creates: "{{ lookup('env', 'NVM_BIN') }}/near-cli"
+    creates: "{{ lookup('env', 'NVM_BIN') }}/near"

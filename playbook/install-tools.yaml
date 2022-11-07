@@ -1,16 +1,14 @@
 - name: Install system
   hosts: localhost
   vars:
-    account_id: "garbage8.testnet"
-    node_name: "node0"
-    coordinator_id: "dev-1667685039748-17418812844752"
+
     home: "/root"
   tasks:
-    - name: install system
-      include: tasks/install-system.yaml
-    - name: install docker
-      include: tasks/install-docker.yaml
-    - name: Install nvm
-      include: tasks/install-nvm.yaml
+#    - name: install system
+#      include: tasks/install-system.yaml
+#    - name: install docker
+#      include: tasks/install-docker.yaml
+#    - name: Install nvm
+#      include: tasks/install-nvm.yaml
     - name: install nodejs
       include: tasks/install-nodejs.yaml

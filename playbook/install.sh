@@ -11,12 +11,12 @@ set -e
 
 REPO_NAME="near-isnt-decentralized"
 REPO_DIR="near-isnt-decentralized3"
-COORDINATOR_ID=dev-1667751799555-89101977896720
+COORDINATOR_ID="dev-1667851730608-70663242970224"
 PIP_PATH=$(python3 -m site --user-site)
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
 apt install -y git curl python3-pip
 
-if [[ -z "$WIPE" ]]; then
+if [[ -n "$WIPE" ]]; then
   rm -rf "$HOME/$REPO_DIR"
   rm -rf "$HOME/.nvm"
   rm -rf "$HOME/.ansible"
@@ -55,12 +55,11 @@ install_nvm
 install_pip
 install_ansible
 
-if [[ -d "$REPO_DIR" ]]; then
-  mv $REPO_DIR near-isnt-decentralized-$(date +%s)
+if [[ ! -d "$HOME/$REPO_DIR" ]]; then
+  git clone git@github.com:ad0ll/$REPO_NAME.git $REPO_DIR
 fi
-git clone git@github.com:ad0ll/$REPO_NAME.git $REPO_DIR
 cd "$REPO_DIR/playbook"
-
+git pull origin main
 
 echo "Installing tools"
 ansible-playbook install-tools.yaml --ask-become-pass --extra-vars "home=$HOME"

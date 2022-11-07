@@ -8,6 +8,7 @@
 # Run with sudo su - root -s $HOME/install.sh
 set -e
 
+
 REPO_NAME="near-isnt-decentralized"
 REPO_DIR="near-isnt-decentralized3"
 COORDINATOR_ID=dev-1667751799555-89101977896720
@@ -15,13 +16,19 @@ PIP_PATH=$(python3 -m site --user-site)
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
 apt install -y git curl python3-pip
 
+if [[ -z "$WIPE" ]]; then
+  rm -rf "$HOME/$REPO_DIR"
+  rm -rf "$HOME/.nvm"
+  rm -rf "$HOME/.ansible"
+fi
+
 install_nvm() {
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+  source "$HOME/.bashrc"
+  source "$HOME/.nvm/nvm.sh"
   nvm install stable
   nvm alias default stable
   nvm use default
-  source "$HOME/.bashrc"
-  source "$HOME/.nvm/nvm.sh"
 }
 
 install_pip() {
@@ -56,8 +63,8 @@ cd "$REPO_DIR/playbook"
 
 
 echo "Installing tools"
-#ansible-playbook install-tools.yaml --ask-become-pass --extra-vars "home=$HOME"
-ansible-playbook install-tools.yaml --become-password-file .password --extra-vars "home=$HOME"
+ansible-playbook install-tools.yaml --ask-become-pass --extra-vars "home=$HOME"
+#ansible-playbook install-tools.yaml --become-password-file .password --extra-vars "home=$HOME"
 
 #We now have near installed and can check that the provided contract, account id, and node name/id are all valid
 
@@ -82,7 +89,8 @@ WEBSOCKET_URL=$WEBSOCKET_URL
 #fi
 
 #Check if key file exists, and if it doesn't, run near login
-ansible-playbook install-client.yaml --become-password-file .password --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
+#ansible-playbook install-client.yaml --become-password-file .password --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
+ansible-playbook install-client.yaml --ask-become-pass --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
 
 cd "$HOME/$REPO_DIR/execution-client"
 yarn

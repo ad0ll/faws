@@ -1,4 +1,9 @@
-# 
+#
+
+There are two sets of documentation for different users. 
+Miners: 
+Bounty creators:
+
 
 ## Installation:
 

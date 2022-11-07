@@ -131,7 +131,7 @@ export class Execution {
 
 
     // Using one of https, git, or ipfs, download the file to BOUNTY_STORAGE_LOCATION
-    //All operations are done in execution_path, which is /tmp/bounty_data/<bountyId>/ by default
+    // All operations are done in execution_path, which is /tmp/bounty_data/<bountyId>/ by default
     async downloadFile() {
         this.updateContext({phase: "Download file"})
         const {file_location, file_download_protocol, id: bountyId} = this.executionContext.bounty;
@@ -163,7 +163,6 @@ export class Execution {
         } else {
             throw new SetupError(`Received unsupported file download protocol: ${file_download_protocol}`)
         }
-
     }
 
     cleanup() {
@@ -205,10 +204,7 @@ export class Execution {
         } catch (e: any) {
             //This is not fatal (although it could eventually become fatal) so just log the error
             logger.error(`Encountered an unexpected error while cleaning up: ${e.message}`)
-
         }
-
-
     }
 
     // Fully validates and runs the bounty off chain, returning the result to the caller (ExecutionClient) to publish to the chain

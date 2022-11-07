@@ -699,7 +699,7 @@ impl Coordinator {
         };
     }
 
-    pub fn collect_reward(&mut self, node_id: AccountId, bounty_id: AccountId) {
+    pub fn collect_reward(&mut self, node_id: AccountId, bounty_id: AccountId) -> Promise {
         //Should collect reward has most preflight checks for this function
         require!(self.should_collect_reward(node_id.clone(), bounty_id.clone()), "You are not eligible to collect a reward");
         let mut node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
@@ -715,7 +715,7 @@ impl Coordinator {
 
         node.lifetime_earnings += payout;
         self.nodes.insert(&node_id, &node);
-        Promise::new(node.owner_id).transfer(payout);
+        return Promise::new(node.owner_id).transfer(payout);
     }
 
 

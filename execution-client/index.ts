@@ -4,7 +4,6 @@ import {
     BountyCompletedEvent,
     BountyCreatedEvent,
     BountyStatuses,
-    ChainEvent,
     ClientConfig,
     ClientExecutionResult,
     ClientNode,
@@ -119,6 +118,7 @@ class ExecutionClient {
         }
 
     }
+
     private addWebsocketListeners() {
         this.websocketClient = new WebSocket(this.config.websocketUrl);
         this.websocketClient.onopen = () => {
@@ -174,9 +174,8 @@ class ExecutionClient {
                                         errorType: e.constructor.name
                                     })
                                 }
-                                await this.emitBountyCompleteEvent(bountyId)
                             } finally {
-                                //TODO anything to close?
+                                await this.emitBountyCompleteEvent(bountyId)
                             }
                         }
                     }
@@ -205,11 +204,11 @@ class ExecutionClient {
     }
 
     //Dev only function that posts events to websocket in absence of an indexer
-    async emitBountyCompleteEvent(bounty_id: string){
+    async emitBountyCompleteEvent(bounty_id: string) {
         if ((this.config.nearConnection.networkId !== "mainnet" || process.env.EMIT_BOUNTY__ALLOW_MAINNET) && process.env.EMIT_BOUNTY__PUBLISH_COMPLETE_EVENT) {
             logger.info(`Publishing bounty_completed event for ${bounty_id}`)
             const bounty = await this.coordinatorContract.get_bounty({bounty_id})
-            if(bounty.status !== BountyStatuses.Pending){
+            if (bounty.status !== BountyStatuses.Pending) {
                 logger.info(`Bounty ${bounty_id} is not pending, not emitting bounty_completed event`)
             }
             const bce: BountyCompletedEvent = {
@@ -218,7 +217,7 @@ class ExecutionClient {
                     bounty_id: bounty_id,
                     coordinator_id: this.config.coordinatorContractId,
                     node_ids: bounty.elected_nodes,
-                    payout_node_ids: [this.config.nodeId],
+                    payout_node_ids: bounty.elected_nodes,
                     payout_strategy: PayoutStrategies.SuccessfulNodes,
                     outcome: BountyStatuses.Success,
                 }

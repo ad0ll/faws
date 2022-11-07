@@ -41,6 +41,7 @@ install_development_tools() {
   pip3 install ansible-lint
 }
 
+install_nvm
 install_pip
 install_ansible
 

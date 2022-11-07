@@ -10,5 +10,5 @@
       include: tasks/install-docker.yaml
 #    - name: Install nvm
 #      include: tasks/install-nvm.yaml
-    - name: install nodejs
+    - name: Install nodejs
       include: tasks/install-nodejs.yaml

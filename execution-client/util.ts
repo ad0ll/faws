@@ -87,8 +87,8 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
             // name: `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`,
             file_location: process.env.EMIT_BOUNTY__FILE_LOCATION || 'git@github.com:ad0ll/docker-hello-world.git',
             file_download_protocol: SupportedFileDownloadProtocols.GIT,
-            min_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "1"),
-            total_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "3"),
+            min_nodes: parseInt(process.env.EMIT_BOUNTY__MIN_NODES || "2"),
+            total_nodes: parseInt(process.env.EMIT_BOUNTY__TOTAL_NODES || "2"),
             timeout_seconds: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "60"), //1 minute
             network_required: process.env.EMIT_BOUNTY__NETWORK_REQUIRED !== "false",
             gpu_required: process.env.EMIT_BOUNTY__GPU_REQUIRED !== "false",
@@ -100,15 +100,18 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
     )
     logger.info(`automatically created bounty ${bounty.id}`, bounty)
     if (process.env.EMIT_BOUNTY__PUBLISH_CREATE_EVENT) {
-        logger.info(`Publishing bounty created event for ${bounty.id}`)
+        logger.info(`Publishing bounty created event for ${bounty.id}`
+        )
         const bce: BountyCreatedEvent = {
             event: "bounty_created",
             data: {
                 coordinator_id: config.coordinatorContractId,
-                node_ids: [config.nodeId],
+                node_ids: bounty.elected_nodes,
                 bounty_id: bounty.id
             }
         }
+        const sanity_check =  await coordinatorContract.get_bounty({bounty_id: bounty.id})
+        console.log("sanity check", sanity_check)
         await publishEventToWebsocketRelay(config, bounty.id, bce)
     }
 

@@ -10,16 +10,14 @@
       nvm alias default stable
     creates: "{{ home }}/.nvm/alias"
 - name: Install yarn
-  # become: true
-  # TODO Dest path belkow doesn't exist
   ansible.builtin.shell:
-    cmd: npm install -g yarn"
+    cmd: "npm install -g yarn"
     creates: "{{ lookup('env', 'NVM_BIN') }}/yarn"
 - name: Install pm2
   ansible.builtin.shell:
-    cmd: npm install -g pm2
+    cmd: "npm install -g pm2"
     creates: "{{ lookup('env', 'NVM_BIN') }}/pm2"
 - name: Install near-cli
   ansible.builtin.shell: 
-    cmd: npm install -g near-cli
+    cmd: "npm install -g near-cli"
     creates: "{{ lookup('env', 'NVM_BIN') }}/near-cli"

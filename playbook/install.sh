@@ -13,6 +13,18 @@ REPO_NAME="near-isnt-decentralized"
 REPO_DIR="near-isnt-decentralized3"
 COORDINATOR_ID="dev-1667851730608-70663242970224"
 PIP_PATH=$(python3 -m site --user-site)
+DEV_BOX=$DEV
+ACCOUNT_ID=$ACCOUNT_ID
+NODE_NAME=$NODE_NAME
+WEBSOCKET_URL=$WEBSOCKET_URL
+
+if [[ -z "$ACCOUNT_ID" || -z "$NODE_NAME" || -z "$WEBSOCKET_URL" ]]; then
+    echo "Please set ACCOUNT_ID, NODE_NAME, and WEBSOCKET_URL"
+    exit 1
+fi
+
+ARM6=$(uname -m | grep armv6l) #Raspberry Pi Zero 1, older Pi models
+GPU_SUPPORT=$(lspci | grep -i nvidia)
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
 apt install -y git curl python3-pip
 
@@ -23,6 +35,12 @@ if [[ -n "$WIPE" ]]; then
 fi
 
 install_nvm() {
+  if [[ -n "$ARM6" ]]; then
+    # https://github.com/sdesalas/node-pi-zero
+    echo "Skipping nvm install on arm6 (Pi Zero), installing node manually"
+    wget -O - https://raw.githubusercontent.com/sdesalas/node-pi-zero/master/install-node-v16.3.0.sh | bash
+    return
+  fi
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
   source "$HOME/.bashrc"
   source "$HOME/.nvm/nvm.sh"
@@ -52,7 +70,7 @@ install_development_tools() {
 }
 
 install_nvm
-install_pip
+instayll_pip
 install_ansible
 
 if [[ ! -d "$HOME/$REPO_DIR" ]]; then
@@ -76,10 +94,7 @@ fi
 #read -sr "Is this a development box? (y/n): " DEV_BOX
 #read -sr "What websocket are you listening to? (ex: ws://localhost:800/ws): " WEBSOCKET_URL
 
-ACCOUNT_ID=garbage9.testnet
-NODE_NAME=node1
-DEV_BOX=y
-WEBSOCKET_URL=$WEBSOCKET_URL
+
 #
 #if [[ -z "$DEV_BOX" ]]; then
 #  WEBSOCKET_URL=ws://localhost:8000/ws
@@ -92,6 +107,14 @@ WEBSOCKET_URL=$WEBSOCKET_URL
 ansible-playbook install-client.yaml --ask-become-pass --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
 
 cd "$HOME/$REPO_DIR/execution-client"
+
+# https://docs.nvidia.com/ai-enterprise/deployment-guide/dg-docker.html
+if [[ -n "$GPU_SUPPORT" ]]; then
+  distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+  curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+  curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+  apt-get update && apt-get install -y nvidia-container-toolkit
+fi
 yarn
 yarn tsc
 yarn start

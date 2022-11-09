@@ -38,7 +38,9 @@ export default function NavBar({ isSignedIn }: { isSignedIn: boolean }) {
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Box sx={{ display: "contents" }}>
-            <img style={{ width: "50px", height: "50px" }} src={Logo} />
+            <a href="/">
+              <img style={{ width: "50px", height: "50px" }} src={Logo} />
+            </a>
           </Box>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
             <Button

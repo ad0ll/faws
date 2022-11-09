@@ -129,6 +129,7 @@ export type ClientNode = {
   allow_gpu: boolean;
   absolute_timeout: number;
   registration_time: number;
+  lifetime_earnings: number;
 };
 
 // Internal answer from an execution that contains additional information for better UX

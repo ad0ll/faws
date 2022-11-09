@@ -1,7 +1,7 @@
 import "regenerator-runtime/runtime";
 
 import NavBar from "./common/nav-bar";
-import Home from "./home/Home";
+import Home from "./home/home";
 import Coordinator from "./coordinator/Coordinator";
 import { Wallet } from "./common/near-wallet";
 import Bounty from "./bounty/bounty";
@@ -31,7 +31,7 @@ export default function App({
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <Home />,
+      element: <Home isSignedIn={isSignedIn} />,
     },
     {
       path: "/bounty",

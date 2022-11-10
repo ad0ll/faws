@@ -10,25 +10,27 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { BountyStatuses } from "../../../execution-client/types";
-import { localStorageState, WalletContext } from "../App";
+import { localStorageState, WalletContext } from "../app";
 import { useRecoilValue } from "recoil";
 import { BountyStorage } from "../storage";
+import { UpdateBountyModal } from "./update-bounty-modal";
 
 export default function ExistingBounty() {
   const wallet = useContext(WalletContext);
   const storage = useRecoilValue(localStorageState);
   const bounties = (storage.get("bounties") as BountyStorage) || {};
+  const [open, setOpen] = React.useState(false);
+  const [field, setField] = React.useState("");
+  const [bountyId, setBountyId] = React.useState("");
+  const handleOpen = (button: string, bountyId: string) => {
+    setBountyId(bountyId);
+    setField(button);
+    setOpen(true);
+  };
+  const handleClose = () => setOpen(false);
 
   const cancelBounty = async (bountyId: string) => {
     await wallet.cancelBounty(bountyId);
-  };
-
-  const addStorage = async (bountyId: string) => {
-    await wallet.addStorage(bountyId);
-  };
-
-  const addReward = async (bountyId: string) => {
-    await wallet.addReward(bountyId);
   };
 
   return (
@@ -113,7 +115,9 @@ export default function ExistingBounty() {
                         <Button
                           variant="contained"
                           color="primary"
-                          onClick={() => addReward(bounty.id)}
+                          onClick={() => {
+                            handleOpen("Reward", bounty.id);
+                          }}
                           sx={{
                             display: "flex",
                             marginLeft: "auto",
@@ -126,7 +130,9 @@ export default function ExistingBounty() {
                         <Button
                           variant="contained"
                           color="secondary"
-                          onClick={() => addStorage(bounty.id)}
+                          onClick={() => {
+                            handleOpen("Storage", bounty.id);
+                          }}
                           sx={{
                             display: "flex",
                             marginLeft: "auto",
@@ -149,6 +155,12 @@ export default function ExistingBounty() {
                         >
                           Cancel Bounty
                         </Button>
+                        <UpdateBountyModal
+                          bountyId={bountyId}
+                          field={field}
+                          open={open}
+                          handleClose={handleClose}
+                        />
                       </>
                     ) : (
                       <></>

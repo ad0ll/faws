@@ -1,4 +1,4 @@
-import { localStorageState } from "../App";
+import { localStorageState } from "../app";
 import { useRecoilValue } from "recoil";
 import { Wallet } from "./near-wallet";
 

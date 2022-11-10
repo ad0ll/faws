@@ -16,7 +16,7 @@ import {
   Bounty,
   SupportedFileDownloadProtocols,
 } from "../../../execution-client/types";
-import { localStorageState, WalletContext } from "../App";
+import { localStorageState, WalletContext } from "../app";
 import { useRecoilValue } from "recoil";
 
 export default function CreateBounty({

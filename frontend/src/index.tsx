@@ -1,4 +1,4 @@
-import App from "./App";
+import App from "./app";
 import React from "react";
 import { Wallet } from "./common/near-wallet";
 import ReactDOM from "react-dom/client";

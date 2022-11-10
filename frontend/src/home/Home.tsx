@@ -3,7 +3,7 @@ import React, { useContext } from "react";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
 import ComputerIcon from "@mui/icons-material/Computer";
-import { localStorageState, WalletContext } from "../App";
+import { localStorageState, WalletContext } from "../app";
 import { useRecoilValue } from "recoil";
 import { BountyStorage, NodeStorage } from "../storage";
 

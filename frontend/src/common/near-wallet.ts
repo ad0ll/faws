@@ -174,19 +174,21 @@ export class Wallet {
     });
   }
 
-  async addStorage(bountyId: string) {
+  async addStorage(bountyId: string, deposit: string) {
     return await this.callMethod({
       contractId: COORDINATOR_ID,
       method: "add_storage_deposit",
       args: { bounty_id: bountyId },
+      deposit: NEAR.parse(deposit).toString(),
     });
   }
 
-  async addReward(bountyId: string) {
+  async addReward(bountyId: string, deposit: string) {
     return await this.callMethod({
       contractId: COORDINATOR_ID,
       method: "add_node_reward_deposit",
       args: { bounty_id: bountyId },
+      deposit: NEAR.parse(deposit).toString(),
     });
   }
 

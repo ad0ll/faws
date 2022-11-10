@@ -5,7 +5,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { default as Logo } from "../../assets/svg/logo-white.svg";
-import { WalletContext } from "../App";
+import { WalletContext } from "../app";
 
 export default function NavBar({ isSignedIn }: { isSignedIn: boolean }) {
   const wallet = useContext(WalletContext);

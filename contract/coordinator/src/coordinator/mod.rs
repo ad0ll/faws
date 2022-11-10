@@ -301,6 +301,7 @@ impl Coordinator {
     }
 
     // Only intended for developmment, should be removed before deploying to production
+    //TODO untested
     pub fn remove_all_nodes(&mut self) {
         self.nodes.clear();
     }
@@ -828,6 +829,7 @@ impl Coordinator {
         );
         return bounty.get_result();
     }
+
 
     #[payable]
     pub fn add_storage_deposit(&mut self, bounty_id: AccountId) -> Promise {

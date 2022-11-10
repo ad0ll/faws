@@ -175,6 +175,10 @@ class ExecutionClient {
                 logger.info("Subscribed to bounty_created events")
             });
         }
+        this.websocketClient.onerror = (err) => {
+            logger.error(`Error connecting to websocket ${this.config.websocketUrl}, ${err}`);
+            process.exit(1);
+        }
         this.websocketClient.on('message', async (data) => {
             try {
                 // logger.debug(data)
@@ -186,7 +190,10 @@ class ExecutionClient {
                     const eventData = JSON.parse(message.event)
                     if (eventData.event === "bounty_created") {
                         const event = eventData as BountyCreatedEvent;
-                        //TODO Check that event was emitted by the coordinator contract
+                        if(event.data.coordinator_id !== this.config.coordinatorContractId) {
+                            logger.debug("Received bounty_created event from a different coordinator contract, ignoring");
+                            return;
+                        }
                         const bountyData = event.data;
                         const bountyId = bountyData.bounty_id;
                         logger.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);

@@ -11,7 +11,7 @@ import path from "path";
 import * as fs from "fs";
 import os from "os";
 import assert from "assert";
-import {ExecutionError, PreflightError, SetupError} from "./errors";
+import {BountyRejectionError, ExecutionError, PreflightError, SetupError} from "./errors";
 import {fillPlaceholders} from "./util";
 import {database} from "./index";
 
@@ -45,6 +45,7 @@ export class Execution {
             packagePath: path.join(storageRoot, "files", path.basename(bounty.file_location)),
             dockerfilePath: path.join(storageRoot, "files", "Dockerfile")
         }
+        this.executionContext.nodeConfig = nodeConfig
     }
 
     updateContext(newValues: any ) { //TODO any here is sloppy
@@ -56,7 +57,9 @@ export class Execution {
         this.updateContext({phase: "Extract file"})
         const {filesDir, packageName, packagePath, dockerfilePath} = this.executionContext.storage
         shell.cd(filesDir)
-        if (packageName.endsWith(".zip")) {
+        if (packageName.endsWith("Dockerfile")) {
+          logger.debug("Package is already extracted, or is a Dockerfile")
+        } else if (packageName.endsWith(".zip")) {
             logger.debug(`unzip ${packagePath}`)
             const unzipRes = shell.exec(`unzip -oj ${packageName}`) //o=overwrite, j=no junk paths (i.e. drop first dir)
             if (unzipRes.code !== 0) {
@@ -207,10 +210,20 @@ export class Execution {
         }
     }
 
+    preflight(bounty: Bounty, nodeConfig: NodeConfig) {
+        const {gpu_required, network_required} = bounty
+        if(gpu_required && !nodeConfig.allowGpu){
+            throw new BountyRejectionError("GPU required but not allowed by node config")
+        } else if (network_required && !nodeConfig.allowNetwork){
+            throw new BountyRejectionError("Network required but not allowed by node config")
+        }
+    }
     // Fully validates and runs the bounty off chain, returning the result to the caller (ExecutionClient) to publish to the chain
     // Some validation is redundant with the on-chain validation, but it's better to be safe than sorry
     async execute(): Promise<ClientExecutionResult> {
-        const {config, bounty} = this.executionContext
+        const {config, nodeConfig, bounty} = this.executionContext
+        this.preflight(bounty, nodeConfig)
+
         try {
             const {file_location, file_download_protocol, elected_nodes} = bounty;
 
@@ -245,7 +258,7 @@ export class Execution {
             //TODO Initialize a sandbox to run the image
             const result = await this.runImage();
             this.updateContext({phase: "Work completed"})
-            logger.debug(`Successfully executed bounty ${bounty.id}, result:`, result)
+            logger.debug(`Successfully executed bounty ${bounty.id} after ${Date.now() - this.startTime}ms, result`, result)
             return result;
         } catch (e: any) {
             logger.error(`Error executing bounty ${bounty.id}: ${e}`)

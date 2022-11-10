@@ -47,7 +47,7 @@ impl Node {
     #[init]
     #[private]
     #[payable]
-    pub fn new_node(id: AccountId, allow_network: bool, allow_gpu: bool) -> Self {
+    pub fn new_node(id: AccountId, absolute_timeout: u64, allow_network: bool, allow_gpu: bool) -> Self {
         Self {
             id,
             owner_id: signer_account_id(),
@@ -63,7 +63,7 @@ impl Node {
             allow_network,
             allow_gpu,
             lifetime_earnings: 0,
-            absolute_timeout: 60000,
+            absolute_timeout,
             deposit: env::attached_deposit(),
             registration_time: env::block_timestamp(),
         }

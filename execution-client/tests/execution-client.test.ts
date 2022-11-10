@@ -26,6 +26,7 @@ const getExampleBounty = (config: ClientConfig, {
     bounty_created = 0,
     amt_storage = BigInt(10000000000000000000),
     amt_node_reward = BigInt(10000000000000000000),
+    timeout_seconds = 60000,
     elected_nodes  = [] as string[],
     answers = {},
     build_args = [] as string[],
@@ -49,6 +50,7 @@ const getExampleBounty = (config: ClientConfig, {
     answers,
     build_args,
     runtime_args,
+    timeout_seconds,
     status: BountyStatuses.Pending
 })
 

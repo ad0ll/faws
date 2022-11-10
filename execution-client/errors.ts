@@ -40,3 +40,12 @@ export class PostExecutionError extends Error {
         this.name = "PostExecutionError";
     }
 }
+
+
+// Node rejected the bounty
+export class BountyRejectionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "BountyRejectionError";
+    }
+}

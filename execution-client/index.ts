@@ -15,15 +15,19 @@ import {
 import WebSocket from "ws";
 import shell from "shelljs";
 import {readConfigFromEnv} from "./config"
-import {emitBounty, getAccount, getBounty, getCoordinatorContract, publishEventToWebsocketRelay} from "./util";
+import {emitBounty, getAccount, getBounty, getCoordinatorContract, MAX_GAS, publishEventToWebsocketRelay} from "./util";
 import {Execution} from "./execution";
-import {ExecutionError, PostExecutionError, PreflightError, SetupError} from "./errors";
+import {BountyRejectionError, ExecutionError, PostExecutionError, PreflightError, SetupError} from "./errors";
 import {Database} from "./database";
+import {NEAR} from "near-units";
 
 // @ts-ignore: Unreachable code error                              <-- BigInt does not have `toJSON` method
 BigInt.prototype.toJSON = function (): string {
     return this.toString();
 };
+
+//Below should match what's in the contract
+const MIN_NODE_DEPOSIT = NEAR.parse("1N")
 
 //Transient storage for bounty executions
 export const database = new Database();
@@ -39,17 +43,24 @@ class ExecutionClient {
 
     constructor(public account: Account,
                 public coordinatorContract: CoordinatorContract,
-                // public node: Node, TODO should probably get the node
                 public config: ClientConfig,
     ) {
         this.websocketClient = new WebSocket(this.config.websocketUrl);
     }
 
     async initialize() {
-        const node = await this.coordinatorContract.get_node(
-            {node_id: this.config.nodeId}
-        );
-        await this.validateNode(node)
+        logger.info(`Initializing execution client for node ${this.config.nodeId}`);
+        let node: ClientNode;
+        try {
+            node = await this.coordinatorContract.get_node(
+                {node_id: this.config.nodeId}
+            );
+            await this.validateNode(node)
+        } catch (e) {
+            logger.error(`Could not get node ${this.config.nodeId} from coordinator contract ${this.config.coordinatorContractId}. Attempting to create.`);
+            node = await this.attemptCreateNode();
+            await this.validateNode(node)
+        }
         this.nodeConfig = {
             absoluteTimeout: node.absolute_timeout,
             allowGpu: node.allow_gpu,
@@ -58,17 +69,36 @@ class ExecutionClient {
         this.addWebsocketListeners()
     }
 
+    async attemptCreateNode(): Promise<ClientNode> {
+        const balance = await this.account.getAccountBalance()
+        if (BigInt(balance.available) > BigInt(MIN_NODE_DEPOSIT.toString())) {
+            logger.info(`Node ${this.config.nodeId} has enough balance to register. Registering now.`);
+            console.log(this.coordinatorContract)
+            await this.coordinatorContract.register_node({
+                name: this.config.nodeName,
+                absolute_timeout: 60000,
+                allow_gpu: false,
+                allow_network: true,
+            }, MAX_GAS, NEAR.parse("1N").toString())
+            return this.coordinatorContract.get_node({node_id: this.config.nodeId})
+        } else {
+            logger.error(`Node ${this.config.nodeId} is not registered with the coordinator contract (${this.config.coordinatorContractId}) and can't afford the deposit to register`);
+            process.exit(1);
+            throw new ExecutionError("Node is not registered and can't afford the deposit to register")
+        }
+    }
+
 
     // Checks if the node has all the required software installed
-    async validateNode(node: ClientNode) {
+    async validateNode(node?: ClientNode) {
         logger.info("Fetching node info from coordinator contract");
 
         //TODO Check if account is owner of the node
         logger.info(`Node ${this.config.nodeId} is registered with the following properties: ${JSON.stringify(node)}`);
         if (!node) {
+            logger.info(`Node ${this.config.nodeId} is not registered with the coordinator contract. Registering now.`);
             //TODO Consider registering the node here
-            logger.error(`Node ${this.config.nodeId} is not registered with the coordinator contract (${this.config.coordinatorContractId})`);
-            process.exit(1);
+
         }
 
         const missingSoftware = [];
@@ -119,6 +149,16 @@ class ExecutionClient {
 
     }
 
+    async rejectBounty(bountyId: string, result: ClientExecutionResult) {
+        logger.info(`Rejecting bounty ${bountyId} for ${result.message}`);
+        await this.coordinatorContract.reject_bounty({
+            bounty_id: bountyId,
+            node_id: this.config.nodeId,
+            message: result.message || ""
+        })
+        logger.debug(`Successfully rejected bounty ${bountyId}`);
+    }
+
     private addWebsocketListeners() {
         this.websocketClient = new WebSocket(this.config.websocketUrl);
         this.websocketClient.onopen = () => {
@@ -157,9 +197,12 @@ class ExecutionClient {
                                 const execution = new Execution(this.config, this.nodeConfig, bounty)
                                 database.insert(bountyId, execution)
                                 const res = await execution.execute()
-                                await this.publishAnswer(bountyId, res)
+                                await Promise.race([
+                                    this.publishAnswer(bountyId, res),
+                                    new Promise((_, reject) => setTimeout(() => reject(new Error('Execution timed out')), this.nodeConfig.absoluteTimeout))
+                                ])
                                 logger.info(`Execution of bounty ${bountyId} completed with result: ${JSON.stringify(res)}`);
-
+                                await this.emitBountyCompleteEvent(bountyId)
                             } catch (e: any) {
                                 logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
                                 if (e instanceof SetupError) { //TODO remove me once cleaned up
@@ -168,14 +211,22 @@ class ExecutionClient {
                                 if (e instanceof SetupError
                                     || e instanceof PreflightError
                                     || e instanceof ExecutionError) {
+                                    logger.info(`Publishing error`)
                                     await this.publishAnswer(bountyId, {
                                         result: "",
                                         message: e.message,
                                         errorType: e.constructor.name
                                     })
+                                    await this.emitBountyCompleteEvent(bountyId)
                                 }
-                            } finally {
-                                await this.emitBountyCompleteEvent(bountyId)
+                                if (e instanceof BountyRejectionError) {
+                                    logger.info(`Rejecting bounty`)
+                                    await this.rejectBounty(bountyId, {
+                                        result: "",
+                                        message: e.message,
+                                        errorType: e.constructor.name
+                                    })
+                                }
                             }
                         }
                     }
@@ -226,6 +277,15 @@ class ExecutionClient {
             await publishEventToWebsocketRelay(this.config, bounty.id, bce);
         }
     }
+
+    // Periodically ping the websocket to keep the connection alive
+    async heartbeat() {
+        logger.debug(`Sending heartbeat to websocket`)
+        if(this.websocketClient){
+            this.websocketClient.ping();
+        }
+        // this.websocketClient.send("Are you still there?")
+    }
 }
 
 
@@ -235,7 +295,7 @@ const init = async () => {
     const coordinatorContract = await getCoordinatorContract(config, account)
     const client = new ExecutionClient(account, coordinatorContract, config);
     await client.initialize();
-
+    setInterval(client.heartbeat, 10000)
 
     // Creates a bounty at a defined interval. Used for development to keep a constant stream of bounty events going
     // Default block when attempting to run against mainnet since it'll cost real near. Pass EMIT_BOUNTY__ALLOW_MAINNET to override

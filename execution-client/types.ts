@@ -49,6 +49,7 @@ export type Bounty = {
     status: BountyStatuses,
     amt_storage: BigInt,
     amt_node_reward: BigInt,
+    timeout_seconds: number,
     elected_nodes: string[],
     // upload_strategy: string // Later add support for publishing solution to IPFS
     answers: { [key: string]: NodeResponse },
@@ -59,6 +60,7 @@ export type Bounty = {
 // Stored locally in environment variables
 export type ClientConfig = {
     // universalTimeout: BigInt, //Universal timeout in MS. Overrules bounty level timeout.
+    nodeName: string,
     nodeId: string, //Every client is a node
     accountId: string, //Owner of the node. Must be able to sign transactions with this account.
     websocketUrl: string, // will be localhost or $(TODO ENTER TESTNET URL) in dev, or $(TODO insert mainnet url) in prod
@@ -95,6 +97,7 @@ export type NodeConfig = {
 
 export type ClientExecutionContext = {
     config: ClientConfig,
+    nodeConfig: NodeConfig,
     bounty: Bounty,
     phase: string,
     imageName: string,
@@ -188,6 +191,9 @@ export type CoordinatorContract = Contract & {
     create_bounty: (args: CreateBountyArgs, gas: string, deposit: string) => Promise<Bounty>;
     collect_reward: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<void>;
     //Note that this is the "view" version, can only be run when the bounty is complete/cancelled. use call_get_answer to get answers from hot bounties.
+    register_node: ({name, absolute_timeout, allow_network, allow_gpu}: { name: string, absolute_timeout: number, allow_network: boolean, allow_gpu: boolean }
+        , gas: string, deposit: string) => Promise<ClientNode>;
+    reject_bounty: ({bounty_id, node_id, message}: { bounty_id: string, node_id: string, message: string }) => Promise<void>;
     get_answer: ({bounty_id, node_id}: { bounty_id: string, node_id: string }) => Promise<NodeResponse>;
     post_answer: ({
                          bounty_id,

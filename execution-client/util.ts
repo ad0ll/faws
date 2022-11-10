@@ -11,6 +11,7 @@ import {logger} from "./logger";
 import {BountyNotFoundError} from "./errors";
 import axios, {AxiosResponse} from "axios";
 
+export const MAX_GAS="300000000000000"
 export const getAccount = async (config: ClientConfig, accountId: string): Promise<Account> => {
     const nearConnection = await connect(config.nearConnection);
     logger.debug(`fetching account from ${config.nearConnection.networkId}`)
@@ -27,7 +28,7 @@ export const getCoordinatorContract = async (config: ClientConfig, account: Acco
         {
             // make sure the ContractCoordinator type matches the contract
             viewMethods: ["get_bounty", "should_post_answer", "get_node", "get_answer"], // view methods do not change state but usually return a value
-            changeMethods: ["post_answer", "create_bounty", "collect_reward"], // change methods modify state, or otherwise require gas (such as when using borsh result_serializer)
+            changeMethods: ["post_answer", "create_bounty", "collect_reward", "register_node", "reject_bounty"], // change methods modify state, or otherwise require gas (such as when using borsh result_serializer)
         }
     );
     logger.info(`Connected to coordinator contract at ${config.coordinatorContractId}`, contract);
@@ -50,6 +51,7 @@ export const getBounty = async (config: ClientConfig, coordinatorContract: Coord
 }
 
 type SupportedPlaceholders = {
+    NODE_NAME?: string,
     NODE_ID?: string,
     BOUNTY_ID?: string,
     ACCOUNT_ID?: string
@@ -63,6 +65,7 @@ Used to populate placeholders like $NODE_ID and $BOUNTY_ID in strings.
 export const fillPlaceholders = (input: string, placeholders: SupportedPlaceholders): string => {
     let base = input;
     //Important to check undefined in case we don't have a value yet. Ex: We know NODE_ID much earlier than BOUNTY_ID
+    base = placeholders.NODE_NAME ? base.replace("$NODE_NAME", placeholders.NODE_NAME) : base
     base = placeholders.NODE_ID ? base.replace("$NODE_ID", placeholders.NODE_ID) : base
     base = placeholders.BOUNTY_ID ? base.replace("$BOUNTY_ID", placeholders.BOUNTY_ID) : base
     base = placeholders.ACCOUNT_ID ? base.replace("$ACCOUNT_ID", placeholders.ACCOUNT_ID) : base
@@ -95,7 +98,7 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
             amt_storage: amtStorage.toString(),
             amt_node_reward: amtReward.toString(),
         },
-        "300000000000000",
+        MAX_GAS,
         deposit.toString()
     )
     logger.info(`automatically created bounty ${bounty.id}`, bounty)

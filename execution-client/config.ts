@@ -20,6 +20,7 @@ export const readConfigFromEnv = (): ClientConfig => {
     const {
         WEBSOCKET_URL = 'ws://localhost:7071', //TODO Default should be mainnet or testnet
         ACCOUNT_ID = "test1.test.near", //TODO bad dummy value, should be required
+        NODE_NAME = "node1",
         NODE_ID = "node1.node.$ACCOUNT_ID", //TODO bad dummy value, should be required
         BOUNTY_STORAGE_DIR = path.join(os.homedir(), ".local/bounty_data/$BOUNTY_ID"),
         COORDINATOR_CONTRACT_ID = "dev-1665283011588-97304367585179",
@@ -45,7 +46,8 @@ export const readConfigFromEnv = (): ClientConfig => {
         websocketUrl: WEBSOCKET_URL,
         // universalTimeout: BigInt(UNIVERSAL_TIMEOUT),
         accountId: ACCOUNT_ID,
-        nodeId: fillPlaceholders(NODE_ID, {ACCOUNT_ID}),
+        nodeName: NODE_NAME,
+        nodeId: fillPlaceholders(NODE_ID, {NODE_NAME, ACCOUNT_ID}),
         // acceptNetworkWorkloads: ACCEPT_NETWORK_WORKLOADS === "true",
         // acceptGpuWorkloads: ACCEPT_GPU_WORKLOADS === "true",
         bountyStorageDir: fillPlaceholders(BOUNTY_STORAGE_DIR, {ACCOUNT_ID, NODE_ID, HOME: os.homedir()}),

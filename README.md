@@ -1,4 +1,9 @@
-# 
+#
+
+There are two sets of documentation for different users. 
+Miners: 
+Bounty creators:
+
 
 ## Installation:
 
@@ -14,6 +19,55 @@ There is one contract, the coordinator contract, which is used to create and man
 ## Mining client
 
 ### Installation
+
+
+
+The default installation connects to testnet, and makes a moderate effort to keep harddrive usage low by deleting bounty files after execution has completed. For more configuration options, see the configuration section below.
+
+Please note that this installation script has only been tested on Debian/Debian based systems on x86_64, amd64, and ARM CPUs.
+
+### Configuration
+
+Configuration is done through a .env file that's placed at the root of the execution_client subdirectory. The contents of this file are determined by the jinja template at [./playbook/files/default.env.j2]()
+
+
+The following variables are available:
+
+[//]: # (TODO Defaults below are wrong, need to update)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `COORDINATOR_URL` | Yes | Hardcoded in [./playbook/install.sh] | The URL of the coordinator contract |
+| `WEBSOCKET_URL` | Yes | ws://127.0.0.1:8000/ws | This is the URL to event-api |
+| `ACCOUNT_ID` | Yes | "garbage8.testnet" | |
+| `BOUNTY_STORAGE_DIR` | Yes | "$HOME/bounty_data/$BOUNTY_ID"0 | |
+| `NODE_ID` | Yes | "node2.node.$ACCOUNT_ID" | |
+| `COORDINATOR_CONTRACT_ID` | Yes | "dev-1667851730608-70663242970224" | |
+| `DOCKER_CONTAINER_NAME_FORMAT` | Yes | "bounty-$BOUNTY_ID" | |
+| `DOCKER_IMAGE_NAME_FORMAT` | Yes | "$BOUNTY_ID" | |
+| `NEAR_NETWORK_ID` | Yes | "testnet" | |
+| `NEAR_NODE_URL` | Yes | "http://dresser.mechadol:3030" # This is the URL to example-indexer | |
+| `NEAR_WALLET_URL` | Yes | "http://0.0.0.0/wallet" | |
+| `NEAR_HELPER_URL` | Yes | "http://0.0.0.0/helper" | |
+| `STORAGE_DOCKER_PRUNE_SYSTEM_EACH_RUN` | No | "false" | |
+| `STORAGE_DOCKER_PRUNE_IMAGES_EACH_RUN` | No | "false" | |
+| `STORAGE_DOCKER_REMOVE_EXECUTION_CONTAINER_EACH_RUN` | No | "true" | |
+| `STORAGE_DOCKER_REMOVE_EXECUTION_IMAGE_EACH_RUN` | No | "true" | |
+
+#### Dev settings
+The following variables are intended for development purposes only, and should not be used in production:
+
+| Variable | Required | Default | Description |
+| -------- | -------- | ------- | ----------- |
+| `EMIT_BOUNTY` | No |   | If true, will create a bounty every INTERVAL milliseconds    |
+| `EMIT_BOUNTY__PUBLISH_CREATE_EVENT` | No |  | If true, sends a bounty_created event payload to the websocket relay |
+| `EMIT_BOUNTY__PUBLISH_COMPLETE_EVENT` | No |  | If true, sends a bounty_complete event payload to the websocket relay |
+| `EMIT_BOUNTY__WS_RELAY_URL` | No |  | URL of a websocket that echoes published events (used in absence of a local indexer) |
+| `EMIT_BOUNTY__MIN_NODES` | No | 1 | Sets the bounty.min_nodes property on emitted bounties |
+| `EMIT_BOUNTY__MAX_NODES` | No | 3 | Sets the bounty.max_nodes property on emitted bounties |
+
+Within the .env file, a handful of placeholders are supported, which are replaced with their corresponding values at runtime. You will often see these placeholders in the default configuration, where they're used to avoid collisions at runtime. Currently $HOME, $BOUNTY_ID, $ACCOUNT_ID, and $NODE_ID are supported.
+
 
 #### Automatic install w/ ansible (recommended)
 

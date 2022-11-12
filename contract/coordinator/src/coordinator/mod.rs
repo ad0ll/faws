@@ -51,6 +51,9 @@ pub struct Coordinator {
     pub total_payouts: Balance,
     pub node_by_owner: UnorderedMap<AccountId, Vec<AccountId>>,
     pub bounty_by_owner: UnorderedMap<AccountId, Vec<AccountId>>,
+    // pub gpu_nodes: UnorderedSet<AccountId>,
+    // pub network_nodes: UnorderedSet<AccountId>,
+    // pub gpu_and_network_nodes: UnorderedSet<AccountId>,
 }
 
 // Define the default, which automatically initializes the contract
@@ -202,7 +205,7 @@ impl Coordinator {
     }
 
     #[payable]
-    pub fn register_node(&mut self, name: String, allow_network: bool, allow_gpu: bool) -> Node {
+    pub fn register_node(&mut self, name: String, absolute_timeout: u64, allow_network: bool, allow_gpu: bool) -> Node {
         require!(
             env::attached_deposit() >= parse_near!("1N"),
             "Must include a refundable deposit of 1 NEAR to register a node"
@@ -219,7 +222,7 @@ impl Coordinator {
             self.nodes.get(&node_id).is_none(),
             format!("Node already registered: {}", node_id.clone())
         );
-        let metadata = Node::new_node(node_id.clone(), allow_network, allow_gpu);
+        let metadata = Node::new_node(node_id.clone(), absolute_timeout, allow_network, allow_gpu);
         self.nodes.insert(&node_id, &metadata);
         self.node_queue.push(node_id.clone());
         let mut owner_nodes = self
@@ -265,7 +268,6 @@ impl Coordinator {
         return node;
     }
 
-    //TODO Untested
     pub fn remove_node(&mut self, node_id: AccountId) -> Promise {
         println!("attempting to remove node with id {}", node_id);
         let node = self
@@ -296,6 +298,12 @@ impl Coordinator {
             node.deposit
         );
         return Promise::new(node.owner_id).transfer(node.deposit);
+    }
+
+    // Only intended for developmment, should be removed before deploying to production
+    //TODO untested
+    pub fn remove_all_nodes(&mut self) {
+        self.nodes.clear();
     }
 
     //TODO untested
@@ -699,7 +707,7 @@ impl Coordinator {
         };
     }
 
-    pub fn collect_reward(&mut self, node_id: AccountId, bounty_id: AccountId) {
+    pub fn collect_reward(&mut self, node_id: AccountId, bounty_id: AccountId) -> Promise {
         //Should collect reward has most preflight checks for this function
         require!(self.should_collect_reward(node_id.clone(), bounty_id.clone()), "You are not eligible to collect a reward");
         let mut node = self.nodes.get(&node_id).unwrap_or_else(|| panic!("Node {} does not exist", node_id));
@@ -715,7 +723,7 @@ impl Coordinator {
 
         node.lifetime_earnings += payout;
         self.nodes.insert(&node_id, &node);
-        Promise::new(node.owner_id).transfer(payout);
+        return Promise::new(node.owner_id).transfer(payout);
     }
 
 
@@ -822,6 +830,7 @@ impl Coordinator {
         return bounty.get_result();
     }
 
+
     #[payable]
     pub fn add_storage_deposit(&mut self, bounty_id: AccountId) -> Promise {
         require!(
@@ -875,7 +884,7 @@ mod tests {
         let account_id: AccountId = format!("{}.node.{}", name, signer_account_id())
             .parse()
             .unwrap();
-        let node = coordinator.register_node(name, true, true);
+        let node = coordinator.register_node(name, 60000, true, true);
 
         assert_eq!(
             node.owner_id,
@@ -900,7 +909,7 @@ mod tests {
         let _account_id: AccountId = format!("{}.node.{}", name, current_account_id().to_string())
             .parse()
             .unwrap();
-        let _node = coordinator.register_node(name, true, true);
+        let _node = coordinator.register_node(name, 60000, true, true);
         //TODO
     }
 

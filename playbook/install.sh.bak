@@ -6,6 +6,8 @@
 # This will be converted to a playbook in the future
 
 # Run with sudo su - root -s $HOME/install.sh
+set -e
+
 
 REPO_NAME="near-isnt-decentralized"
 REPO_DIR="near-isnt-decentralized3"

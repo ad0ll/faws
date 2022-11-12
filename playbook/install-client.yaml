@@ -1,12 +1,17 @@
-- name: install execution client
-  tasks:
-  - git:
-      repo: git@github.com:ad0ll/near-isnt-decentralized.git
-      dest: /home/{{ ansible_user_id }}/execution-client
-      version: main
-      key_file: /home/{{ ansible_user_id }}/.ssh/id_rsa #TODO Should be removed before submission
-  - name: install dependencies
-    shell: /bin/bash -c "source ~/.nvm/nvm.sh && cd /home/{{ ansible_user_id }}/execution-client && yarn install && yarn build"
+- name: Install execution client
+  hosts: localhost
+  become: true
+  vars:
+    account_id: "garbage7.testnet"
+    node_name: "node1"
+    coordinator_id: "dev-1667685039748-17418812844752"
+    bounty_storage_dir: "{{ home }}/.local/bounty_storage/$BOUNTY_ID" # $BOUNTY_ID must appear in this path
+    home: "/root"
+    repo_name: "near-isnt-decentralized"
+    repo_dir: "near-isnt-decentralized3"
+    websocket_url: "ws://localhost:8000/ws"
+    installation_dir: "{{ home }}/{{ repo_dir }}/execution-client"
 
-  # TODO install service
-  # https://wiki.debian.org/systemd/Services
+  tasks:
+    - name: install system
+      include: tasks/install-client.yaml

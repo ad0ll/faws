@@ -11,6 +11,7 @@ import {logger} from "./logger";
 import {BountyNotFoundError} from "./errors";
 import axios, {AxiosResponse} from "axios";
 
+export const MAX_GAS="300000000000000"
 export const getAccount = async (config: ClientConfig, accountId: string): Promise<Account> => {
     const nearConnection = await connect(config.nearConnection);
     logger.debug(`fetching account from ${config.nearConnection.networkId}`)
@@ -27,7 +28,7 @@ export const getCoordinatorContract = async (config: ClientConfig, account: Acco
         {
             // make sure the ContractCoordinator type matches the contract
             viewMethods: ["get_bounty", "should_post_answer", "get_node", "get_answer"], // view methods do not change state but usually return a value
-            changeMethods: ["post_answer", "create_bounty", "collect_reward"], // change methods modify state, or otherwise require gas (such as when using borsh result_serializer)
+            changeMethods: ["post_answer", "create_bounty", "collect_reward", "register_node", "reject_bounty"], // change methods modify state, or otherwise require gas (such as when using borsh result_serializer)
         }
     );
     logger.info(`Connected to coordinator contract at ${config.coordinatorContractId}`, contract);
@@ -50,6 +51,7 @@ export const getBounty = async (config: ClientConfig, coordinatorContract: Coord
 }
 
 type SupportedPlaceholders = {
+    NODE_NAME?: string,
     NODE_ID?: string,
     BOUNTY_ID?: string,
     ACCOUNT_ID?: string
@@ -63,6 +65,7 @@ Used to populate placeholders like $NODE_ID and $BOUNTY_ID in strings.
 export const fillPlaceholders = (input: string, placeholders: SupportedPlaceholders): string => {
     let base = input;
     //Important to check undefined in case we don't have a value yet. Ex: We know NODE_ID much earlier than BOUNTY_ID
+    base = placeholders.NODE_NAME ? base.replace("$NODE_NAME", placeholders.NODE_NAME) : base
     base = placeholders.NODE_ID ? base.replace("$NODE_ID", placeholders.NODE_ID) : base
     base = placeholders.BOUNTY_ID ? base.replace("$BOUNTY_ID", placeholders.BOUNTY_ID) : base
     base = placeholders.ACCOUNT_ID ? base.replace("$ACCOUNT_ID", placeholders.ACCOUNT_ID) : base
@@ -87,28 +90,31 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
             // name: `${process.env.EMIT_BOUNTY__NAME || "test-bounty"}-${Math.floor(Date.now() / 1000)}`,
             file_location: process.env.EMIT_BOUNTY__FILE_LOCATION || 'git@github.com:ad0ll/docker-hello-world.git',
             file_download_protocol: SupportedFileDownloadProtocols.GIT,
-            min_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "1"),
-            total_nodes: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "3"),
+            min_nodes: parseInt(process.env.EMIT_BOUNTY__MIN_NODES || "2"),
+            total_nodes: parseInt(process.env.EMIT_BOUNTY__TOTAL_NODES || "2"),
             timeout_seconds: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "60"), //1 minute
             network_required: process.env.EMIT_BOUNTY__NETWORK_REQUIRED !== "false",
             gpu_required: process.env.EMIT_BOUNTY__GPU_REQUIRED !== "false",
             amt_storage: amtStorage.toString(),
             amt_node_reward: amtReward.toString(),
         },
-        "300000000000000",
+        MAX_GAS,
         deposit.toString()
     )
     logger.info(`automatically created bounty ${bounty.id}`, bounty)
     if (process.env.EMIT_BOUNTY__PUBLISH_CREATE_EVENT) {
-        logger.info(`Publishing bounty created event for ${bounty.id}`)
+        logger.info(`Publishing bounty created event for ${bounty.id}`
+        )
         const bce: BountyCreatedEvent = {
             event: "bounty_created",
             data: {
                 coordinator_id: config.coordinatorContractId,
-                node_ids: [config.nodeId],
+                node_ids: bounty.elected_nodes,
                 bounty_id: bounty.id
             }
         }
+        const sanity_check =  await coordinatorContract.get_bounty({bounty_id: bounty.id})
+        console.log("sanity check", sanity_check)
         await publishEventToWebsocketRelay(config, bounty.id, bce)
     }
 

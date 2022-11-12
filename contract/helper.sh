@@ -44,6 +44,9 @@ if [[ -n $REDEPLOY_CONTRACT ]]; then #If defined then...
 #  local_near call "$CONTRACT_NAME" register_node '{"name": "node5"}' --accountId="$ACCOUNT"
 fi
 source_neardev
+local_near call "$CONTRACT_NAME" register_node '{"name": "node1", "absolute_timeout": 60000, "allow_network": true, "allow_gpu": false}' --deposit 1 --accountId="$ACCOUNT"
+  local_near call "$CONTRACT_NAME" register_node '{"name": "node2", "absolute_timeout": 60000, "allow_network": false, "allow_gpu": false}' --deposit 1 --accountId="$ACCOUNT"
+  local_near call "$CONTRACT_NAME" register_node '{"name": "node3", "absolute_timeout": 60000, "allow_network": true, "allow_gpu": false}' --deposit 1 --accountId="$ACCOUNT"
 
 #  local_near call "$CONTRACT_NAME" register_node '{"name": "node1", "allow_network": true, "allow_gpu": true}' --deposit 1 --accountId="$ACCOUNT"
 #  local_near call "$CONTRACT_NAME" register_node '{"name": "node2", "allow_network": true, "allow_gpu": true}' --deposit 1 --accountId="$ACCOUNT"

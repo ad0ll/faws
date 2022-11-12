@@ -1,47 +1,23 @@
 import React, {ReactElement, useEffect, useState} from "react";
-import {Checkbox, Chip, Grid, Table, TableBody, TableCell, TableHead, TableRow, TextField} from "@mui/material";
+import {Checkbox, Chip, Grid, Table, TableBody, TableCell, TableHead, TableRow} from "@mui/material";
 import {FCWithChildren} from "../types";
 import {Link} from "react-router-dom";
 import Button from "@mui/material/Button";
 import {localStorageState} from "../App";
-import {ClientNode} from "../../../execution-client/types"; //TODO fix me later
-import {BountyExecutionState, BountyMonitor, ExecutionMessageSummaryValue} from "../bounty/BountyMonitor";
-import {NodeStorage, NodeStorageValue, TransientStorage} from "../storage";
-import {messageFactory, readyStateToString} from "./util";
-import useWebSocket, {ReadyState} from "react-use-websocket";
+import {BountyExecutionState, BountyMonitor, ExecutionMessageSummaryValue} from "../bounty/bounty-monitor";
+import {NodeStorage, TransientStorage} from "../storage";
+import {messageFactory} from "./util";
+import useWebSocket from "react-use-websocket";
 import {ClientMessage} from "../../../execution-client/database";
 import {atom, selector, useRecoilState, useRecoilValue} from "recoil";
-import {wallet} from "../index"; //TODO fix me later
+import {wallet} from "../index";
+import {chainNodesState, viewMineOnlyState} from "./existing-node"; //TODO fix me later
 
-const viewMineOnlyState = atom<boolean>({
-    key: "viewMineOnly",
-    default: false
-})
 
-const chainNodesState = selector({
-    key: "chainNodes",
-    get: async ({get}) => {
-        const viewMineOnly = get(viewMineOnlyState)
-        // The contract currently returns a vector of nodes, so we have to massage it into an object here
-        // const massage = (fetchedNodes: ClientNode[]) => {
-        //     const nodesObject = {};
-        //     fetchedNodes.forEach((node) => {
-        //         nodesObject[node.id] = {
-        //             ...node,
-        //             bountiesVisible: false
-        //         }
-        //     })
-        //     return nodesObject
-        // }
-        if (viewMineOnly) {
-            console.log(`fetching nodes owned by ${wallet.accountId}`)
-            return await wallet.getNodesOwnedBySelf()
-        } else {
-            console.log("fetching all nodes")
-            return await wallet.getNodes()
-        }
-    }
-})
+// const nodesVisibleBounties = atom<{ [key: string]: boolean }>({
+//     key: "nodesVisibleBounties",
+//     default: {}
+// })
 
 const localNodesState = selector({
     key: "localNodesState",
@@ -63,8 +39,8 @@ const localNodesState = selector({
 })
 
 const nodesState = atom<NodeStorage>({
-  key: "nodesState",
-  default: localNodesState,
+    key: "nodesState",
+    default: localNodesState,
     effects: [
         //Copy state changes to local storage
         ({onSet}) => {
@@ -76,11 +52,6 @@ const nodesState = atom<NodeStorage>({
     ]
 
 })
-
-// const nodesVisibleBounties = atom<{ [key: string]: boolean }>({
-//     key: "nodesVisibleBounties",
-//     default: {}
-// })
 
 export const NodeList: React.FC = () => {
     // const wallet = useRecoilValue(walletState);
@@ -99,7 +70,17 @@ export const NodeList: React.FC = () => {
         const timeOutId = setTimeout(() => {
             storage.set("nodes", nodes)
         }, 1000);
-        return () => clearTimeout(timeOutId);
+        return () => {
+            clearTimeout(timeOutId)
+        };
+    }, [nodes]);
+
+    //Refresh nodes every 2s. Node data doesn't change w/o a transaction, so this is moreso ceremony
+    useEffect(() => {
+        const pollingInterval = setInterval(wallet.getNodes, 2000)
+        return () => {
+            clearInterval(pollingInterval)
+        }
     }, [nodes]);
 
 
@@ -180,22 +161,7 @@ export const NodeList: React.FC = () => {
                                                                checked={node.allow_network}/></TableCell></DisplayIfVerbose>
                         <DisplayIfVerbose><TableCell><Checkbox disabled={true}
                                                                checked={node.allow_gpu}/></TableCell></DisplayIfVerbose>
-                        <TableCell>
-                            {/*TODO desperately need validation here*/}
-                            {/*TODO desperately need an inline submit button here so we don't update storage on change*/}
-                            <TextField label={"URL"} placeholder={"ws://localhost:8081"}
-                                       defaultValue={node.url}
-                                       color={readyState === ReadyState.OPEN ? "secondary" : "primary"}
-                                       onChange={(e) => {
-                                           setNodes({...nodes, [node.id]: {...node, url: e.target.value}})
-                                       }}/>
-                        </TableCell>
-                        <TableCell>
-                            {/*TODO Should be green and red instead of blue and pink*/}
-                            {localNode.url && <Chip variant={"outlined"}
-                                                    color={readyState === ReadyState.OPEN ? "secondary" : "primary"}
-                                                    label={readyStateToString(readyState)}/>}
-                        </TableCell>
+
                         <TableCell>
                             <Button variant={showDetail ? "outlined" : "contained"} color={"primary"}
                                     onClick={() => {

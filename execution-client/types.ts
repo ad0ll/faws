@@ -16,7 +16,7 @@ export enum NodeResponseStatuses {
 export enum SupportedFileDownloadProtocols {
   GIT = "GIT",
   IPFS = "IPFS",
-  HTTP = "HTTP",
+  HTTPS = "HTTPS",
 }
 export enum BountyStatuses {
   Pending = "PENDING",
@@ -55,6 +55,10 @@ export type Bounty = {
   answers: { [key: string]: NodeResponse };
   build_args: string[]; //Not currently supported by contract, but used by client for tests
   runtime_args: string[]; //Not currently supported by contract, but used by client for tests
+  failed_nodes?: string[];
+  successful_nodes?: string[];
+  unanswered_nodes?: string[];
+  rejected_nodes?: string[];
 };
 
 // Stored locally in environment variables

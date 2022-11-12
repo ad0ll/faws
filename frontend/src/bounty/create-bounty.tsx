@@ -11,22 +11,29 @@ import {
   Select,
   TextField,
 } from "@mui/material";
-import React, { useContext } from "react";
+import React, {useContext, useTransition} from "react";
 import {
   Bounty,
   BountyStatuses,
   SupportedFileDownloadProtocols,
 } from "../../../execution-client/types";
 import { localStorageState, WalletContext } from "../app";
-import { useRecoilValue } from "recoil";
+import {selector, useRecoilValue} from "recoil";
+import {wallet} from "../index";
+
+
+
 
 export default function CreateBounty({
   handleClose,
+    nodeCount
 }: {
   handleClose: () => void;
+  nodeCount: number;
 }) {
+  console.log("Node count: (create bounty)", nodeCount);
   const wallet = useContext(WalletContext);
-  const storage = useRecoilValue(localStorageState);
+  const [inTransition, startTransition] = useTransition();
   const [error, setError] = React.useState("");
   const [state, setState] = React.useState<Bounty>({
     amt_node_reward: "",
@@ -63,7 +70,6 @@ export default function CreateBounty({
   };
 
   const validateBounty = (bounty: Bounty): string => {
-    const nodesCount = storage.get("nodesCount");
 
     if (!bounty.file_location) {
       return "File location is required";
@@ -92,7 +98,7 @@ export default function CreateBounty({
     if (bounty.min_nodes > bounty.total_nodes) {
       return "Threshold set greater than total nodes.";
     }
-    if (bounty.total_nodes > Number(nodesCount)) {
+    if (bounty.total_nodes > nodeCount) {
       return "Total nodes set higher than total nodes available.";
     }
     return "";
@@ -116,6 +122,7 @@ export default function CreateBounty({
           {error}
         </Alert>
       )}
+      {inTransition ? <div>[Loading new results...]</div> : null}
       <Grid container rowSpacing={1} spacing={4}>
         <Grid item xs={6}>
           <FormGroup>

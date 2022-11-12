@@ -1,27 +1,45 @@
-import React, { useContext } from "react";
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Button,
-  Grid,
-  Typography,
-} from "@mui/material";
+import React, {useContext, useEffect} from "react";
+import {Accordion, AccordionDetails, AccordionSummary, Box, Button, Grid, Typography,} from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { BountyStatuses } from "../../../execution-client/types";
-import { localStorageState, WalletContext } from "../app";
-import { useRecoilValue } from "recoil";
-import { BountyStorage } from "../storage";
-import { UpdateBountyModal } from "./update-bounty-modal";
+import {BountyStatuses} from "../../../execution-client/types";
+import {WalletContext} from "../app";
+import {atom, selector, useRecoilState} from "recoil";
+import {UpdateBountyModal} from "./update-bounty-modal";
+import {wallet} from "../index";
+
+const chainBountiesState = selector({
+  key: "chainBounties",
+  get: async ({get}) => {
+    return await wallet.getBountiesOwnedBySelf();
+  }
+})
+const bountiesState = atom({
+  key: "bountiesStates",
+  default: chainBountiesState
+})
+
 
 export default function ExistingBounty() {
   const wallet = useContext(WalletContext);
-  const storage = useRecoilValue(localStorageState);
-  const bounties = (storage.get("bounties") as BountyStorage) || {};
   const [open, setOpen] = React.useState(false);
   const [field, setField] = React.useState("");
   const [bountyId, setBountyId] = React.useState("");
+  const [bounties, setBounties] = useRecoilState(bountiesState);
+
+  //Refetch bounties every 2s
+  useEffect(
+      () => {
+        const getBounties = async () => {
+          const selfBounties = await wallet.getBountiesOwnedBySelf();
+          console.log("Bounties: ", selfBounties);
+            setBounties(selfBounties);
+        }
+        const interval = setInterval(() => {
+          getBounties();
+        }, 2000);
+        return () => clearInterval(interval);
+      }, [bounties]
+  )
   const handleOpen = (button: string, bountyId: string) => {
     setBountyId(bountyId);
     setField(button);
@@ -29,9 +47,12 @@ export default function ExistingBounty() {
   };
   const handleClose = () => setOpen(false);
 
+
+
   const cancelBounty = async (bountyId: string) => {
     await wallet.cancelBounty(bountyId);
   };
+
 
   return (
     <>
@@ -99,7 +120,19 @@ export default function ExistingBounty() {
                       </Box>{" "}
                       {bounty.amt_node_reward} YoctoNEAR
                     </Typography>
-                    {/*TODO toString shouldnt be required. May want to change this control to grid*/}
+
+                    <Typography>
+                      <Box fontWeight="700" display="inline">
+                        Successes:
+                      </Box>{" "}
+                      {bounty.successful_nodes?.length}
+                    </Typography>
+                    <Typography>
+                    <Box fontWeight="700" display="inline">
+                      Failures:
+                    </Box>{" "}
+                    {bounty.failed_nodes?.length}
+                    </Typography>
 
                     <Typography>
                       <Box fontWeight="700" display="inline">

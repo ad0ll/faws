@@ -5,7 +5,7 @@ import {ClientNode} from "../../../execution-client/types"
 
 import {nanoTimestampToDate} from "../util";
 import {useRecoilValue} from "recoil";
-import {localStorageState, WalletContext} from "../App";
+import {localStorageState, WalletContext} from "../app";
 
 
 export const NodeDetail: React.FC = () => {

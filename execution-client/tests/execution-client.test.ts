@@ -135,7 +135,7 @@ test.serial("can download file with git", async t => {
 })
 
 test.serial("can download file with http", async t => {
-    await downloadFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", SupportedFileDownloadProtocols.HTTP, true)
+    await downloadFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", SupportedFileDownloadProtocols.HTTPS, true)
 })
 
 test.serial("can extract (which does nothing) with git", async t => {
@@ -143,7 +143,7 @@ test.serial("can extract (which does nothing) with git", async t => {
 })
 
 test.serial("can extract file with zip", async t => {
-    await downloadAndExtractFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", SupportedFileDownloadProtocols.HTTP, true)
+    await downloadAndExtractFileTest(t, "https://github.com/ad0ll/docker-hello-world/archive/refs/heads/main.zip", SupportedFileDownloadProtocols.HTTPS, true)
 })
 
 test.serial("image build error results in failure", async t => {

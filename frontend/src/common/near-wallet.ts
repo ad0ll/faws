@@ -235,6 +235,13 @@ export class Wallet {
       method: "get_bounties",
     });
   }
+  async getNodeCount(): Promise<number> {
+    const result =  await this.viewMethod({
+      method: "get_node_count",
+    });
+    console.log("get_node_count", result);
+    return result;
+  }
 
   async registerNode(
     name: string,
@@ -246,6 +253,7 @@ export class Wallet {
       method: "register_node",
       args: {
         name,
+        absolute_timeout: 60000,
         allow_network,
         allow_gpu,
       },

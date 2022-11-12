@@ -47,8 +47,8 @@ export type Bounty = {
   network_required: boolean;
   gpu_required: boolean;
   status: BountyStatuses;
-  amt_storage: BigInt;
-  amt_node_reward: BigInt;
+  amt_storage: string;
+  amt_node_reward: string;
   timeout_seconds: number;
   elected_nodes: string[];
   // upload_strategy: string // Later add support for publishing solution to IPFS

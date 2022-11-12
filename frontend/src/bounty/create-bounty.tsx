@@ -14,6 +14,7 @@ import {
 import React, { useContext } from "react";
 import {
   Bounty,
+  BountyStatuses,
   SupportedFileDownloadProtocols,
 } from "../../../execution-client/types";
 import { localStorageState, WalletContext } from "../app";
@@ -45,7 +46,7 @@ export default function CreateBounty({
     network_required: true,
     owner_id: "",
     runtime_args: [],
-    status: undefined,
+    status: "" as BountyStatuses,
     total_nodes: 0,
     timeout_seconds: 60,
   });

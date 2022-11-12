@@ -156,12 +156,8 @@ export class Wallet {
         amt_node_reward: NEAR.parse(bounty.amt_node_reward),
       },
       deposit: (
-        BigInt(
-          //@ts-ignore-next-line
-          NEAR.parse(bounty.amt_storage)
-        ) +
-        //@ts-ignore-next-line
-        BigInt(NEAR.parse(bounty.amt_node_reward))
+        NEAR.parse(bounty.amt_storage).toBigInt() +
+        NEAR.parse(bounty.amt_node_reward).toBigInt()
       ).toString(),
     });
   }
@@ -234,21 +230,26 @@ export class Wallet {
       args: { owner_id: this.accountId },
     });
   }
-  async getBounties(): Promise<ClientNode[]> {
+  async getBounties(): Promise<Bounty[]> {
     return await this.viewMethod({
       method: "get_bounties",
     });
   }
 
-  async registerNode(node: Node): Promise<void | FinalExecutionOutcome> {
+  async registerNode(
+    name: string,
+    allow_network: boolean,
+    allow_gpu: boolean
+  ): Promise<void | FinalExecutionOutcome> {
     return await this.callMethod({
       contractId: COORDINATOR_ID,
       method: "register_node",
       args: {
-        name: node.name,
-        allow_network: node.allow_network,
-        allow_gpu: node.allow_gpu,
+        name,
+        allow_network,
+        allow_gpu,
       },
+      deposit: NEAR.parse("1").toString(),
     });
   }
 

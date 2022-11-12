@@ -6,6 +6,7 @@ import ComputerIcon from "@mui/icons-material/Computer";
 import { localStorageState, WalletContext } from "../app";
 import { useRecoilValue } from "recoil";
 import { BountyStorage, NodeStorage } from "../storage";
+import { useNavigate } from "react-router";
 
 const paperStyle = {
   margin: "24px",
@@ -25,13 +26,14 @@ export default function Home({ isSignedIn }: { isSignedIn: boolean }) {
   const storage = useRecoilValue(localStorageState);
   const nodes = (storage.get("nodes") as NodeStorage) || {};
   const bounties = (storage.get("bounties") as BountyStorage) || {};
+  const navigate = useNavigate();
   let totalEarnings = 0;
   let totalBounties = 0;
   let totalNodes = 0;
   Object.values(nodes)
     .filter((node) => node.owner_id === wallet.accountId)
     .forEach((node) => {
-      totalEarnings += node.lifetime_earnings;
+      totalEarnings += node.lifetime_earnings ?? 0;
       totalNodes++;
     });
   Object.values(bounties)
@@ -48,7 +50,13 @@ export default function Home({ isSignedIn }: { isSignedIn: boolean }) {
             margin: "auto",
           }}
         >
-          <Paper elevation={3} sx={{ ...paperStyle, background: "#388e3c" }}>
+          <Paper
+            elevation={3}
+            sx={{
+              ...paperStyle,
+              background: "#388e3c",
+            }}
+          >
             <MonetizationOnIcon sx={iconStyle} />
             <Typography variant="h5">My Earnings</Typography>
             <Typography variant="h1">
@@ -58,12 +66,32 @@ export default function Home({ isSignedIn }: { isSignedIn: boolean }) {
               </>
             </Typography>
           </Paper>
-          <Paper elevation={3} sx={{ ...paperStyle, background: "#0288d1" }}>
+          <Paper
+            onClick={() => {
+              navigate("/bounty");
+            }}
+            elevation={3}
+            sx={{
+              ...paperStyle,
+              background: "#0288d1",
+              cursor: "pointer",
+            }}
+          >
             <HistoryEduIcon sx={iconStyle} />
             <Typography variant="h5">My Bounties</Typography>
             <Typography variant="h1">{totalBounties}</Typography>
           </Paper>
-          <Paper elevation={3} sx={{ ...paperStyle, background: "#ab47bc" }}>
+          <Paper
+            onClick={() => {
+              navigate("/node");
+            }}
+            elevation={3}
+            sx={{
+              ...paperStyle,
+              background: "#ab47bc",
+              cursor: "pointer",
+            }}
+          >
             <ComputerIcon sx={iconStyle} />
             <Typography variant="h5">My Nodes</Typography>
             <Typography variant="h1">{totalNodes}</Typography>

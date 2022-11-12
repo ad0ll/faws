@@ -1,18 +1,24 @@
-import { Button, FormControl, FormGroup, Grid, TextField } from "@mui/material";
-import * as React from "react";
-import { Wallet } from "../common/near-wallet";
-import { Node } from "./types";
-import {COORDINATOR_ID} from "../coordinator/Coordinator";
+import {
+  Button,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
+  FormGroup,
+  TextField,
+} from "@mui/material";
+import React, { useContext } from "react";
+import { WalletContext } from "../app";
 
 export default function RegisterNode({
-  wallet,
   handleClose,
 }: {
-  wallet: Wallet;
   handleClose: () => void;
 }) {
+  const wallet = useContext(WalletContext);
   const [state, setState] = React.useState({
     name: "",
+    allow_network: false,
+    allow_gpu: false,
   });
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,8 +32,8 @@ export default function RegisterNode({
     });
   };
 
-  const handleSubmit = () => {
-    registerNode(wallet, state);
+  const handleSubmit = async () => {
+    await wallet.registerNode(state.name, state.allow_network, state.allow_gpu);
     handleClose();
   };
 
@@ -45,6 +51,26 @@ export default function RegisterNode({
             onChange={handleChange}
           />
         </FormControl>
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="allow_network"
+              onChange={handleChange}
+              checked={state.allow_network}
+            />
+          }
+          label="Network Required"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="allow_gpu"
+              onChange={handleChange}
+              checked={state.allow_gpu}
+            />
+          }
+          label="GPU Required"
+        />
       </FormGroup>
       <FormGroup>
         <FormControl margin="normal">
@@ -55,16 +81,4 @@ export default function RegisterNode({
       </FormGroup>
     </>
   );
-}
-
-async function registerNode(wallet: Wallet, node: Node) {
-  const args = {
-    name: node.name,
-  };
-  //TODO replace with wallet.registerNode
-  return await wallet.callMethod({
-    contractId: COORDINATOR_ID,
-    method: "register_node",
-    args,
-  });
 }

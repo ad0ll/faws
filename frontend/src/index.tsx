@@ -30,12 +30,13 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: [
+      "Manrope",
+      "Arial",
       "-apple-system",
       "BlinkMacSystemFont",
       '"Segoe UI"',
       "Roboto",
       '"Helvetica Neue"',
-      "Arial",
       "sans-serif",
       '"Apple Color Emoji"',
       '"Segoe UI Emoji"',

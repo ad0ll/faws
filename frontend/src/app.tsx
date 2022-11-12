@@ -13,6 +13,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { TransientStorage } from "./storage";
 import { atom } from "recoil";
 import { loadData } from "./common/load-chain-data";
+import Node from "./node/node";
 
 export const localStorageState = atom<TransientStorage>({
   key: "localStorageState",
@@ -43,7 +44,7 @@ export default function App({
     },
     {
       path: "/node",
-      element: <NodeList />,
+      element: <Node />,
     },
     {
       path: "/node/:id",

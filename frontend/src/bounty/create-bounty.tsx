@@ -91,7 +91,7 @@ export default function CreateBounty({
     if (bounty.min_nodes > bounty.total_nodes) {
       return "Threshold set greater than total nodes.";
     }
-    if (bounty.total_nodes > nodesCount) {
+    if (bounty.total_nodes > Number(nodesCount)) {
       return "Total nodes set higher than total nodes available.";
     }
     return "";

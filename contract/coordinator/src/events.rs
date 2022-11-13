@@ -17,6 +17,7 @@ use crate::coordinator::PayoutStrategy;
 #[non_exhaustive]
 pub enum EventLogVariant {
     BountyCreated(BountyCreatedLog),
+ BountyRequestRetry(BountyRequestRetryLog),
     BountyCompleted(BountyCompletedLog),
 }
 
@@ -46,8 +47,10 @@ impl fmt::Display for EventLog {
 }
 
 /// An event log for when a bounty is created.
+/// Used to let nodes know that there is work to do
 ///
 /// Arguments
+/// * `coordinator_id`: the account id of the coordinator firing this event
 /// * `bounty_id`: "bounty.id.test.near"
 /// * `node_ids`: ["node.id.test.near", "node2.id.test.near"]
 /// * `message`: optional message
@@ -57,19 +60,39 @@ pub struct BountyCreatedLog {
     pub coordinator_id: AccountId,
     pub bounty_id: AccountId,
     pub node_ids: Vec<AccountId>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+/// An event log for when an incomplete bounty should be retried, such as when the storage deposit has been increased.
+///
+/// Arguments
+/// * `coordinator_id`: the account id of the coordinator firing this event
+/// * `bounty_id`: "bounty.id.test.near"
+/// * `node_ids`: nodes elected for the bounty
+/// * `message`: optional message
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct BountyRequestRetryLog {
+    pub coordinator_id: AccountId,
+    pub bounty_id: AccountId,
+    pub node_ids: Vec<AccountId>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
 
 
 /// An event log to capture bounty closure
-/// TODO update this comment
+/// Used to let nodes know that they can attempt to collect their payout
+///
 /// Arguments
-/// * `authorized_id`: approved account to transfer
-/// * `old_owner_id`: "owner.near"
-/// * `new_owner_id`: "receiver.near"
-/// * `token_ids`: ["1", "12345abc"]
-/// * `memo`: optional message
+/// * `coordinator_id`: the account id of the coordinator firing this event
+/// * `bounty_id`: id of the bounty that was closed
+/// * `node_ids`: All nodes that were elected for the bounty
+/// * `reward_recipients`: Elected nodes that are qualified to receive a reward
+/// * `payout_strategy`: The payout strategy used to determine which nodes receive an award
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct BountyCompletedLog {

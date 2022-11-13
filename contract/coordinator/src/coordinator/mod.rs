@@ -14,7 +14,7 @@ use near_units::parse_near;
 use crate::bounty::{
     Bounty, BountyStatus, NodeResponse, NodeResponseStatus, SupportedDownloadProtocols,
 };
-use crate::events::{BountyCompletedLog, BountyCreatedLog, EventLog, EventLogVariant};
+use crate::events::{BountyCompletedLog, BountyCreatedLog, BountyRequestRetryLog, EventLog, EventLogVariant};
 use crate::node::Node;
 
 pub const MIN_STORAGE: Balance = parse_near!("0.1 N");
@@ -348,6 +348,39 @@ impl Coordinator {
         return seed;
     }
 
+    #[private]
+    pub(crate) fn node_qualified(node: &Node, bounty: &Bounty) -> bool {
+        if !node.allow_network && bounty.network_required {
+            log!("Node {} does not allow network, but bounty requires it, rejecting election", node.id);
+            return false;
+        }
+        if !node.allow_gpu && bounty.gpu_required {
+            log!("Node {} does not allow gpu, but bounty requires it, rejecting election", node.id);
+            return false;
+        }
+        //TODO This conversion from seconds to milli is sloppy
+        if node.absolute_timeout < bounty.timeout_seconds * 1000 {
+            log!("Node {} has a timeout of {} which is less than the required timeout of {}", node.id, node.absolute_timeout, bounty.timeout_seconds);
+            return false;
+        }
+        return true;
+    }
+
+    pub fn get_answer_counts(&self, bounty_id: AccountId) -> HashMap<String, u64>{
+        let bounty = self
+            .bounties
+            .get(&bounty_id)
+            .unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
+        let mut map: HashMap<String, u64> = HashMap::new();
+
+        map.insert("answers".to_string(), bounty.answers.len());
+        map.insert("failed_nodes".to_string(), bounty.failed_nodes.len());
+        map.insert("successful_nodes".to_string(), bounty.successful_nodes.len());
+        map.insert("rejected_nodes".to_string(), bounty.rejected_nodes.len());
+        map.insert("unanswered_nodes".to_string(), bounty.unanswered_nodes.len());
+        return map;
+    }
+
     #[payable]
     pub fn create_bounty(
         &mut self,
@@ -415,10 +448,15 @@ impl Coordinator {
             "The bounty's owner id must be the signer"
         ); //Cautionary check. We don't want to risk preventing the creator from cancelling the bounty to withdraw their funds
 
+        let mut unelected_nodes: Vec<AccountId> = vec![];
         while bounty.elected_nodes.len() < total_nodes.clone() as usize {
             let key: AccountId;
             if self.node_queue.len() == 1 {
                 key = self.node_queue.pop().unwrap();
+                if !Coordinator::node_qualified(&self.nodes.get(&key).unwrap(), &bounty) {
+                    log!("Node {} is not qualified for bounty {}. Since this is the only node left to elect, panic", key, bounty.id);
+                    panic!("Not enough qualified nodes to fill bounty");
+                }
                 log!("elected {} (only node in queue)", key);
             } else {
                 let seed = Coordinator::rand_u64();
@@ -432,7 +470,11 @@ impl Coordinator {
                 // let key = self.node_queue.swap_remove(random_node); // O(1) by replacing removed with last element
                 // Remove node to eliminate possibility of collisions
                 key = self.node_queue.swap_remove(random_node as usize);
-                // log!("elected {} (index {})", key, random_node.to_string());
+                if !Coordinator::node_qualified(&self.nodes.get(&key).unwrap(), &bounty) {
+                    log!("Node {} is not qualified for bounty {}. Skipping", key, bounty.id);
+                    unelected_nodes.push(key);
+                    continue;
+                }
             }
             require!(!bounty.elected_nodes.contains(&key), "Node already elected");
             bounty.elected_nodes.push(key.clone());
@@ -441,6 +483,10 @@ impl Coordinator {
         for node in &bounty.elected_nodes {
             self.node_queue.push(node.clone());
             log!("Elected node: {}", node);
+        }
+        for node in unelected_nodes {
+            log!("Restoring unelected node: {}", node);
+            self.node_queue.push(node.clone());
         }
 
         let mut owner_bounties = self
@@ -467,6 +513,20 @@ impl Coordinator {
 
         log_str(&bounty_created_log.to_string());
         return bounty;
+    }
+    pub fn send_retry_event(&self, bounty_id: AccountId) {
+        let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty not found"));
+        let bounty_request_retry_log: EventLog = EventLog {
+            standard: EVENT_STANDARD_NAME.to_string(),
+            version: EVENT_STANDARD_SPEC.to_string(),
+            event: EventLogVariant::BountyRequestRetry(BountyRequestRetryLog {
+                coordinator_id: current_account_id(),
+                bounty_id: bounty_id.clone(),
+                node_ids: bounty.elected_nodes.clone(),
+                message: Some("Bounty failed due to timeout".to_string()),
+            }),
+        };
+        log_str(&bounty_request_retry_log.to_string());
     }
 
     //View function to fetch an answer that can only be run after the bounty has been completed
@@ -843,7 +903,9 @@ impl Coordinator {
             "Only the owner of the bounty or the coordinator can add to the deposit"
         );
         bounty.amt_storage += attached_deposit();
+        self.send_retry_event(bounty_id.clone());
         self.bounties.insert(&bounty_id, &bounty);
+
         return Promise::new(current_account_id()).transfer(attached_deposit());
     }
 
@@ -859,6 +921,7 @@ impl Coordinator {
             "Only the owner of the bounty or the coordinator can add to the deposit"
         );
         bounty.amt_node_reward += attached_deposit();
+        self.send_retry_event(bounty_id.clone());
         self.bounties.insert(&bounty_id, &bounty);
         return Promise::new(current_account_id()).transfer(attached_deposit());
     }

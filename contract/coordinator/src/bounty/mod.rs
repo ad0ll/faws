@@ -103,8 +103,22 @@ impl NodeResponse {
     }
 }
 
+// // impl<K, V> Serialize for UnorderedMap<>
+// impl<T> Serialize for UnorderedSet<T>
+//  where T: Serialize,
+// {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let mut map = serializer.seq(Some(self.len()))?;
+//         for v in self {
+//             seq.serialize_element(v)?;
+//         }
+//         seq.end()
+//     }
+// }
 // TODO Add a timeout to a bounty
-
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct Bounty {
@@ -170,7 +184,7 @@ impl Serialize for Bounty {
 
         //TODO Figure out how to serialize and add these fields
         // pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
-        // pub failed_nodes: UnorderedSet<AccountId>,
+        // state.serialize_seq("failed_nodes", &self.failed_nodes)?;
         // pub successful_nodes: UnorderedSet<AccountId>,
         // pub unanswered_nodes: UnorderedSet<AccountId>,
         state.end()
@@ -303,6 +317,7 @@ impl<'de> Deserialize<'de> for Bounty {
                             }
                             elected_nodes = Some(map.next_value()?);
                         }
+
                         _ => {}
                     }
                 }
@@ -350,7 +365,7 @@ impl<'de> Deserialize<'de> for Bounty {
                         format!("{}-answers", "test").to_string().as_bytes(),
                     ),
                     failed_nodes: UnorderedSet::new(
-                        format!("{}-failed", "test").to_string().as_bytes(),
+                        format!("{}-failed-nodes", "test").to_string().as_bytes(),
                     ),
                     successful_nodes: UnorderedSet::new(
                         format!("{}-successful", "test").to_string().as_bytes(),

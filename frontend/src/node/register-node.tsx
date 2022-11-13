@@ -17,6 +17,7 @@ export default function RegisterNode({
   const wallet = useContext(WalletContext);
   const [state, setState] = React.useState({
     name: "",
+    absolute_timeout: "",
     allow_network: false,
     allow_gpu: false,
   });
@@ -33,7 +34,12 @@ export default function RegisterNode({
   };
 
   const handleSubmit = async () => {
-    await wallet.registerNode(state.name, state.allow_network, state.allow_gpu);
+    await wallet.registerNode(
+      state.name,
+      state.absolute_timeout,
+      state.allow_network,
+      state.allow_gpu
+    );
     handleClose();
   };
 
@@ -43,11 +49,22 @@ export default function RegisterNode({
         <FormControl margin="normal">
           <TextField
             fullWidth
-            id="outlined-basic"
+            id="name"
             label="Name"
             variant="outlined"
             size="small"
             name="name"
+            onChange={handleChange}
+          />
+        </FormControl>
+        <FormControl margin="normal">
+          <TextField
+            fullWidth
+            id="timeout"
+            label="Absolute Timeout"
+            variant="outlined"
+            size="small"
+            name="absolute_timeout"
             onChange={handleChange}
           />
         </FormControl>
@@ -59,7 +76,7 @@ export default function RegisterNode({
               checked={state.allow_network}
             />
           }
-          label="Network Required"
+          label="Allow Network"
         />
         <FormControlLabel
           control={
@@ -69,7 +86,7 @@ export default function RegisterNode({
               checked={state.allow_gpu}
             />
           }
-          label="GPU Required"
+          label="Allow GPU"
         />
       </FormGroup>
       <FormGroup>

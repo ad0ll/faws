@@ -12,7 +12,6 @@ import { NodeList } from "./node/NodeList";
 import { ErrorBoundary } from "react-error-boundary";
 import { TransientStorage } from "./storage";
 import { atom } from "recoil";
-import { loadData } from "./common/load-chain-data";
 import Node from "./node/node";
 
 export const localStorageState = atom<TransientStorage>({
@@ -28,7 +27,6 @@ export default function App({
   isSignedIn: boolean;
   wallet: Wallet;
 }) {
-  loadData(wallet);
   const router = createBrowserRouter([
     {
       path: "/",

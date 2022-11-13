@@ -1,23 +1,34 @@
-import React, {useContext, useEffect} from "react";
-import {Accordion, AccordionDetails, AccordionSummary, Box, Button, Grid, Typography,} from "@mui/material";
+import React, { useContext, useEffect } from "react";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Button,
+  Grid,
+  Typography,
+} from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import {BountyStatuses} from "../../../execution-client/types";
-import {WalletContext} from "../app";
-import {atom, selector, useRecoilState} from "recoil";
-import {UpdateBountyModal} from "./update-bounty-modal";
-import {wallet} from "../index";
+import { BountyStatuses } from "../../../execution-client/types";
+import { WalletContext } from "../app";
+import { atom, selector, useRecoilState } from "recoil";
+import { UpdateBountyModal } from "./update-bounty-modal";
+import { wallet } from "../index";
 
 const chainBountiesState = selector({
   key: "chainBounties",
-  get: async ({get}) => {
-    return await wallet.getBountiesOwnedBySelf();
-  }
-})
+  get: async ({ get }) => {
+    let bounties = [];
+    try {
+      bounties = await wallet.getBountiesOwnedBySelf();
+    } catch (e) {}
+    return bounties;
+  },
+});
 const bountiesState = atom({
   key: "bountiesStates",
-  default: chainBountiesState
-})
-
+  default: chainBountiesState,
+});
 
 export default function ExistingBounty() {
   const wallet = useContext(WalletContext);
@@ -27,19 +38,16 @@ export default function ExistingBounty() {
   const [bounties, setBounties] = useRecoilState(bountiesState);
 
   //Refetch bounties every 2s
-  useEffect(
-      () => {
-        const getBounties = async () => {
-          const selfBounties = await wallet.getBountiesOwnedBySelf();
-          console.log("Bounties: ", selfBounties);
-            setBounties(selfBounties);
-        }
-        const interval = setInterval(() => {
-          getBounties();
-        }, 2000);
-        return () => clearInterval(interval);
-      }, [bounties]
-  )
+  useEffect(() => {
+    const getBounties = async () => {
+      const selfBounties = await wallet.getBountiesOwnedBySelf();
+      setBounties(selfBounties);
+    };
+    const interval = setInterval(() => {
+      getBounties();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [bounties]);
   const handleOpen = (button: string, bountyId: string) => {
     setBountyId(bountyId);
     setField(button);
@@ -47,12 +55,9 @@ export default function ExistingBounty() {
   };
   const handleClose = () => setOpen(false);
 
-
-
   const cancelBounty = async (bountyId: string) => {
     await wallet.cancelBounty(bountyId);
   };
-
 
   return (
     <>
@@ -65,7 +70,7 @@ export default function ExistingBounty() {
         {Object.values(bounties)
           .filter((bounty) => bounty.owner_id === wallet.accountId)
           .map((bounty) => (
-            <Accordion>
+            <Accordion key={bounty.id}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography>{bounty.id}</Typography>
               </AccordionSummary>
@@ -128,10 +133,10 @@ export default function ExistingBounty() {
                       {bounty.successful_nodes?.length}
                     </Typography>
                     <Typography>
-                    <Box fontWeight="700" display="inline">
-                      Failures:
-                    </Box>{" "}
-                    {bounty.failed_nodes?.length}
+                      <Box fontWeight="700" display="inline">
+                        Failures:
+                      </Box>{" "}
+                      {bounty.failed_nodes?.length}
                     </Typography>
 
                     <Typography>

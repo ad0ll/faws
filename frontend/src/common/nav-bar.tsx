@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import { default as Logo } from "../../assets/svg/faws-logo-blue.svg";
 import { WalletContext } from "../app";
 import { Link } from "@mui/material";
+import { AccountBalanceWallet } from "@mui/icons-material";
 
 export default function NavBar({ isSignedIn }: { isSignedIn: boolean }) {
   const wallet = useContext(WalletContext);
@@ -59,7 +60,11 @@ export default function NavBar({ isSignedIn }: { isSignedIn: boolean }) {
 
 export function SignInPrompt({ onClick }) {
   return (
-    <Button onClick={onClick} variant="contained">
+    <Button
+      onClick={onClick}
+      variant="contained"
+      startIcon={<AccountBalanceWallet />}
+    >
       Connect Wallet
     </Button>
   );
@@ -67,7 +72,11 @@ export function SignInPrompt({ onClick }) {
 
 function SignOutButton({ accountId, onClick }: { accountId: string; onClick }) {
   return (
-    <Button onClick={onClick} variant="contained">
+    <Button
+      onClick={onClick}
+      variant="contained"
+      startIcon={<AccountBalanceWallet />}
+    >
       {accountId}
     </Button>
   );

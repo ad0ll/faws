@@ -1,141 +1,147 @@
 import {
-  Box, Chip,
+  Box,
+  Chip,
   Collapse,
+  FormControl,
   IconButton,
+  InputAdornment,
   Link,
+  OutlinedInput,
   Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow, TextField,
+  TableRow,
   Typography,
 } from "@mui/material";
-import React, {useContext, useEffect, useState} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { localStorageState, WalletContext } from "../app";
-import {atom, selector, useRecoilValue} from "recoil";
-import {NodeStorage, TransientStorage} from "../storage";
+import { atom, selector, useRecoilValue } from "recoil";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import { ClientNode, } from "../../../execution-client/types";
+import { ClientNode } from "../../../execution-client/types";
 import { ClientMessage } from "../../../execution-client/database";
-import {BountyExecutionState, BountyMonitor, ExecutionMessageSummaryValue} from "../bounty/bounty-monitor";
-import {wallet} from "../index";
-import useWebSocket, {ReadyState} from "react-use-websocket";
-import {readyStateToString} from "./util";
-
+import {
+  BountyExecutionState,
+  BountyMonitor,
+  ExecutionMessageSummaryValue,
+} from "../bounty/bounty-monitor";
+import { wallet } from "../index";
+import useWebSocket, { ReadyState } from "react-use-websocket";
+import { readyStateToString } from "./util";
+import CableIcon from "@mui/icons-material/Cable";
 
 export const viewMineOnlyState = atom<boolean>({
   key: "viewMineOnly",
-  default: false
-})
+  default: true,
+});
 
 export const chainNodesState = selector({
   key: "chainNodes",
-  get: async ({get}) => {
-    const viewMineOnly = get(viewMineOnlyState)
+  get: async ({ get }) => {
+    const viewMineOnly = get(viewMineOnlyState);
     if (viewMineOnly) {
-      console.log(`fetching nodes owned by ${wallet.accountId}`)
-      return await wallet.getNodesOwnedBySelf()
+      console.log(`fetching nodes owned by ${wallet.accountId}`);
+      return await wallet.getNodesOwnedBySelf();
     } else {
-      console.log("fetching all nodes")
-      return await wallet.getNodes()
+      console.log("fetching all nodes");
+      return await wallet.getNodes();
     }
-  }
-})
-
-
+  },
+});
 
 export default function ExistingNode() {
   const wallet = useContext(WalletContext);
-  const nodes = useRecoilValue(chainNodesState)
-
+  const nodes = useRecoilValue(chainNodesState);
 
   //Refresh nodes every 2s. Node data doesn't change w/o a transaction, so this is moreso ceremony
   useEffect(() => {
-    const pollingInterval = setInterval( wallet.getNodes, 2000)
+    const pollingInterval = setInterval(wallet.getNodes, 2000);
     return () => {
-      clearInterval(pollingInterval)
-    }
+      clearInterval(pollingInterval);
+    };
   }, [nodes]);
   return (
     <>
-      {Object.values(nodes).length === 0 && (
-        <Typography variant="h6" component="h2">
-          No Existing Nodes
-        </Typography>
-      )}
-      <Box sx={{ marginTop: "24px" }}>
-        <TableContainer component={Paper}>
-          <Table aria-label="collapsible table">
-            <TableHead>
-              <TableRow>
-                <TableCell />
-                <TableCell>Id</TableCell>
-                <TableCell align="right">Last Success</TableCell>
-                <TableCell align="right">Last Failure</TableCell>
-                <TableCell align="right">Active Bounties</TableCell>
-                <TableCell align="right">URL</TableCell>
-                <TableCell align="right">Connection</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {Object.values(nodes).map((node) => (
-                <Row key={node.id} node={node} />
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+      <div style={{ marginTop: "24px" }}>
+        {Object.values(nodes).length === 0 && (
+          <Typography variant="h6" component="h2">
+            No Existing Nodes
+          </Typography>
+        )}
+        {Object.values(nodes).length > 0 && (
+          <TableContainer component={Paper}>
+            <Table aria-label="collapsible table">
+              <TableHead>
+                <TableRow>
+                  <TableCell />
+                  <TableCell>Id</TableCell>
+                  <TableCell align="center">Last Success</TableCell>
+                  <TableCell align="center">Last Failure</TableCell>
+                  <TableCell align="center">Active Bounties</TableCell>
+                  <TableCell align="center">URL</TableCell>
+                  <TableCell align="center">Connection</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Object.values(nodes).map((node) => (
+                  <Row key={node.id} node={node} />
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </div>
     </>
   );
 }
 
 // setNodes is used to update local storage when the user changes the URL
 function Row({ node }: { node: ClientNode }) {
-
   const storage = useRecoilValue(localStorageState);
-  const [url, setUrl] = useState<string>(storage.get(node.id)?.url ?? "")
-  const {lastMessage, readyState} = useWebSocket(url);
+  const [url, setUrl] = useState<string>(storage.get(node.id)?.url ?? "");
+  const { lastMessage, readyState } = useWebSocket(url);
   const [bountyState, setBountyState] = useState<BountyExecutionState>({});
+  const [tempUrl, setTempUrl] = React.useState<string>(
+    storage.get(node.id)?.url ?? ""
+  );
 
-  const incompleteBounties = Object.values(bountyState).filter((bounty) => bounty.phase !== "Complete").length;
+  const incompleteBounties = Object.values(bountyState).filter(
+    (bounty) => bounty.phase !== "Complete"
+  ).length;
   //Update bounty state when the websocket message comes in
   useEffect(() => {
     if (lastMessage) {
-      console.log(`got message ${lastMessage}`)
       //Validate that message is of a type we care about
-      const {bountyId, data, sentAt} = JSON.parse(lastMessage.data) as ClientMessage
-      const current = bountyState[node.id + bountyId]
+      const { bountyId, data, sentAt } = JSON.parse(
+        lastMessage.data
+      ) as ClientMessage;
+      const current = bountyState[node.id + bountyId];
       const bounty: ExecutionMessageSummaryValue = {
         nodeId: node.id,
         bountyId,
         phase: data.phase || current?.phase || "new",
-        lastUpdate: sentAt
-      }
-      setBountyState({...bountyState, [node.id + bountyId]: bounty})
+        lastUpdate: sentAt,
+      };
+      setBountyState({ ...bountyState, [node.id + bountyId]: bounty });
     }
-  }, [url, lastMessage, readyState])
+  }, [url, lastMessage, readyState]);
 
-  //Delay setting storage until the user has stopped typing for 1s
-  //This can be avoided with a submit button
-  useEffect(() => {
-    const timeOutId = setTimeout(() => {
-      storage.set(node.id, {url})
-    }, 1000);
-    return () => {
-      clearTimeout(timeOutId)
-    };
-  }, [url]);
+  const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTempUrl(event.target.value);
+  };
 
-
+  const handleSetUrl = (nodeId: string) => {
+    storage.set(nodeId, { url });
+    setUrl(tempUrl);
+  };
 
   const [open, setOpen] = React.useState(false);
-  const nodeLink = `/node/${node.id}`;
   return (
     <React.Fragment>
-      <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
+      <TableRow key={node.id} sx={{ "& > *": { borderBottom: "unset" } }}>
         <TableCell>
           <IconButton
             aria-label="expand row"
@@ -146,34 +152,56 @@ function Row({ node }: { node: ClientNode }) {
           </IconButton>
         </TableCell>
         <TableCell component="th" scope="row">
-          <Link href={nodeLink}>{node.id}</Link>
+          <Link href={`/node/${node.id}`}>{node.id}</Link>
         </TableCell>
-        <TableCell align="right">{node.last_success}</TableCell>
-        <TableCell align="right">{node.last_failure}</TableCell>
-        <TableCell>
-          <Chip label={incompleteBounties} color={incompleteBounties > 0 ? "secondary" : "primary"}/>
+        <TableCell align="center">
+          {node.last_success ? node.last_success : "N/A"}
         </TableCell>
-        <TableCell>
-          <TextField label={"URL"} placeholder={"ws://localhost:8081"}
-                     defaultValue={url}
-                     color={readyState === ReadyState.OPEN ? "secondary" : "primary"}
-                     onChange={(e) => {
-                       setUrl( e.target.value)
-                     }}/>
+        <TableCell align="center">
+          {node.last_failure ? node.last_failure : "N/A"}
         </TableCell>
-        <TableCell>
-          {/*TODO Should be green and red instead of blue and pink*/}
-          {url && <Chip variant={"outlined"}
-                                  color={readyState === ReadyState.OPEN ? "secondary" : "primary"}
-                                  label={readyStateToString(readyState)}/>}
+        <TableCell align="center">
+          <Chip
+            label={incompleteBounties}
+            color={incompleteBounties > 0 ? "secondary" : "primary"}
+          />
         </TableCell>
-
+        <TableCell align="center">
+          <FormControl>
+            <OutlinedInput
+              id="node-ws-endpoint"
+              onChange={handleUrlChange}
+              placeholder={"ws://localhost:8081"}
+              value={tempUrl}
+              endAdornment={
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="Set URL"
+                    onClick={() => handleSetUrl(node.id)}
+                    edge="end"
+                  >
+                    {<CableIcon />}
+                  </IconButton>
+                </InputAdornment>
+              }
+            />
+          </FormControl>
+        </TableCell>
+        <TableCell align="center">
+          {url && (
+            <Chip
+              variant={"outlined"}
+              color={readyState === ReadyState.OPEN ? "success" : "error"}
+              label={readyStateToString(readyState)}
+            />
+          )}
+        </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
-              {/* <BountyMonitor bountyState={bountyState} /> */}
+              <BountyMonitor bountyState={bountyState} />
             </Box>
           </Collapse>
         </TableCell>

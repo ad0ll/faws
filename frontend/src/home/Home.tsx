@@ -67,14 +67,14 @@ export default function Home({ isSignedIn }: { isSignedIn: boolean }) {
             </Typography>
           </Paper>
           <Paper
-            onClick={() => {
-              navigate("/bounty");
-            }}
+            // onClick={() => {
+            //   navigate("/bounty");
+            // }}
             elevation={3}
             sx={{
               ...paperStyle,
               background: "#0288d1",
-              cursor: "pointer",
+              // cursor: "pointer",
             }}
           >
             <HistoryEduIcon sx={iconStyle} />
@@ -82,14 +82,14 @@ export default function Home({ isSignedIn }: { isSignedIn: boolean }) {
             <Typography variant="h1">{totalBounties}</Typography>
           </Paper>
           <Paper
-            onClick={() => {
-              navigate("/node");
-            }}
+            // onClick={() => {
+            //   navigate("/node");
+            // }}
             elevation={3}
             sx={{
               ...paperStyle,
               background: "#ab47bc",
-              cursor: "pointer",
+              // cursor: "pointer",
             }}
           >
             <ComputerIcon sx={iconStyle} />

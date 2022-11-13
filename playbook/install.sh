@@ -9,7 +9,7 @@
 
 REPO_NAME="near-isnt-decentralized"
 REPO_DIR="near-isnt-decentralized3"
-COORDINATOR_ID="dev-1668374033816-13641068739714"
+COORDINATOR_ID="dev-1668375639392-20530569635416"
 PIP_PATH=$(python3 -m site --user-site)
 DEV_BOX=$DEV
 ACCOUNT_ID=$ACCOUNT_ID

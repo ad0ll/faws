@@ -262,6 +262,15 @@ export class Wallet {
     });
   }
 
+  async getBountyAnswerCounts(bountyId: string): Promise<{ [key: string]: number }> {
+    return await this.viewMethod({
+      contractId: COORDINATOR_ID,
+      method: "get_bounty_answer_counts",
+      args: {
+        bounty_id: bountyId,
+      }})
+  }
+
   async updateNode(
     nodeId,
     allow_network,

@@ -182,7 +182,7 @@ impl Coordinator {
         let bounty_ids = self
             .bounty_by_owner
             .get(&owner_id)
-            .unwrap_or_else(|| panic!("No bounties found for owner {}", owner_id));
+            .unwrap_or_else(|| return vec![]);
         log!(
             "Fetching all {} bounties for owner {}",
             self.bounties.len(),
@@ -366,7 +366,7 @@ impl Coordinator {
         return true;
     }
 
-    pub fn get_answer_counts(&self, bounty_id: AccountId) -> HashMap<String, u64>{
+    pub fn get_bounty_answer_counts(&self, bounty_id: AccountId) -> HashMap<String, u64>{
         let bounty = self
             .bounties
             .get(&bounty_id)

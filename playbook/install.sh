@@ -80,8 +80,8 @@ git pull origin main
 echo "Installing tools"
 ansible-playbook install-tools.yaml --ask-become-pass --extra-vars "home=$HOME"
 
-if [[ ! -d $HOME/.near-config ]]; then
-  mkdir "$HOME/.near-config"
+if [[ ! -f "$HOME/.near-config/settings.json" ]]; then
+  mkdir -p "$HOME/.near-config"
   tee "$HOME/.near-config/settings.json" <<- EOF
   {
     "trackingEnabled": false,
@@ -119,4 +119,5 @@ if [[ ! -f "$HOME/start.sh" ]]; then
 EOF
   chmod +x "$HOME/start.sh"
 fi
-./start.sh
+
+bash "$HOME/start.sh"

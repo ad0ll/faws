@@ -6,6 +6,7 @@
 # Run with sudo su - root -s $HOME/install.sh
 # One line install is (Replace ACCOUNT_ID, NODE_NAME, and WEBSOCKET_URL with your own values):
 # (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1 WEBSOCKET_URL=http://127.0.0.1:8000/ws bash
+# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/installer-one-line/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1 WEBSOCKET_URL=http://127.0.0.1:8000/ws bash
 # (mainnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1  bash
 REPO_NAME="faws"
 REPO_DIR="faws"
@@ -78,29 +79,22 @@ git pull origin main
 
 echo "Installing tools"
 ansible-playbook install-tools.yaml --ask-become-pass --extra-vars "home=$HOME"
-#ansible-playbook install-tools.yaml --become-password-file .password --extra-vars "home=$HOME"
 
-#We now have near installed and can check that the provided contract, account id, and node name/id are all valid
-
-if [[ ! -d $HOME/.near-credentials ]]; then
-  near login
+if [[ ! -d $HOME/.near-config ]]; then
+  mkdir "$HOME/.near-config"
+  cat "$HOME/.near-config/settings.json" <<- EOF
+  {
+    "trackingEnabled": false,
+    "trackingAccountID": false
+  }
+EOF
 fi
 
-#read -sr "What is your near account id? (ex: account1.testnet): " ACCOUNT_ID
-#read -sr "What is the name of your node? (ex: node1): " NODE_NAME
-#read -sr "Is this a development box? (y/n): " DEV_BOX
-#read -sr "What websocket are you listening to? (ex: ws://localhost:800/ws): " WEBSOCKET_URL
+#We now have near installed and can check that the provided contract, account id, and node name/id are all valid
+if [[ ! -d $HOME/.near-credentials ]]; then
+  near login --accountId "$ACCOUNT_ID"
+fi
 
-
-#
-#if [[ -z "$DEV_BOX" ]]; then
-#  WEBSOCKET_URL=ws://localhost:8000/ws
-#else
-#  read -sr "What is the url for the websocket relay? (ex: ws://localhost:8000/ws): " WEBSOCKET_URL
-#fi
-
-#Check if key file exists, and if it doesn't, run near login
-#ansible-playbook install-client.yaml --become-password-file .password --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
 ansible-playbook install-client.yaml --ask-become-pass --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
 
 cd "$HOME/$REPO_DIR/execution-client" || exit
@@ -113,11 +107,16 @@ if [[ -n "$GPU_SUPPORT" ]]; then
   curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
   apt-get update && apt-get install -y nvidia-container-toolkit
 fi
-yarn
-yarn tsc
-yarn start
 
-#near login
-#pm2 startup
-#pm2 restart index
-#pm2 save
+
+if [[ ! -f "$HOME/start.sh" ]]; then
+  cat "$HOME/start.sh" <<- EOF
+  #!/bin/bash
+  cd "$HOME/$REPO_DIR/execution-client" || exit
+  yarn
+  yarn tsc
+  yarn start
+EOF
+  chmod +x "$HOME/start.sh"
+fi
+./start.sh

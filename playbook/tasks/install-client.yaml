@@ -1,6 +1,6 @@
 - name: Fetch repo
   ansible.builtin.git:
-    repo: git@github.com:ad0ll/{{ repo_name }}.git
+    repo: https://github.com/ad0ll/{{ repo_name }}.git
     dest: "{{ home }}/{{ repo_dir }}"
     version: main
     key_file: "{{ home }}/.ssh/id_rsa" # TODO Should be removed before submission

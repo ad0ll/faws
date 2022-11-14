@@ -1,17 +1,16 @@
 #!/bin/bash
 
 # This is a simple script that installs all software needed to run a mainnet node client
-# It's been tested against debian 11, but should work against most debian based systems
-# Non-debian systems may work, but note that the node software makes
-# This will be converted to a playbook in the future
+# It's been tested against Debian 11, Raspbian and MacOS Ventura, and it should work against most debian based systems
 
 # Run with sudo su - root -s $HOME/install.sh
-
-REPO_NAME="near-isnt-decentralized"
-REPO_DIR="near-isnt-decentralized3"
+# One line install is (Replace ACCOUNT_ID, NODE_NAME, and WEBSOCKET_URL with your own values):
+# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1 WEBSOCKET_URL=http://127.0.0.1:8000/ws bash
+# (mainnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1  bash
+REPO_NAME="faws"
+REPO_DIR="faws"
 COORDINATOR_ID="dev-1668375639392-20530569635416"
 PIP_PATH=$(python3 -m site --user-site)
-DEV_BOX=$DEV
 ACCOUNT_ID=$ACCOUNT_ID
 NODE_NAME=$NODE_NAME
 WEBSOCKET_URL=$WEBSOCKET_URL
@@ -27,7 +26,7 @@ export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
 apt install -y git curl python3-pip
 
 if [[ -n "$WIPE" ]]; then
-  rm -rf "$HOME/$REPO_DIR"
+  rm -rf "${HOME:?}/$REPO_DIR"
   rm -rf "$HOME/.nvm"
   rm -rf "$HOME/.ansible"
 fi
@@ -68,13 +67,13 @@ install_development_tools() {
 }
 
 install_nvm
-instayll_pip
+install_pip
 install_ansible
 
 if [[ ! -d "$HOME/$REPO_DIR" ]]; then
-  git clone git@github.com:ad0ll/$REPO_NAME.git $REPO_DIR
+  git clone https://github.com/ad0ll/$REPO_NAME.git $REPO_DIR
 fi
-cd "$REPO_DIR/playbook"
+cd "$REPO_DIR/playbook" || exit
 git pull origin main
 
 echo "Installing tools"
@@ -104,7 +103,8 @@ fi
 #ansible-playbook install-client.yaml --become-password-file .password --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
 ansible-playbook install-client.yaml --ask-become-pass --extra-vars "account_id=$ACCOUNT_ID node_name=$NODE_NAME coordinator_id=$COORDINATOR_ID websocket_url=$WEBSOCKET_URL repo_dir=$REPO_DIR home=$HOME" --verbose
 
-cd "$HOME/$REPO_DIR/execution-client"
+cd "$HOME/$REPO_DIR/execution-client" || exit
+
 
 # https://docs.nvidia.com/ai-enterprise/deployment-guide/dg-docker.html
 if [[ -n "$GPU_SUPPORT" ]]; then
@@ -116,6 +116,7 @@ fi
 yarn
 yarn tsc
 yarn start
+
 #near login
 #pm2 startup
 #pm2 restart index

@@ -5,8 +5,8 @@
 
 # Run with sudo su - root -s $HOME/install.sh
 # One line install is (Replace ACCOUNT_ID, NODE_NAME, and WEBSOCKET_URL with your own values):
-# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1 WEBSOCKET_URL=http://127.0.0.1:8000/ws bash
-# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/installer-one-line/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1 WEBSOCKET_URL=http://127.0.0.1:8000/ws bash
+# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/installer-one-line/playbook/install.sh | ACCOUNT_ID=faws-demo1.testnet NODE_NAME=vm-node1 WEBSOCKET_URL=ws://127.0.0.1:8000/ws bash
+# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1.testnet NODE_NAME=vm-node1 WEBSOCKET_URL=ws://127.0.0.1:8000/ws bash
 # (mainnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1  bash
 REPO_NAME="faws"
 REPO_DIR="faws"
@@ -82,7 +82,7 @@ ansible-playbook install-tools.yaml --ask-become-pass --extra-vars "home=$HOME"
 
 if [[ ! -d $HOME/.near-config ]]; then
   mkdir "$HOME/.near-config"
-  cat "$HOME/.near-config/settings.json" <<- EOF
+  tee "$HOME/.near-config/settings.json" <<- EOF
   {
     "trackingEnabled": false,
     "trackingAccountID": false
@@ -110,7 +110,7 @@ fi
 
 
 if [[ ! -f "$HOME/start.sh" ]]; then
-  cat "$HOME/start.sh" <<- EOF
+  tee "$HOME/start.sh" <<- EOF
   #!/bin/bash
   cd "$HOME/$REPO_DIR/execution-client" || exit
   yarn

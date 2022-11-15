@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 # This is a simple script that installs all software needed to run a mainnet node client
 # It's been tested against Debian 11, Raspbian and MacOS Ventura, and it should work against most debian based systems
 
@@ -21,8 +22,8 @@ if [[ -z "$ACCOUNT_ID" || -z "$NODE_NAME" || -z "$WEBSOCKET_URL" ]]; then
     exit 1
 fi
 
-ARM6=$(uname -m | grep armv6l) #Raspberry Pi Zero 1, older Pi models
-GPU_SUPPORT=$(lspci | grep -i nvidia)
+ARM6=$(uname -m | grep armv6l) || true #Raspberry Pi Zero 1, older Pi models
+GPU_SUPPORT=$(lspci | grep -i nvidia) || true
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
 apt install -y git curl python3-pip
 

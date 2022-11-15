@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import React, { useContext, useEffect, useState } from "react";
 import { localStorageState, WalletContext } from "../app";
-import { atom, selector, useRecoilValue } from "recoil";
+import {atom, selector, useRecoilState, useRecoilValue} from "recoil";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { ClientNode } from "../../../execution-client/types";
@@ -42,27 +42,40 @@ export const chainNodesState = selector({
   key: "chainNodes",
   get: async ({ get }) => {
     const viewMineOnly = get(viewMineOnlyState);
-    if (viewMineOnly) {
-      console.log(`fetching nodes owned by ${wallet.accountId}`);
-      return await wallet.getNodesOwnedBySelf();
-    } else {
-      console.log("fetching all nodes");
-      return await wallet.getNodes();
-    }
+    return fetchNodes(viewMineOnly);
   },
 });
 
+const fetchNodes = async (viewMineOnly: boolean) => {
+  if (viewMineOnly) {
+    console.log(`fetching nodes owned by ${wallet.accountId}`);
+    return await wallet.getNodesOwnedBySelf();
+  } else {
+    console.log("fetching all nodes");
+    return await wallet.getNodes();
+  }
+}
+const nodesState = atom({
+    key: "nodesState",
+  default: chainNodesState,
+})
+
 export default function ExistingNode() {
   const wallet = useContext(WalletContext);
-  const nodes = useRecoilValue(chainNodesState);
-
+  const [nodes, setNodes] = useRecoilState(nodesState);
+const [viewMineOnly, setViewMineOnly] = useRecoilState(viewMineOnlyState);
   //Refresh nodes every 2s. Node data doesn't change w/o a transaction, so this is moreso ceremony
   useEffect(() => {
-    const pollingInterval = setInterval(wallet.getNodes, 2000);
+    const getNodes = async () => {
+      console.log("refreshing nodes");
+      const fetchedNodes = await fetchNodes(viewMineOnly)
+      setNodes(fetchedNodes);
+    }
+    const pollingInterval = setInterval(getNodes, 2000);
     return () => {
       clearInterval(pollingInterval);
     };
-  }, [nodes]);
+  }, []);
   return (
     <>
       <div style={{ marginTop: "24px" }}>

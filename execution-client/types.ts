@@ -15,7 +15,6 @@ export enum NodeResponseStatuses {
 }
 export enum SupportedFileDownloadProtocols {
   GIT = "GIT",
-  IPFS = "IPFS",
   HTTPS = "HTTPS",
 }
 export enum BountyStatuses {

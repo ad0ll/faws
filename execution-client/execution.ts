@@ -154,9 +154,11 @@ export class Execution {
                 throw new SetupError("Successfully cloned git repo, but could not find Dockerfile at: " + dockerfilePath)
             }
             logger.info(`Successfully cloned git repo to ${filesDir}`)
-        } else if (SupportedFileDownloadProtocols.IPFS) {
-            throw new SetupError(`IPFS not yet supported`)
-        } else if (file_download_protocol === SupportedFileDownloadProtocols.HTTPS) {
+        }
+        // else if (SupportedFileDownloadProtocols.IPFS) {
+        //     throw new SetupError(`IPFS not yet supported`)
+        // }
+        else if (file_download_protocol === SupportedFileDownloadProtocols.HTTPS) {
             const res = shell.exec(`wget ${file_location}`)
             if (res.code !== 0) throw new Error(`downloading file with wget failed: ${res.stderr}`)
             logger.debug(`downloaded ${packageName}, checking that ${packagePath} exists`)

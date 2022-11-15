@@ -68,21 +68,23 @@ install_development_tools() {
   echo "Installing development tools"
   pip3 install ansible-lint
 }
+
 install_node_exporter() {
   KERNEL=$(uname -s)
   ARCH=$(uname -m)
-  NODE_EXPORTER_FILENAME="node_exporter-1.4.0.$KERNEL-$ARCH.tar.gz"
-  "https://github.com/prometheus/node_exporter/releases/download/v1.4.0/node_exporter-1.4.0.$KERNEL-$ARCH.tar.gz"
+  ARCH=$(sed 's/aarch64/arm64/g' <<<"$ARCH")
+  NODE_EXPORTER_DIR=$(echo "node_exporter-1.4.0.$KERNEL-$ARCH" | tr '[:upper:]' '[:lower:]')
+  NODE_EXPORTER_FILENAME="$NODE_EXPORTER_DIR.tar.gz"
   wget "https://github.com/prometheus/node_exporter/releases/download/v1.4.0/$NODE_EXPORTER_FILENAME"
   tar xvfz "$NODE_EXPORTER_FILENAME"
-  cd "node_exporter-1.4.0.$KERNEL-$ARCH" || exit
-  ./node_exporter &
+  cd "$NODE_EXPORTER_DIR" || exit
+  ./node_exporter 2>/dev/null &
 }
 
-install_node_exporter
 install_nvm
 install_pip
 install_ansible
+install_node_exporter
 
 if [[ ! -d "$HOME/$REPO_DIR" ]]; then
   git clone https://github.com/ad0ll/$REPO_NAME.git $REPO_DIR

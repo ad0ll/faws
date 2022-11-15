@@ -17,6 +17,7 @@ ACCOUNT_ID=$ACCOUNT_ID
 NODE_NAME=$NODE_NAME
 WEBSOCKET_URL=$WEBSOCKET_URL
 
+
 if [[ -z "$ACCOUNT_ID" || -z "$NODE_NAME" || -z "$WEBSOCKET_URL" ]]; then
     echo "Please set ACCOUNT_ID, NODE_NAME, and WEBSOCKET_URL"
     exit 1
@@ -67,7 +68,18 @@ install_development_tools() {
   echo "Installing development tools"
   pip3 install ansible-lint
 }
+install_node_exporter() {
+  KERNEL=$(uname -s)
+  ARCH=$(uname -m)
+  NODE_EXPORTER_FILENAME="node_exporter-1.4.0.$KERNEL-$ARCH.tar.gz"
+  "https://github.com/prometheus/node_exporter/releases/download/v1.4.0/node_exporter-1.4.0.$KERNEL-$ARCH.tar.gz"
+  wget "https://github.com/prometheus/node_exporter/releases/download/v1.4.0/$NODE_EXPORTER_FILENAME"
+  tar xvfz "$NODE_EXPORTER_FILENAME"
+  cd "node_exporter-1.4.0.$KERNEL-$ARCH" || exit
+  ./node_exporter &
+}
 
+install_node_exporter
 install_nvm
 install_pip
 install_ansible

@@ -107,7 +107,10 @@ function Row({ node }: { node: ClientNode }) {
   const [tempUrl, setTempUrl] = React.useState<string>(
     storage.get(node.id)?.url ?? ""
   );
-
+  const metricsUrl = url
+      .replace(/wss?/, "http")
+      .replace(/(.*):([0-9]+).*/, "$1:9100/metrics");
+  console.log(`metrics url: ${metricsUrl}`);
   const incompleteBounties = Object.values(bountyState).filter(
     (bounty) => bounty.phase !== "Complete"
   ).length;

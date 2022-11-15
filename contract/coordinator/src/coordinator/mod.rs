@@ -790,7 +790,9 @@ impl Coordinator {
     #[private]
     pub fn close_bounty(&mut self, bounty: &mut Bounty, cancel: bool) -> Promise {
         require!(bounty.status == BountyStatus::Pending, "Bounty is already closed");
-        require!(bounty.successful_nodes.len() >= bounty.min_nodes || bounty.failed_nodes.len() >= bounty.min_nodes, "Bounty does not have enough answers to be closed. If you are the owner, you may cancel the bounty instead.");
+        if !cancel {
+            require!(bounty.successful_nodes.len() >= bounty.min_nodes || bounty.failed_nodes.len() >= bounty.min_nodes, "Bounty does not have enough answers to be closed. If you are the owner, you may cancel the bounty instead.");
+        }
         log!("Closing bounty {}", bounty.id);
 
         if cancel {
@@ -802,10 +804,10 @@ impl Coordinator {
             log!("Bounty is complete but failed because the number of failed nodes ({}) has exceeded the min number of nodes required for success ({})", bounty.failed_nodes.len(), bounty.min_nodes);
             bounty.status = BountyStatus::Failed;
         } else {
-            log!("bounty does not have enough answers to be considered complete, assuming its cancelled");
+            panic!("Cannot find the bounty status upon closing. Has the enum been updated?");
         }
-        // Don't check the signer. Anyone can attempt to close the bounty once we've received min nodes
 
+        // Don't check the signer. Anyone can attempt to close the bounty once we've received min nodes
         if !cancel {
             log!("Marking unanswered nodes");
             for node_id in bounty.unanswered_nodes.iter() {

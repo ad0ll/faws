@@ -10,16 +10,13 @@
     "@babel/core": "^7.18.2",
     "@babel/preset-env": "^7.18.2",
     "@babel/preset-react": "^7.17.12",
-    "@parcel/transformer-sass": "^2.7.0",
     "@types/jest": "^29.1.1",
     "@types/node": "^18.11.8",
     "@types/react": "^18.0.24",
     "@types/react-dom": "^18.0.8",
-    "ava": "^4.2.0",
     "css-loader": "^6.7.1",
     "env-cmd": "^10.1.0",
     "html-webpack-plugin": "^5.5.0",
-    "nodemon": "^2.0.16",
     "process": "^0.11.10",
     "react-test-renderer": "^18.1.0",
     "style-loader": "^3.3.1",
@@ -50,14 +47,12 @@
     "dotenv": "^16.0.3",
     "near-api-js": "^0.44.2",
     "near-units": "^0.1.9",
-    "react": "^18.1.0",
+    "react": "^18.2.0",
     "react-dom": "^18.1.0",
     "react-error-boundary": "^3.1.4",
     "react-router-dom": "^6.4.2",
-    "react-table": "^7.8.0",
     "react-use-websocket": "^4.2.0",
-    "recoil": "^0.7.6",
-    "regenerator-runtime": "^0.13.9"
+    "recoil": "^0.7.6"
   },
   "resolutions": {
     "@babel/preset-env": "7.13.8"

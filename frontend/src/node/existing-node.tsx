@@ -5,7 +5,6 @@ import {
   FormControl,
   IconButton,
   InputAdornment,
-  Link,
   OutlinedInput,
   Paper,
   Table,
@@ -32,6 +31,7 @@ import { wallet } from "../index";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { readyStateToString } from "./util";
 import CableIcon from "@mui/icons-material/Cable";
+import {Link} from "react-router-dom";
 
 export const viewMineOnlyState = atom<boolean>({
   key: "viewMineOnly",
@@ -42,28 +42,30 @@ export const chainNodesState = selector({
   key: "chainNodes",
   get: async ({ get }) => {
     const viewMineOnly = get(viewMineOnlyState);
-    return fetchNodes(viewMineOnly);
+    return await fetchNodes(viewMineOnly);
   },
 });
 
 const fetchNodes = async (viewMineOnly: boolean) => {
   if (viewMineOnly) {
     console.log(`fetching nodes owned by ${wallet.accountId}`);
-    return await wallet.getNodesOwnedBySelf();
+    return wallet.getNodesOwnedBySelf();
   } else {
     console.log("fetching all nodes");
-    return await wallet.getNodes();
+    return wallet.getNodes();
   }
 }
 const nodesState = atom({
     key: "nodesState",
-  default: chainNodesState,
+    default: chainNodesState,
 })
 
 export default function ExistingNode() {
-  const wallet = useContext(WalletContext);
+
   const [nodes, setNodes] = useRecoilState(nodesState);
-const [viewMineOnly, setViewMineOnly] = useRecoilState(viewMineOnlyState);
+  console.log(nodes)
+
+  const [viewMineOnly, setViewMineOnly] = useRecoilState(viewMineOnlyState);
   //Refresh nodes every 2s. Node data doesn't change w/o a transaction, so this is moreso ceremony
   useEffect(() => {
     const getNodes = async () => {
@@ -77,7 +79,7 @@ const [viewMineOnly, setViewMineOnly] = useRecoilState(viewMineOnlyState);
     };
   }, []);
   return (
-    <>
+      <React.Suspense fallback={<Typography>loading..</Typography>}>
       <div style={{ marginTop: "24px" }}>
         {Object.values(nodes).length === 0 && (
           <Typography variant="h6" component="h2">
@@ -107,12 +109,13 @@ const [viewMineOnly, setViewMineOnly] = useRecoilState(viewMineOnlyState);
           </TableContainer>
         )}
       </div>
-    </>
+    </React.Suspense>
   );
 }
 
 // setNodes is used to update local storage when the user changes the URL
 function Row({ node }: { node: ClientNode }) {
+  console.log("loading row")
   const storage = useRecoilValue(localStorageState);
   const [url, setUrl] = useState<string>(storage.get(node.id)?.url ?? "");
   const { lastMessage, readyState } = useWebSocket(url);
@@ -168,7 +171,7 @@ function Row({ node }: { node: ClientNode }) {
           </IconButton>
         </TableCell>
         <TableCell component="th" scope="row">
-          <Link href={`/node/${node.id}`}>{node.id}</Link>
+          <Link to={`/node/${node.id}`}>{node.id}</Link>
         </TableCell>
         <TableCell align="center">
           {node.last_success ? node.last_success : "N/A"}

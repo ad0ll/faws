@@ -5,7 +5,7 @@ import Home from "./home/home";
 import Coordinator from "./coordinator/Coordinator";
 import { Wallet } from "./common/near-wallet";
 import Bounty from "./bounty/bounty";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {BrowserRouter, createBrowserRouter, Route, RouterProvider, Routes} from "react-router-dom";
 import React from "react";
 import { NodeDetail } from "./node/NodeDetail";
 import { NodeList } from "./node/NodeList";
@@ -27,53 +27,51 @@ export default function App({
   isSignedIn: boolean;
   wallet: Wallet;
 }) {
-  const router = createBrowserRouter([
-    {
-      path: "/",
-      element: <Home isSignedIn={isSignedIn} />,
-    },
-    {
-      path: "/bounty",
-      element: <Bounty />,
-    },
-    {
-      path: "/coordinator",
-      element: <Coordinator />,
-    },
-    {
-      path: "/node",
-      element: <Node />,
-    },
-    {
-      path: "/node/:id",
-      element: <NodeDetail />,
-    },
-  ]);
   return (
-    <WalletContext.Provider value={wallet}>
-      <NavBar isSignedIn={isSignedIn} />
-      <main
-        style={{
-          maxWidth: "1536px",
-          paddingLeft: "24px",
-          paddingRight: "24px",
-          marginLeft: "auto",
-          marginRight: "auto",
-          paddingTop: "24px",
-        }}
-      >
-        <ErrorBoundary
+
+      <ErrorBoundary
           fallbackRender={({ error, resetErrorBoundary }) => (
-            <div role="alert">
-              <p>Something went wrong:</p>
-              <pre>{error.message}</pre>
-              <button onClick={resetErrorBoundary}>Try again</button>
-            </div>
+              <div role="alert">
+                  Something went wrong:
+                  <pre>{error.message}</pre>
+                  <button onClick={resetErrorBoundary}>Try again</button>
+              </div>
           )}
-        >
-          <RouterProvider router={router} />
-        </ErrorBoundary>
-      </main>
+      >
+    <WalletContext.Provider value={wallet}>
+
+
+        <BrowserRouter>
+
+
+        <NavBar isSignedIn={isSignedIn} />
+            <main
+                style={{
+                    maxWidth: "1536px",
+                    paddingLeft: "24px",
+                    paddingRight: "24px",
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                    paddingTop: "24px",
+                }}
+            >
+                <React.Suspense fallback={<div>Loading...</div>}>
+
+                <Routes>
+                <Route path="/" element={<Home isSignedIn={isSignedIn} />} />
+                <Route path="/bounty" element={<Bounty />} />
+                <Route path="/coordinator" element={<Coordinator />} />
+                    <Route path="/node/:id" element={<NodeDetail />} />
+                <Route path="/node" element={<Node />} />
+            </Routes>
+                </React.Suspense>
+
+            </main>
+
+        </BrowserRouter>
+
     </WalletContext.Provider>
+      </ErrorBoundary>
+
   );
 }

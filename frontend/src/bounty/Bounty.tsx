@@ -3,8 +3,8 @@ import CreateBounty from "./create-bounty";
 import React from "react";
 import ExistingBounty from "./existing-bounty";
 import { Add } from "@mui/icons-material";
-import {selector, useRecoilValue} from "recoil";
-import {wallet} from "../index";
+import { selector, useRecoilValue } from "recoil";
+import { wallet } from "../index";
 
 const style = {
   position: "absolute" as "absolute",
@@ -17,20 +17,20 @@ const style = {
   p: 4,
 };
 const nodeCountState = selector({
-    key: 'nodeCountState',
-    get: async ({get}) => {
-        console.log("Nodescount state)")
-        return await wallet.getNodeCount();
-    }
-})
+  key: "nodeCountState",
+  get: async ({ get }) => {
+    console.log("Nodescount state)");
+    return await wallet.getNodeCount();
+  },
+});
 
 export default function Bounty() {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-    const nodeCount = useRecoilValue(nodeCountState);
+  let nodeCount = 0;
+  nodeCount = useRecoilValue(nodeCountState);
 
-    console.log("Node count: ", nodeCount);
   return (
     <>
       <Button variant="contained" onClick={handleOpen} startIcon={<Add />}>
@@ -50,7 +50,7 @@ export default function Bounty() {
           >
             Create Bounty
           </Typography>
-          <CreateBounty handleClose={handleClose} nodeCount={nodeCount}/>
+          <CreateBounty handleClose={handleClose} nodeCount={nodeCount} />
         </Box>
       </Modal>
       <ExistingBounty />

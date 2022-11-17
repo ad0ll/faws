@@ -15,9 +15,9 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
-import { localStorageState, WalletContext } from "../app";
-import {atom, selector, useRecoilState, useRecoilValue} from "recoil";
+import React, { useEffect, useState } from "react";
+import { localStorageState } from "../app";
+import { atom, selector, useRecoilState, useRecoilValue } from "recoil";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { ClientNode } from "../../../execution-client/types";
@@ -31,7 +31,10 @@ import { wallet } from "../index";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { readyStateToString } from "./util";
 import CableIcon from "@mui/icons-material/Cable";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
+import EditIcon from "@mui/icons-material/Edit";
+import { UpdateNodeModal } from "./udpate-node-modal";
+import { nanoTimestampToDate } from "../util";
 
 export const viewMineOnlyState = atom<boolean>({
   key: "viewMineOnly",
@@ -54,32 +57,31 @@ const fetchNodes = async (viewMineOnly: boolean) => {
     console.log("fetching all nodes");
     return wallet.getNodes();
   }
-}
+};
 const nodesState = atom({
-    key: "nodesState",
-    default: chainNodesState,
-})
+  key: "nodesState",
+  default: chainNodesState,
+});
 
 export default function ExistingNode() {
-
   const [nodes, setNodes] = useRecoilState(nodesState);
-  console.log(nodes)
+  console.log(nodes);
 
   const [viewMineOnly, setViewMineOnly] = useRecoilState(viewMineOnlyState);
   //Refresh nodes every 2s. Node data doesn't change w/o a transaction, so this is moreso ceremony
   useEffect(() => {
     const getNodes = async () => {
       console.log("refreshing nodes");
-      const fetchedNodes = await fetchNodes(viewMineOnly)
+      const fetchedNodes = await fetchNodes(viewMineOnly);
       setNodes(fetchedNodes);
-    }
+    };
     const pollingInterval = setInterval(getNodes, 2000);
     return () => {
       clearInterval(pollingInterval);
     };
   }, []);
   return (
-      <React.Suspense fallback={<Typography>loading..</Typography>}>
+    <React.Suspense fallback={<Typography>loading..</Typography>}>
       <div style={{ marginTop: "24px" }}>
         {Object.values(nodes).length === 0 && (
           <Typography variant="h6" component="h2">
@@ -98,6 +100,7 @@ export default function ExistingNode() {
                   <TableCell align="center">Active Bounties</TableCell>
                   <TableCell align="center">URL</TableCell>
                   <TableCell align="center">Connection</TableCell>
+                  <TableCell align="center">Edit</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -115,17 +118,19 @@ export default function ExistingNode() {
 
 // setNodes is used to update local storage when the user changes the URL
 function Row({ node }: { node: ClientNode }) {
-  console.log("loading row")
+  console.log("loading row");
   const storage = useRecoilValue(localStorageState);
   const [url, setUrl] = useState<string>(storage.get(node.id)?.url ?? "");
   const { lastMessage, readyState } = useWebSocket(url);
   const [bountyState, setBountyState] = useState<BountyExecutionState>({});
+  const [open, setOpen] = React.useState(false);
+  const [openModal, setOpenModal] = React.useState(false);
   const [tempUrl, setTempUrl] = React.useState<string>(
     storage.get(node.id)?.url ?? ""
   );
   const metricsUrl = url
-      .replace(/wss?/, "http")
-      .replace(/(.*):([0-9]+).*/, "$1:9100/metrics");
+    .replace(/wss?/, "http")
+    .replace(/(.*):([0-9]+).*/, "$1:9100/metrics");
   console.log(`metrics url: ${metricsUrl}`);
   const incompleteBounties = Object.values(bountyState).filter(
     (bounty) => bounty.phase !== "Complete"
@@ -153,11 +158,12 @@ function Row({ node }: { node: ClientNode }) {
   };
 
   const handleSetUrl = (nodeId: string) => {
-    storage.set(nodeId, { url });
+    storage.set(nodeId, { url: tempUrl });
     setUrl(tempUrl);
   };
 
-  const [open, setOpen] = React.useState(false);
+  const handleCloseModal = () => setOpenModal(false);
+
   return (
     <React.Fragment>
       <TableRow key={node.id} sx={{ "& > *": { borderBottom: "unset" } }}>
@@ -174,10 +180,14 @@ function Row({ node }: { node: ClientNode }) {
           <Link to={`/node/${node.id}`}>{node.id}</Link>
         </TableCell>
         <TableCell align="center">
-          {node.last_success ? node.last_success : "N/A"}
+          {node.last_success
+            ? nanoTimestampToDate(node.last_success).toDateString()
+            : "N/A"}
         </TableCell>
         <TableCell align="center">
-          {node.last_failure ? node.last_failure : "N/A"}
+          {node.last_failure
+            ? nanoTimestampToDate(node.last_failure).toDateString()
+            : "N/A"}
         </TableCell>
         <TableCell align="center">
           <Chip
@@ -215,9 +225,23 @@ function Row({ node }: { node: ClientNode }) {
             />
           )}
         </TableCell>
+        <TableCell align="center">
+          <IconButton
+            aria-label="Edit Node"
+            size="small"
+            onClick={() => setOpenModal(!openModal)}
+          >
+            <EditIcon />
+          </IconButton>
+          <UpdateNodeModal
+            node={node}
+            open={openModal}
+            handleClose={handleCloseModal}
+          />
+        </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <BountyMonitor bountyState={bountyState} />

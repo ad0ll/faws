@@ -2,13 +2,16 @@ import React, { useContext } from "react";
 import {
   Box,
   Button,
+  Checkbox,
   FormControl,
+  FormControlLabel,
   FormGroup,
   Modal,
   TextField,
   Typography,
 } from "@mui/material";
 import { WalletContext } from "../app";
+import { ClientNode } from "../../../execution-client/types";
 
 const modalStyle = {
   position: "absolute" as "absolute",
@@ -22,32 +25,42 @@ const modalStyle = {
   p: 4,
 };
 
-export const UpdateBountyModal = ({
-  bountyId,
-  field,
+export const UpdateNodeModal = ({
+  node,
   open,
   handleClose,
 }: {
-  bountyId: string;
-  field: string;
+  node: ClientNode;
   open: boolean;
   handleClose: () => void;
 }) => {
   const wallet = useContext(WalletContext);
-  const [value, setValue] = React.useState("");
+  const [state, setState] = React.useState({
+    absolute_timeout: String(node.absolute_timeout),
+    allow_network: node.allow_network,
+    allow_gpu: node.allow_gpu,
+  });
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(event.target.value);
+    const value =
+      event.target.type === "checkbox"
+        ? event.target.checked
+        : event.target.value;
+    setState({
+      ...state,
+      [event.target.name]: value,
+    });
   };
   const handleSubmit = async () => {
     try {
-      if (field === "Reward") {
-        await wallet.addReward(bountyId, value);
-      } else if (field === "Storage") {
-        await wallet.addStorage(bountyId, value);
-      }
+      await wallet.updateNode(
+        node.id,
+        state.absolute_timeout,
+        state.allow_network,
+        state.allow_gpu
+      );
       handleClose();
     } catch (e: any) {
-      console.log(`Error updating bounty: ${e}`);
+      console.log(`Error updating node: ${e}`);
     }
   };
   return (
@@ -59,7 +72,7 @@ export const UpdateBountyModal = ({
     >
       <Box sx={modalStyle}>
         <Typography id="create-bounty-modal-title" variant="h5" component="h2">
-          Add {field}
+          Update Node
         </Typography>
         <FormGroup>
           <FormControl margin="normal">
@@ -67,12 +80,32 @@ export const UpdateBountyModal = ({
               required
               fullWidth
               id="update-bounty-value"
-              label={field}
+              label="Absolute Timeout"
               variant="outlined"
               size="small"
               onChange={handleChange}
             />
           </FormControl>
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="allow_network"
+                onChange={handleChange}
+                checked={state.allow_network}
+              />
+            }
+            label="Allow Network"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="allow_gpu"
+                onChange={handleChange}
+                checked={state.allow_gpu}
+              />
+            }
+            label="Allow GPU"
+          />
           <FormControl margin="normal">
             <Button variant="contained" onClick={handleSubmit}>
               Update

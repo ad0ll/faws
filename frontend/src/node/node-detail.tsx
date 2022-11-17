@@ -85,15 +85,37 @@ export const NodeDetail: React.FC = () => {
             node.registration_time
           ).toDateString()}`}
         />
-        <GridLi title={"Last success"} content={`${node.last_success}`} />
-        <GridLi title="Last Failure" content={`${node.last_failure}`} />
-        <GridLi title="Last Rejected" content={`${node.last_reject}`} />
+        <GridLi
+          title={"Last success"}
+          content={`${
+            node.last_success
+              ? nanoTimestampToDate(node.last_success).toDateString()
+              : "N/A"
+          }`}
+        />
+        <GridLi
+          title="Last Failure"
+          content={`${
+            node.last_failure
+              ? nanoTimestampToDate(node.last_failure).toDateString()
+              : "N/A"
+          }`}
+        />
+        <GridLi
+          title="Last Rejected"
+          content={`${
+            node.last_reject
+              ? nanoTimestampToDate(node.last_reject).toDateString()
+              : "N/A"
+          }`}
+        />
         <GridLi title="Total success" content={`${node.successful_runs}`} />
         <GridLi title="Total failure" content={`${node.failed_runs}`} />
         <GridLi title="Total rejected" content={`${node.rejected_runs}`} />
         <GridLi title="Total Unanswered" content={`${node.unanswered_runs}`} />
-        <GridLi title="Supports network" content={`${node.allow_network}`} />
-        <GridLi title="Supports GPU" content={`${node.allow_gpu}`} />
+        <GridLi title="Allow Network" content={`${node.allow_network}`} />
+        <GridLi title="Allow GPU" content={`${node.allow_gpu}`} />
+        <GridLi title="Absolute Timeout" content={`${node.absolute_timeout}`} />
       </List>
     </Suspense>
   );

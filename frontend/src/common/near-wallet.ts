@@ -235,6 +235,23 @@ export class Wallet {
       method: "get_bounties",
     });
   }
+
+  async getTotalPayouts(): Promise<number> {
+    const result = await this.viewMethod({
+      method: "get_total_payouts",
+    });
+    console.log("get_total_payouts", result);
+    return result;
+  }
+
+  async getBountyCount(): Promise<number> {
+    const result = await this.viewMethod({
+      method: "get_bounty_count",
+    });
+    console.log("get_bounty_count", result);
+    return result;
+  }
+
   async getNodeCount(): Promise<number> {
     const result = await this.viewMethod({
       method: "get_node_count",
@@ -272,13 +289,14 @@ export class Wallet {
   }
 
   async updateNode(
-    nodeId,
-    allow_network,
-    allow_gpu
+    node_id: string,
+    absolute_timeout: string,
+    allow_network: boolean,
+    allow_gpu: boolean
   ): Promise<void | FinalExecutionOutcome> {
     const node = await this.callMethod({
       method: "update_node",
-      args: { node_id: nodeId, allow_network, allow_gpu },
+      args: { node_id, allow_network, allow_gpu, absolute_timeout },
       gas: THIRTY_TGAS,
     });
     return node;

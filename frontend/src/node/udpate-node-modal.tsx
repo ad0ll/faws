@@ -84,6 +84,7 @@ export const UpdateNodeModal = ({
               variant="outlined"
               size="small"
               onChange={handleChange}
+              value={node.absolute_timeout}
             />
           </FormControl>
           <FormControlLabel

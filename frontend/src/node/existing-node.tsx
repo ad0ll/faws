@@ -5,6 +5,8 @@ import {
   FormControl,
   IconButton,
   InputAdornment,
+  Menu,
+  MenuItem,
   OutlinedInput,
   Paper,
   Table,
@@ -31,8 +33,8 @@ import { wallet } from "../index";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { readyStateToString } from "./util";
 import CableIcon from "@mui/icons-material/Cable";
-import { Link } from "react-router-dom";
-import EditIcon from "@mui/icons-material/Edit";
+import { useNavigate } from "react-router-dom";
+import MenuIcon from "@mui/icons-material/Menu";
 import { UpdateNodeModal } from "./udpate-node-modal";
 import { nanoTimestampToDate } from "../util";
 
@@ -100,7 +102,7 @@ export default function ExistingNode() {
                   <TableCell align="center">Active Bounties</TableCell>
                   <TableCell align="center">URL</TableCell>
                   <TableCell align="center">Connection</TableCell>
-                  <TableCell align="center">Edit</TableCell>
+                  <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -128,6 +130,17 @@ function Row({ node }: { node: ClientNode }) {
   const [tempUrl, setTempUrl] = React.useState<string>(
     storage.get(node.id)?.url ?? ""
   );
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null
+  );
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElUser(event.currentTarget);
+  };
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+  const navigate = useNavigate();
+
   const metricsUrl = url
     .replace(/wss?/, "http")
     .replace(/(.*):([0-9]+).*/, "$1:9100/metrics");
@@ -166,7 +179,16 @@ function Row({ node }: { node: ClientNode }) {
 
   return (
     <React.Fragment>
-      <TableRow key={node.id} sx={{ "& > *": { borderBottom: "unset" } }}>
+      <TableRow
+        key={node.id}
+        sx={{
+          "& > *": { borderBottom: "unset" },
+          backgroundImage:
+            incompleteBounties > 0
+              ? "linear-gradient(to right, #6B6EF9 , #DB5555);"
+              : "",
+        }}
+      >
         <TableCell>
           <IconButton
             aria-label="expand row"
@@ -177,7 +199,7 @@ function Row({ node }: { node: ClientNode }) {
           </IconButton>
         </TableCell>
         <TableCell component="th" scope="row">
-          <Link to={`/node/${node.id}`}>{node.id}</Link>
+          <Typography>{node.id}</Typography>
         </TableCell>
         <TableCell align="center">
           {node.last_success
@@ -226,13 +248,44 @@ function Row({ node }: { node: ClientNode }) {
           )}
         </TableCell>
         <TableCell align="center">
-          <IconButton
-            aria-label="Edit Node"
-            size="small"
-            onClick={() => setOpenModal(!openModal)}
-          >
-            <EditIcon />
+          <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+            <MenuIcon />
           </IconButton>
+          <Menu
+            sx={{ mt: "45px" }}
+            id="node-action-button"
+            anchorEl={anchorElUser}
+            anchorOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            open={Boolean(anchorElUser)}
+            onClose={handleCloseUserMenu}
+          >
+            <MenuItem
+              key="Edit"
+              onClick={() => {
+                setOpenModal(!openModal);
+                handleCloseUserMenu();
+              }}
+            >
+              <Typography textAlign="center">Edit</Typography>
+            </MenuItem>
+            <MenuItem
+              key="Details"
+              onClick={() => {
+                navigate(`/node/${node.id}`);
+                handleCloseUserMenu();
+              }}
+            >
+              <Typography textAlign="center">Details</Typography>
+            </MenuItem>
+          </Menu>
           <UpdateNodeModal
             node={node}
             open={openModal}

@@ -130,29 +130,30 @@ export default function ExistingBounty() {
           .filter((bounty) => bounty.owner_id === wallet.accountId)
           .map((bounty) => (
             <>
-              {bounty.status.toLowerCase() ===
-                BountyStatuses.Pending.toLowerCase() && (
-                <LinearProgress
-                  /* Show as green if in progress and not all nodes have completed
-                         Show as red if all nodes complete but have not met threshold
-                         TODO: Might not need red since progress bar only shown for Pending bounties
-                      */
-                  color={
-                    (bounty.successful_nodes?.length || 0) +
-                      (bounty.failed_nodes?.length || 0) ===
-                      bounty.total_nodes &&
-                    (bounty.successful_nodes?.length || 0) < bounty.min_nodes
-                      ? "error"
-                      : "success"
-                  }
-                  variant="determinate"
-                  value={
-                    ((bounty.successful_nodes?.length || 0) /
-                      bounty.min_nodes) *
-                    100
-                  }
-                />
-              )}
+              <LinearProgress
+                /* Show as green if in progress and not all nodes have completed
+                   Show as red if all nodes complete but have not met threshold
+                   Show as red is cancelled or failed
+                */
+                color={
+                  ((bounty.successful_nodes?.length || 0) +
+                    (bounty.failed_nodes?.length || 0) ===
+                    bounty.total_nodes &&
+                    (bounty.successful_nodes?.length || 0) <
+                      bounty.min_nodes) ||
+                  bounty.status.toLowerCase() ===
+                    BountyStatuses.Failed.toLowerCase() ||
+                  bounty.status.toLowerCase() ===
+                    BountyStatuses.Cancelled.toLowerCase()
+                    ? "error"
+                    : "success"
+                }
+                variant="determinate"
+                value={
+                  ((bounty.successful_nodes?.length || 0) / bounty.min_nodes) *
+                  100
+                }
+              />
               <Accordion key={bounty.id}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography>{bounty.id}</Typography>

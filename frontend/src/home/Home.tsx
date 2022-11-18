@@ -126,7 +126,16 @@ export default function Home({ isSignedIn }: { isSignedIn: boolean }) {
   }, [nodes]);
   return (
     <>
-      {isSignedIn ? (
+      {!isSignedIn ? (
+        <Typography
+          variant="h5"
+          sx={{
+            textAlign: "center",
+          }}
+        >
+          Please connect a wallet to continue
+        </Typography>
+      ) : (
         <Box
           sx={{
             display: "flex",
@@ -182,65 +191,56 @@ export default function Home({ isSignedIn }: { isSignedIn: boolean }) {
             <Typography variant="h1">{totalSelfNodes}</Typography>
           </Paper>
         </Box>
-      ) : (
-        <>
-          <Typography
-            variant="h5"
-            sx={{
-              textAlign: "center",
-            }}
-          >
-            Please connect a wallet to continue
-          </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              margin: "auto",
-            }}
-          >
-            <Paper
-              elevation={3}
-              sx={{
-                ...paperStyle,
-                background: "#388e3c",
-              }}
-            >
-              <MonetizationOnIcon sx={iconStyle} />
-              <Typography variant="h5">Total Payouts</Typography>
-              <Typography variant="h1">
-                <>
-                  {totalPayouts}
-                  <Typography>NEAR</Typography>
-                </>
-              </Typography>
-            </Paper>
-            <Paper
-              elevation={3}
-              sx={{
-                ...paperStyle,
-                background: "#0288d1",
-              }}
-            >
-              <HistoryEduIcon sx={iconStyle} />
-              <Typography variant="h5">Total Bounties</Typography>
-              <Typography variant="h1">{totalBounties}</Typography>
-            </Paper>
-            <Paper
-              elevation={3}
-              sx={{
-                ...paperStyle,
-                background: "#ab47bc",
-              }}
-            >
-              <ComputerIcon sx={iconStyle} />
-              <Typography variant="h5">Total Nodes</Typography>
-              <Typography variant="h1">{totalNodes}</Typography>
-            </Paper>
-          </Box>
-        </>
       )}
+      <>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            margin: "auto",
+          }}
+        >
+          <Paper
+            elevation={3}
+            sx={{
+              ...paperStyle,
+              background: "rgb(38,38,38)",
+            }}
+          >
+            <MonetizationOnIcon sx={iconStyle} />
+            <Typography variant="h5">Total Payouts</Typography>
+            <Typography variant="h1">
+              <>
+                {totalPayouts}
+                <Typography>NEAR</Typography>
+              </>
+            </Typography>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              ...paperStyle,
+              background: "rgb(53,53,53)",
+            }}
+          >
+            <HistoryEduIcon sx={iconStyle} />
+            <Typography variant="h5">Total Bounties</Typography>
+            <Typography variant="h1">{totalBounties}</Typography>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              ...paperStyle,
+              background: "rgb(68,68,68)",
+            }}
+          >
+            <ComputerIcon sx={iconStyle} />
+            <Typography variant="h5">Total Nodes</Typography>
+            <Typography variant="h1">{totalNodes}</Typography>
+          </Paper>
+        </Box>
+      </>
       <Box>
         <img
           style={{

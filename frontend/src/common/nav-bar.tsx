@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
-import { default as Logo } from "../../assets/svg/faws-logo-blue.svg";
+import { default as Logo } from "../../assets/svg/faws-logo-purple.svg";
 import { WalletContext } from "../app";
 import { AccountBalanceWallet } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";

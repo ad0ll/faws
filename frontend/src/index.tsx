@@ -50,14 +50,14 @@ window.onload = () => {
     .startUp()
     .then((isSignedIn: boolean) => {
       reactRoot.render(
-          <React.StrictMode>
-        <RecoilRoot>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <App isSignedIn={isSignedIn} wallet={wallet} />
-          </ThemeProvider>
-        </RecoilRoot>
-          </React.StrictMode>
+        <React.StrictMode>
+          <RecoilRoot>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <App isSignedIn={isSignedIn} wallet={wallet} />
+            </ThemeProvider>
+          </RecoilRoot>
+        </React.StrictMode>
       );
     })
     .catch((e) => {

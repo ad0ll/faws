@@ -100,6 +100,9 @@ export default function ExistingNode() {
                   <TableCell align="center">Last Success</TableCell>
                   <TableCell align="center">Last Failure</TableCell>
                   <TableCell align="center">Active Bounties</TableCell>
+                  <TableCell align="center">CPU Usage</TableCell>
+                  <TableCell align="center">Disk Usage</TableCell>
+                  <TableCell align="center">RAM Usage</TableCell>
                   <TableCell align="center">URL</TableCell>
                   <TableCell align="center">Connection</TableCell>
                   <TableCell align="center">Actions</TableCell>
@@ -177,6 +180,11 @@ function Row({ node }: { node: ClientNode }) {
 
   const handleCloseModal = () => setOpenModal(false);
 
+  // TODO: Replace with actual metrics once integrated
+  const cpuUsage = 10;
+  const diskUsage = 50;
+  const ramUsage = 100;
+
   return (
     <React.Fragment>
       <TableRow
@@ -215,6 +223,51 @@ function Row({ node }: { node: ClientNode }) {
           <Chip
             label={incompleteBounties}
             color={incompleteBounties > 0 ? "secondary" : "primary"}
+          />
+        </TableCell>
+        <TableCell align="center">
+          <Chip
+            label={`${cpuUsage}%`}
+            sx={{
+              color: "rgb(0, 30, 60);",
+              backgroundColor: `rgb(${Math.min(
+                208,
+                170 + (cpuUsage < 50 ? 0 : cpuUsage) * 1.6
+              )},${Math.max(
+                85,
+                208 - (cpuUsage < 50 ? 0 : cpuUsage) * 1.6
+              )},85)`,
+            }}
+          />
+        </TableCell>
+        <TableCell align="center">
+          <Chip
+            label={`${diskUsage}%`}
+            sx={{
+              color: "rgb(0, 30, 60);",
+              backgroundColor: `rgb(${Math.min(
+                208,
+                170 + (diskUsage < 50 ? 0 : diskUsage) * 1.6
+              )},${Math.max(
+                85,
+                208 - (diskUsage < 50 ? 0 : diskUsage) * 1.6
+              )},85)`,
+            }}
+          />
+        </TableCell>
+        <TableCell align="center">
+          <Chip
+            label={`${ramUsage}%`}
+            sx={{
+              color: "rgb(0, 30, 60);",
+              backgroundColor: `rgb(${Math.min(
+                208,
+                170 + (ramUsage < 50 ? 0 : ramUsage) * 1.6
+              )},${Math.max(
+                85,
+                208 - (ramUsage < 50 ? 0 : ramUsage) * 1.6
+              )},85)`,
+            }}
           />
         </TableCell>
         <TableCell align="center">
@@ -294,7 +347,7 @@ function Row({ node }: { node: ClientNode }) {
         </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <BountyMonitor bountyState={bountyState} />

@@ -1,24 +1,27 @@
 import React, { useContext, useEffect } from "react";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
   Button,
-  Grid,
+  Chip,
   LinearProgress,
+  Menu,
+  MenuItem,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Bounty, BountyStatuses } from "../../../execution-client/types";
 import { WalletContext } from "../app";
 import { atom, selector, selectorFamily, useRecoilState } from "recoil";
 import { UpdateBountyModal } from "./update-bounty-modal";
 import { wallet } from "../index";
 import { ErrorBoundary } from "react-error-boundary";
-import IosShareIcon from "@mui/icons-material/IosShare";
-
-const yoctoNear = 1000000000000000000000000;
+import { yoctoNear } from "../common/near-wallet";
+import { useNavigate } from "react-router-dom";
 
 const chainBountiesState = selector({
   key: "chainBounties",
@@ -62,9 +65,6 @@ const bountyAnswersState = atom({
 
 export default function ExistingBounty() {
   const wallet = useContext(WalletContext);
-  const [open, setOpen] = React.useState(false);
-  const [field, setField] = React.useState("");
-  const [bountyId, setBountyId] = React.useState("");
   const [bounties, setBounties] = useRecoilState(bountiesState);
   const [bountyAnswers, setBountyAnswers] = useRecoilState(bountyAnswersState);
   //Refetch bounties and answer counts every 2s
@@ -85,38 +85,6 @@ export default function ExistingBounty() {
     }, 2000);
     return () => clearInterval(interval);
   }, [bounties]);
-  const handleOpen = (button: string, bountyId: string) => {
-    setBountyId(bountyId);
-    setField(button);
-    setOpen(true);
-  };
-  const handleClose = () => setOpen(false);
-
-  const cancelBounty = async (bountyId: string) => {
-    await wallet.cancelBounty(bountyId);
-  };
-
-  const exportBounty = (bounty: Bounty) => {
-    const element = document.createElement("a");
-    const bountyConfig = {
-      file_location: bounty.file_location,
-      file_download_protocol: bounty.file_download_protocol,
-      min_nodes: bounty.min_nodes,
-      total_nodes: bounty.total_nodes,
-      amt_storage: Number(bounty.amt_storage) / yoctoNear,
-      amt_node_reward: Number(bounty.amt_node_reward) / yoctoNear,
-      timeout_seconds: bounty.timeout_seconds,
-      network_required: bounty.network_required,
-      gpu_required: bounty.gpu_required,
-    };
-    const file = new Blob([JSON.stringify(bountyConfig)], {
-      type: "applciation/json",
-    });
-    element.href = URL.createObjectURL(file);
-    element.download = `${bounty.id}.json`;
-    document.body.appendChild(element);
-    element.click();
-  };
 
   return (
     <>
@@ -126,189 +94,29 @@ export default function ExistingBounty() {
             No Existing Bounties
           </Typography>
         )}
-        {Object.values(bounties)
-          .filter((bounty) => bounty.owner_id === wallet.accountId)
-          .map((bounty) => (
-            <>
-              <LinearProgress
-                /* Show as green if in progress and not all nodes have completed
-                   Show as red if all nodes complete but have not met threshold
-                   Show as red is cancelled or failed
-                */
-                color={
-                  ((bounty.successful_nodes?.length || 0) +
-                    (bounty.failed_nodes?.length || 0) ===
-                    bounty.total_nodes &&
-                    (bounty.successful_nodes?.length || 0) <
-                      bounty.min_nodes) ||
-                  bounty.status.toLowerCase() ===
-                    BountyStatuses.Failed.toLowerCase() ||
-                  bounty.status.toLowerCase() ===
-                    BountyStatuses.Cancelled.toLowerCase()
-                    ? "error"
-                    : "success"
-                }
-                variant="determinate"
-                value={
-                  ((bounty.successful_nodes?.length || 0) / bounty.min_nodes) *
-                  100
-                }
-              />
-              <Accordion key={bounty.id}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>{bounty.id}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Grid container rowSpacing={1} spacing={4}>
-                    <Grid item xs={6}>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          File Location:
-                        </Box>{" "}
-                        {bounty.file_location}
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Download Protocol:
-                        </Box>{" "}
-                        {bounty.file_download_protocol}
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Threshold:
-                        </Box>{" "}
-                        {bounty.min_nodes}
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Total Nodes:
-                        </Box>{" "}
-                        {bounty.total_nodes}
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Network Required:
-                        </Box>{" "}
-                        {String(bounty.network_required)}
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          GPU Required:
-                        </Box>{" "}
-                        {String(bounty.gpu_required)}
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Storage Amount:
-                        </Box>{" "}
-                        {bounty.amt_storage / yoctoNear} NEAR
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Reward:
-                        </Box>{" "}
-                        {bounty.amt_node_reward / yoctoNear} NEAR
-                      </Typography>
-
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Successes:
-                        </Box>{" "}
-                        {bounty.successful_nodes?.length}
-                      </Typography>
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Failures:
-                        </Box>{" "}
-                        {bounty.failed_nodes?.length}
-                      </Typography>
-
-                      <Typography>
-                        <Box fontWeight="700" display="inline">
-                          Status:
-                        </Box>{" "}
-                        {bounty.status.toString()}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => {
-                          exportBounty(bounty);
-                        }}
-                        sx={{
-                          display: "flex",
-                          marginLeft: "auto",
-                          marginRight: 0,
-                          marginY: "10px",
-                        }}
-                        startIcon={<IosShareIcon />}
-                      >
-                        Export
-                      </Button>
-                      {bounty.status.toLowerCase() ===
-                      BountyStatuses.Pending.toLowerCase() ? (
-                        <>
-                          <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => {
-                              handleOpen("Reward", bounty.id);
-                            }}
-                            sx={{
-                              display: "flex",
-                              marginLeft: "auto",
-                              marginRight: 0,
-                              marginY: "10px",
-                            }}
-                          >
-                            Add Reward
-                          </Button>
-                          <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => {
-                              handleOpen("Storage", bounty.id);
-                            }}
-                            sx={{
-                              display: "flex",
-                              marginLeft: "auto",
-                              marginRight: 0,
-                              marginY: "10px",
-                            }}
-                          >
-                            Add Storage
-                          </Button>
-                          <Button
-                            variant="contained"
-                            color="error"
-                            onClick={() => cancelBounty(bounty.id)}
-                            sx={{
-                              display: "flex",
-                              marginLeft: "auto",
-                              marginRight: 0,
-                              marginY: "10px",
-                            }}
-                          >
-                            Cancel Bounty
-                          </Button>
-                          <UpdateBountyModal
-                            bountyId={bountyId}
-                            field={field}
-                            open={open}
-                            handleClose={handleClose}
-                          />
-                        </>
-                      ) : (
-                        <></>
-                      )}
-                    </Grid>
-                  </Grid>
-                </AccordionDetails>
-              </Accordion>
-            </>
-          ))}
+        <TableContainer component={Paper}>
+          <Table aria-label="collapsible table">
+            <TableHead>
+              <TableRow>
+                <TableCell />
+                <TableCell>Id</TableCell>
+                <TableCell align="center">Successful Nodes</TableCell>
+                <TableCell align="center">Failed Nodes</TableCell>
+                <TableCell align="center">Status</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Object.values(bounties)
+                .filter((bounty) => bounty.owner_id === wallet.accountId)
+                .map((bounty) => (
+                  <>
+                    <Row bounty={bounty} />
+                  </>
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </div>
       <ErrorBoundary
         fallbackRender={({ error, resetErrorBoundary }) => (
@@ -322,3 +130,194 @@ export default function ExistingBounty() {
     </>
   );
 }
+
+function Row({ bounty }: { bounty: any }) {
+  const [open, setOpen] = React.useState(false);
+  const [expand, setExpand] = React.useState(false);
+  const [field, setField] = React.useState("");
+  const [bountyId, setBountyId] = React.useState("");
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null
+  );
+  const navigate = useNavigate();
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElUser(event.currentTarget);
+  };
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+  const handleOpenModal = (button: string, bountyId: string) => {
+    setBountyId(bountyId);
+    setField(button);
+    setOpen(true);
+  };
+  const handleCloseModal = () => setOpen(false);
+
+  const cancelBounty = async (bountyId: string) => {
+    await wallet.cancelBounty(bountyId);
+  };
+
+  return (
+    <React.Fragment>
+      <TableRow key={bounty.id}>
+        <TableCell width={10}></TableCell>
+        <TableCell component="th" scope="row">
+          <Typography>{bounty.id}</Typography>
+        </TableCell>
+        <TableCell component="th" scope="row" align="center">
+          <Typography>{bounty.successful_nodes || "N/A"}</Typography>
+        </TableCell>
+        <TableCell component="th" scope="row" align="center">
+          <Typography>{bounty.failed_nodes || "N/A"}</Typography>
+        </TableCell>
+        <TableCell component="th" scope="row" align="center">
+          <Chip
+            label={bounty.status}
+            variant="outlined"
+            color={
+              bounty.status.toLowerCase() ===
+              BountyStatuses.Pending.toLowerCase()
+                ? "warning"
+                : bounty.status.toLowerCase() ===
+                  BountyStatuses.Success.toLowerCase()
+                ? "success"
+                : "error"
+            }
+          />
+        </TableCell>
+        <TableCell component="th" scope="row" align="center">
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleOpenUserMenu}
+          >
+            Actions
+          </Button>
+          <Menu
+            sx={{ mt: "45px" }}
+            id="node-action-button"
+            anchorEl={anchorElUser}
+            anchorOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            open={Boolean(anchorElUser)}
+            onClose={handleCloseUserMenu}
+          >
+            <MenuItem
+              key="export"
+              onClick={() => {
+                exportBounty(bounty);
+                handleCloseUserMenu();
+              }}
+            >
+              <Typography textAlign="center">Export</Typography>
+            </MenuItem>
+            <MenuItem
+              key="details"
+              onClick={() => {
+                navigate(`/bounty/${bounty.id}`);
+                handleCloseUserMenu();
+              }}
+            >
+              <Typography textAlign="center">Details</Typography>
+            </MenuItem>
+            {bounty.status.toLowerCase() ===
+            BountyStatuses.Pending.toLowerCase() ? (
+              <>
+                <MenuItem
+                  key="reward"
+                  onClick={() => {
+                    handleOpenModal("Reward", bounty.id);
+                    handleCloseUserMenu();
+                  }}
+                >
+                  <Typography textAlign="center">Add Reward</Typography>
+                </MenuItem>
+                <MenuItem
+                  key="storage"
+                  onClick={() => {
+                    handleOpenModal("Storage", bounty.id);
+                    handleCloseUserMenu();
+                  }}
+                >
+                  <Typography textAlign="center">Add Storage</Typography>
+                </MenuItem>
+                <MenuItem
+                  key="cancel"
+                  onClick={() => {
+                    cancelBounty(bounty.id);
+                    handleCloseUserMenu();
+                  }}
+                >
+                  <Typography textAlign="center">Cancel Bounty</Typography>
+                </MenuItem>{" "}
+              </>
+            ) : (
+              <></>
+            )}
+          </Menu>
+          <UpdateBountyModal
+            bountyId={bountyId}
+            field={field}
+            open={open}
+            handleClose={handleCloseModal}
+          />
+        </TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell colSpan={6} sx={{ padding: 0 }}>
+          <LinearProgress
+            /* Show as green if in progress and not all nodes have completed
+             Show as red if all nodes complete but have not met threshold
+             Show as red is cancelled or failed
+          */
+            color={
+              ((bounty.successful_nodes?.length || 0) +
+                (bounty.failed_nodes?.length || 0) ===
+                bounty.total_nodes &&
+                (bounty.successful_nodes?.length || 0) < bounty.min_nodes) ||
+              bounty.status.toLowerCase() ===
+                BountyStatuses.Failed.toLowerCase() ||
+              bounty.status.toLowerCase() ===
+                BountyStatuses.Cancelled.toLowerCase()
+                ? "error"
+                : "success"
+            }
+            variant="determinate"
+            value={
+              ((bounty.successful_nodes?.length || 0) / bounty.min_nodes) * 100
+            }
+          />
+        </TableCell>
+      </TableRow>
+    </React.Fragment>
+  );
+}
+
+export const exportBounty = (bounty: Bounty) => {
+  const element = document.createElement("a");
+  const bountyConfig = {
+    file_location: bounty.file_location,
+    file_download_protocol: bounty.file_download_protocol,
+    min_nodes: bounty.min_nodes,
+    total_nodes: bounty.total_nodes,
+    amt_storage: Number(bounty.amt_storage) / yoctoNear,
+    amt_node_reward: Number(bounty.amt_node_reward) / yoctoNear,
+    timeout_seconds: bounty.timeout_seconds,
+    network_required: bounty.network_required,
+    gpu_required: bounty.gpu_required,
+  };
+  const file = new Blob([JSON.stringify(bountyConfig)], {
+    type: "applciation/json",
+  });
+  element.href = URL.createObjectURL(file);
+  element.download = `${bounty.id}.json`;
+  document.body.appendChild(element);
+  element.click();
+};

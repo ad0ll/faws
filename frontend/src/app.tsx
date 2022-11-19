@@ -11,6 +11,7 @@ import { NodeDetail } from "./node/node-detail";
 import { ErrorBoundary } from "react-error-boundary";
 import { TransientStorage } from "./storage";
 import { atom } from "recoil";
+import { BountyDetail } from "./bounty/bounty-detail";
 
 export const localStorageState = atom<TransientStorage>({
   key: "localStorageState",
@@ -52,6 +53,7 @@ export default function App({
               <Routes>
                 <Route path="/" element={<Home isSignedIn={isSignedIn} />} />
                 <Route path="/bounty" element={<Bounty />} />
+                <Route path="/bounty/:id" element={<BountyDetail />} />
                 <Route path="/coordinator" element={<Coordinator />} />
                 <Route path="/node/:id" element={<NodeDetail />} />
                 <Route path="/node" element={<Node />} />

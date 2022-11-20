@@ -19,6 +19,7 @@ import {Bounty, BountyStatuses, SupportedFileDownloadProtocols,} from "../../../
 import {WalletContext} from "../app";
 import HelpIcon from "@mui/icons-material/Help";
 
+const NODE_PADDING = 1.25;
 export const HelpText: React.FC<{ text: string }> = ({text}) => {
     return (
         <Tooltip title={text}>
@@ -26,7 +27,12 @@ export const HelpText: React.FC<{ text: string }> = ({text}) => {
         </Tooltip>
     );
 };
-type BountyValidationError = Record<keyof Bounty, string> & {file_upload: string};
+
+type BountyValidationError = Record<keyof Bounty, string> & {
+    //Additional types of errors that don't map to specific bounty inputs
+    not_enough_nodes: string;
+    file_upload: string
+};
 export default function CreateBounty({
                                          handleClose,
                                          nodeCount,
@@ -48,7 +54,6 @@ export default function CreateBounty({
         gpu_required: false,
         min_nodes: 0,
         network_required: true,
-        total_nodes: 0,
         timeout_seconds: 60,
     });
 
@@ -74,29 +79,17 @@ export default function CreateBounty({
         if (!bounty.min_nodes) {
             stagedError.min_nodes = "Minimum number of nodes is required";
         }
-        if (!bounty.total_nodes) {
-            stagedError.total_nodes = "Total number of nodes is required";
-        }
         if (!bounty.amt_storage) {
             stagedError.amt_storage = "Storage amount is required";
         }
         if (!bounty.amt_node_reward) {
             stagedError.amt_node_reward = "Node reward amount is required";
         }
-        if (bounty.min_nodes === 0) {
+        if (bounty.min_nodes <= 0) {
             stagedError.min_nodes = "Minimum number of nodes must be greater than 0";
         }
-        if (bounty.total_nodes === 0) {
-            stagedError.total_nodes = "Total number of nodes must be greater than 0";
-        }
-        if (bounty.min_nodes > bounty.total_nodes) {
-            stagedError.min_nodes =
-                "Min number of nodes must be less than or equal to the total number of nodes";
-            stagedError.total_nodes =
-                "Total number of nodes must be greater than or equal to minimum number of nodes";
-        }
-        if (bounty.total_nodes > nodeCount) {
-            stagedError.total_nodes = `Total number of nodes must be less than or equal to the number of nodes available (${nodeCount})`;
+        if (Math.ceil(bounty.min_nodes * NODE_PADDING) > nodeCount) {
+            stagedError.not_enough_nodes = `Not enough nodes to fill the bounty (requires ${NODE_PADDING*100}% of min_nodes (${bounty.min_nodes})`;
         }
         return stagedError;
     };
@@ -192,29 +185,6 @@ export default function CreateBounty({
                                 onChange={handleChange}
                                 helperText={error.min_nodes}
                                 error={error.min_nodes !== undefined}
-                            />
-                        </FormControl>
-                        <FormControl margin="normal">
-                            <TextField
-                                required
-                                fullWidth
-                                id="total-nodes"
-                                label="Total Nodes"
-                                variant="outlined"
-                                size="small"
-                                name="total_nodes"
-                                onChange={handleChange}
-                                InputProps={{
-                                    endAdornment: (
-                                        <HelpText
-                                            text={
-                                                "The total number of nodes to have attempt the bounty. Should be higher than Min Nodes so the bounty has a buffer for failure."
-                                            }
-                                        />
-                                    ),
-                                }}
-                                helperText={error.total_nodes}
-                                error={error.total_nodes !== undefined}
                             />
                         </FormControl>
                     </FormGroup>
@@ -318,7 +288,6 @@ export default function CreateBounty({
                                         file_location: res.file_location,
                                         file_download_protocol: res.file_download_protocol,
                                         min_nodes: res.min_nodes,
-                                        total_nodes: res.total_nodes,
                                         amt_storage: res.amt_storage,
                                         amt_node_reward: res.amt_node_reward,
                                         timeout_seconds: res.timeout_seconds,

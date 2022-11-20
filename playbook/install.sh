@@ -11,7 +11,7 @@ set -e
 # (mainnet) curl -H 'Cache-Control: no-cache' -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1  bash
 REPO_NAME="faws"
 REPO_DIR="faws"
-COORDINATOR_ID="dev-1668375639392-20530569635416"
+COORDINATOR_ID="dev-1668967710095-18512722227792"
 PIP_PATH=$(python3 -m site --user-site)
 ACCOUNT_ID=$ACCOUNT_ID
 NODE_NAME=$NODE_NAME

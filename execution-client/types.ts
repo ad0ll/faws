@@ -41,7 +41,6 @@ export type Bounty = {
   complete: boolean;
   cancelled: boolean;
   min_nodes: number;
-  total_nodes: number;
   bounty_created: number;
   network_required: boolean;
   gpu_required: boolean;
@@ -185,7 +184,6 @@ export type CreateBountyArgs = {
   file_location: string;
   file_download_protocol: SupportedFileDownloadProtocols;
   min_nodes: number;
-  total_nodes: number;
   timeout_seconds: number;
   network_required: boolean;
   gpu_required: boolean;

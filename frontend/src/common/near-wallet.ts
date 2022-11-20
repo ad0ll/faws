@@ -148,7 +148,6 @@ export class Wallet {
         file_location: bounty.file_location,
         file_download_protocol: bounty.file_download_protocol,
         min_nodes: Number(bounty.min_nodes),
-        total_nodes: Number(bounty.total_nodes),
         timeout_seconds: Number(bounty.timeout_seconds),
         network_required: bounty.network_required,
         gpu_required: bounty.gpu_required,

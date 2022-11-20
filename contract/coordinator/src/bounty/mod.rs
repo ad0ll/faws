@@ -5,7 +5,7 @@ use near_sdk::{AccountId, Balance, log, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::env::{
-    block_timestamp, block_timestamp_ms, predecessor_account_id, signer_account_id,
+    block_timestamp_ms, predecessor_account_id, signer_account_id,
 };
 use near_sdk::serde::{Deserialize, Deserializer, Serialize, Serializer};
 use near_sdk::serde::de::{Error, MapAccess, Visitor};
@@ -135,8 +135,6 @@ pub struct Bounty {
     //ipfs, git, https
     pub min_nodes: u64,
     // Min number of nodes that must have consensus to complete the bounty
-    pub total_nodes: u64,
-    // Total nodes to process bounty. If > threshold, bounty allows for some failures.
     pub bounty_created: u64,
     //UTC timestamp for when bounty was created
     pub network_required: bool,
@@ -173,7 +171,6 @@ impl Serialize for Bounty {
         state.serialize_field("file_download_protocol", &self.file_download_protocol)?;
         state.serialize_field("status", &self.status)?;
         state.serialize_field("min_nodes", &self.min_nodes)?;
-        state.serialize_field("total_nodes", &self.total_nodes)?;
         state.serialize_field("bounty_created", &self.bounty_created)?;
         state.serialize_field("network_required", &self.network_required)?;
         state.serialize_field("gpu_required", &self.gpu_required)?;
@@ -216,7 +213,6 @@ impl<'de> Deserialize<'de> for Bounty {
                 let mut file_download_protocol = None;
                 let mut status = None;
                 let mut min_nodes = None;
-                let mut total_nodes = None;
                 let mut bounty_created = None;
                 let mut network_required = None;
                 let mut gpu_required = None;
@@ -268,12 +264,6 @@ impl<'de> Deserialize<'de> for Bounty {
                                 return Err(Error::duplicate_field("min_nodes"));
                             }
                             min_nodes = Some(map.next_value()?);
-                        }
-                        "total_nodes" => {
-                            if total_nodes.is_some() {
-                                return Err(Error::duplicate_field("total_nodes"));
-                            }
-                            total_nodes = Some(map.next_value()?);
                         }
                         "bounty_created" => {
                             if bounty_created.is_some() {
@@ -331,7 +321,6 @@ impl<'de> Deserialize<'de> for Bounty {
                     .ok_or_else(|| Error::missing_field("file_download_protocol"))?;
                 let status = status.ok_or_else(|| Error::missing_field("status"))?;
                 let min_nodes = min_nodes.ok_or_else(|| Error::missing_field("min_nodes"))?;
-                let total_nodes = total_nodes.ok_or_else(|| Error::missing_field("total_nodes"))?;
                 let bounty_created =
                     bounty_created.ok_or_else(|| Error::missing_field("bounty_created"))?;
                 let network_required =
@@ -353,7 +342,6 @@ impl<'de> Deserialize<'de> for Bounty {
                     file_download_protocol,
                     status,
                     min_nodes,
-                    total_nodes,
                     bounty_created,
                     network_required,
                     gpu_required,
@@ -387,7 +375,6 @@ impl<'de> Deserialize<'de> for Bounty {
             "file_download_protocol",
             "status",
             "min_nodes",
-            "total_nodes",
             "bounty_created",
             "network_required",
             "gpu_required",
@@ -411,7 +398,6 @@ impl PartialEq<Self> for Bounty {
             && self.file_download_protocol == other.file_download_protocol
             && self.status == other.status
             && self.min_nodes == other.min_nodes
-            && self.total_nodes == other.total_nodes
             && self.timeout_seconds == other.timeout_seconds
             && self.bounty_created == other.bounty_created
             && self.network_required == other.network_required
@@ -437,7 +423,6 @@ impl Default for Bounty {
             file_download_protocol: SupportedDownloadProtocols::EMPTY,
             status: BountyStatus::Pending,
             min_nodes: 0,
-            total_nodes: 0,
             timeout_seconds: 30,
             bounty_created: block_timestamp_ms(),
             network_required: false,
@@ -464,7 +449,6 @@ impl Bounty {
         file_location: String,
         file_download_protocol: SupportedDownloadProtocols,
         min_nodes: u64,
-        total_nodes: u64,
         timeout_seconds: u64,
         network_required: bool,
         gpu_required: bool,
@@ -479,7 +463,6 @@ impl Bounty {
             file_download_protocol,
             status: BountyStatus::Pending,
             min_nodes,
-            total_nodes,
             timeout_seconds,
             bounty_created: block_timestamp_ms(),
             // result: "".to_string(),

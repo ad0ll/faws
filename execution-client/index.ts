@@ -188,7 +188,9 @@ class ExecutionClient {
                     //Below is extremely noisy, make sure it's commented out in prod or increase to logger.trace
                     // logger.debug(`Received message: `, message);
                     const eventData = JSON.parse(message.event)
-                    if (eventData.event === "bounty_created") {
+                    if (eventData.event === "bounty_created" || eventData.event === "bounty_retry") {
+                        //This is cryptic, but both bounty_created and bounty_retry events have the same payload
+                        //bounty_retry will only attempt against newly elected nodes, create will attempt against all elected nodes
                         const event = eventData as BountyCreatedEvent;
                         if(event.data.coordinator_id !== this.config.coordinatorContractId) {
                             logger.debug("Received bounty_created event from a different coordinator contract, ignoring");
@@ -196,7 +198,7 @@ class ExecutionClient {
                         }
                         const bountyData = event.data;
                         const bountyId = bountyData.bounty_id;
-                        logger.info(`Received bounty_created event for ${bountyId}. Checking if we're elected...`);
+                        logger.info(`Received ${eventData.event} event for ${bountyId}. Checking if we're elected...`);
                         if (bountyData.node_ids.includes(this.config.nodeId)) {
                             logger.info(`We're elected! Executing bounty ${bountyId}...`);
                             try {
@@ -212,9 +214,6 @@ class ExecutionClient {
                                 await this.emitBountyCompleteEvent(bountyId)
                             } catch (e: any) {
                                 logger.error(`Execution of bounty ${bountyId} failed with error: ${e.message}`);
-                                if (e instanceof SetupError) { //TODO remove me once cleaned up
-                                    logger.warning(`Execution of bounty ${bountyId} failed with SetupError, but SetupError is disallowed in execution catch: ${e.message}`);
-                                }
                                 if (e instanceof SetupError
                                     || e instanceof PreflightError
                                     || e instanceof ExecutionError) {

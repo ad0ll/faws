@@ -14,18 +14,17 @@ use near_units::parse_near;
 use crate::bounty::{
     Bounty, BountyStatus, NodeResponse, NodeResponseStatus, SupportedDownloadProtocols,
 };
-use crate::events::{BountyCompletedLog, BountyCreatedLog, BountyRequestRetryLog, EventLog, EventLogVariant};
+use crate::events::{BountyCompletedLog, BountyCreatedLog, BountyRetryLog, EventLog, EventLogVariant};
 use crate::node::Node;
 
 pub const MIN_STORAGE: Balance = parse_near!("0.1 N");
 pub const MIN_REWARD: Balance = parse_near!("0.1 N");
-pub const DEFAULT_NODE_OWNER_ID: &str = "default-node.test.near";
-pub const DEFAULT_BOUNTY_OWNER_ID: &str = "default-bounty.test.near";
 pub const EVENT_STANDARD_NAME: &str = "NEP-297";
 pub const EVENT_STANDARD_SPEC: &str = "1.0.0";
 pub const BOUNTY_CREATED_EVENT_NAME: &str = "BountyCreated";
 pub const BOUNTY_COMPLETED_EVENT_NAME: &str = "BountyCompleted";
-
+//How many extra nodes to elect for each bounty to allow for node failures
+pub const NODE_PADDING: f64 = 1.25;
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PayoutStrategy {
@@ -129,16 +128,18 @@ impl Coordinator {
         return bounty;
     }
 
-    //TODO This NEEDS pagination, can return a huge amount of data
-    //also probably not efficient
     pub fn get_nodes(&self) -> Vec<Node> {
         log!("Fetching all {} nodes", self.nodes.len());
-        let mut nodes: Vec<Node> = vec![];
-        for node in self.nodes.values() {
-            log!("node: {:?}", node.id);
-            nodes.push(node);
+        let mut vec: Vec<Node> = vec![];
+        for item in self.nodes.values() {
+            vec.push(item);
         }
-        return nodes;
+        return vec;
+    }
+    // Function I'm testing on the side
+    pub fn get_nodes2(&self) -> Vec<(AccountId, Node)> {
+        log!("Fetching all {} nodes", self.nodes.len());
+        return self.nodes.to_vec();
     }
 
     pub fn get_nodes_for_owner(&self, owner_id: AccountId) -> Vec<Node> {
@@ -151,6 +152,7 @@ impl Coordinator {
             self.nodes.len(),
             owner_id
         );
+
         let mut nodes: Vec<Node> = vec![];
         for node_id in node_ids.unwrap() {
             let node = self.nodes.get(&node_id);
@@ -169,20 +171,47 @@ impl Coordinator {
 
     pub fn get_bounties(&self) -> Vec<Bounty> {
         log!("Fetching all {} bounties", self.bounties.len());
-        let mut bounties: Vec<Bounty> = vec![];
-        for bounty in self.bounties.values() {
-            log!("pushing bounty: {:?}", bounty.id);
-            bounties.push(bounty);
+        let mut vec: Vec<Bounty> = vec![];
+        for item in self.bounties.values() {
+            vec.push(item);
         }
-        log!("returning bounties");
-        return bounties;
+        return vec;
     }
+
+    pub fn get_bounty_elected_nodes(&self, bounty_id: AccountId) -> Vec<AccountId> {
+        let bounty = self.get_bounty_or_panic(bounty_id);
+        return bounty.elected_nodes.to_vec();
+    }
+    pub fn get_unanswered_nodes(&self, bounty_id: AccountId) -> Vec<AccountId> {
+        let bounty = self.get_bounty_or_panic(bounty_id);
+        return bounty.unanswered_nodes.to_vec();
+    }
+    pub fn get_successful_nodes(&self, bounty_id: AccountId) -> Vec<AccountId> {
+        let bounty = self.get_bounty_or_panic(bounty_id);
+        return bounty.successful_nodes.to_vec();
+    }
+    pub fn get_failed_nodes(&self, bounty_id: AccountId) -> Vec<AccountId> {
+        let bounty = self.get_bounty_or_panic(bounty_id);
+        return bounty.failed_nodes.to_vec();
+    }
+
+    pub fn get_bounty_or_panic(&self, bounty_id: AccountId) -> Bounty {
+        return self.bounties.get(&bounty_id).unwrap_or_else(|| {
+            panic!(
+                "Bounty {} does not exist, cannot get elected nodes",
+                bounty_id
+            )
+        });
+    }
+
 
     pub fn get_bounties_for_owner(&self, owner_id: AccountId) -> Vec<Bounty> {
         let bounty_ids = self
             .bounty_by_owner
             .get(&owner_id)
-            .unwrap_or_else(|| return vec![]);
+            .unwrap_or_else(|| {
+                return vec![];
+            });
         log!(
             "Fetching all {} bounties for owner {}",
             self.bounties.len(),
@@ -337,6 +366,7 @@ impl Coordinator {
         return removed;
     }
 
+
     #[private]
     pub(crate) fn rand_u64() -> u64 {
         //TODO Random seed may have security vulnerabilities. This is a risk we will likely have to take, but should read docs
@@ -366,7 +396,7 @@ impl Coordinator {
         return true;
     }
 
-    pub fn get_bounty_answer_counts(&self, bounty_id: AccountId) -> HashMap<String, u64>{
+    pub fn get_bounty_answer_counts(&self, bounty_id: AccountId) -> HashMap<String, u64> {
         let bounty = self
             .bounties
             .get(&bounty_id)
@@ -380,14 +410,16 @@ impl Coordinator {
         map.insert("unanswered_nodes".to_string(), bounty.unanswered_nodes.len());
         return map;
     }
-
+    #[private]
+    pub fn get_node_padding(&self, min_nodes: u64) -> u64 {
+           return (min_nodes as f64 * NODE_PADDING).ceil() as u64;
+    }
     #[payable]
     pub fn create_bounty(
         &mut self,
         file_location: String,
         file_download_protocol: SupportedDownloadProtocols,
         min_nodes: u64,
-        total_nodes: u64,
         timeout_seconds: u64,
         network_required: bool,
         gpu_required: bool,
@@ -396,6 +428,7 @@ impl Coordinator {
     ) -> Bounty {
         let amt_storage: u128 = amt_storage.parse().unwrap();
         let amt_node_reward: u128 = amt_node_reward.parse().unwrap();
+        let total_nodes = self.get_node_padding(min_nodes);
         require!(
             attached_deposit() == amt_storage + amt_node_reward,
             "Attached deposit must be equal to the sum of the storage and node reward amounts"
@@ -436,7 +469,6 @@ impl Coordinator {
             file_location,
             file_download_protocol,
             min_nodes,
-            total_nodes,
             timeout_seconds,
             network_required,
             gpu_required,
@@ -448,8 +480,39 @@ impl Coordinator {
             "The bounty's owner id must be the signer"
         ); //Cautionary check. We don't want to risk preventing the creator from cancelling the bounty to withdraw their funds
 
+
+        bounty.elected_nodes = self.elect_nodes(&bounty, total_nodes as usize);
+        let mut owner_bounties = self
+            .bounty_by_owner
+            .get(&signer_account_id())
+            .unwrap_or_else(|| vec![]);
+        owner_bounties.push(bounty.id.clone());
+        self.universal_bounty_index += 1;
+        self.bounty_by_owner
+            .insert(&signer_account_id(), &owner_bounties);
+        self.bounties.insert(&bounty_key, &bounty);
+        self.active_bounties.insert(&bounty_key);
+
+        let bounty_created_log: EventLog = EventLog {
+            standard: EVENT_STANDARD_NAME.to_string(),
+            version: EVENT_STANDARD_SPEC.to_string(),
+            event: EventLogVariant::BountyCreated(BountyCreatedLog {
+                coordinator_id: current_account_id(),
+                bounty_id: bounty_key.clone(),
+                node_ids: bounty.elected_nodes.clone(),
+                message: None,
+            }),
+        };
+
+        log_str(&bounty_created_log.to_string());
+        return bounty;
+    }
+
+    #[private]
+    pub fn elect_nodes(&mut self, bounty: &Bounty, total_elections: usize) -> Vec<AccountId>{
         let mut unelected_nodes: Vec<AccountId> = vec![];
-        while bounty.elected_nodes.len() < total_nodes.clone() as usize {
+        let mut elected_nodes: Vec<AccountId> = vec![];
+        while elected_nodes.len() < total_elections {
             let key: AccountId;
             if self.node_queue.len() == 1 {
                 key = self.node_queue.pop().unwrap();
@@ -477,10 +540,10 @@ impl Coordinator {
                 }
             }
             require!(!bounty.elected_nodes.contains(&key), "Node already elected");
-            bounty.elected_nodes.push(key.clone());
+            elected_nodes.push(key.clone());
         }
 
-        for node in &bounty.elected_nodes {
+        for node in &elected_nodes {
             self.node_queue.push(node.clone());
             log!("Elected node: {}", node);
         }
@@ -488,42 +551,19 @@ impl Coordinator {
             log!("Restoring unelected node: {}", node);
             self.node_queue.push(node.clone());
         }
-
-        let mut owner_bounties = self
-            .bounty_by_owner
-            .get(&signer_account_id())
-            .unwrap_or_else(|| vec![]);
-        owner_bounties.push(bounty.id.clone());
-        self.universal_bounty_index += 1;
-        self.bounty_by_owner
-            .insert(&signer_account_id(), &owner_bounties);
-        self.bounties.insert(&bounty_key, &bounty);
-        self.active_bounties.insert(&bounty_key);
-
-        let bounty_created_log: EventLog = EventLog {
-            standard: EVENT_STANDARD_NAME.to_string(),
-            version: EVENT_STANDARD_SPEC.to_string(),
-            event: EventLogVariant::BountyCreated(BountyCreatedLog {
-                coordinator_id: current_account_id(),
-                bounty_id: bounty_key.clone(),
-                node_ids: bounty.elected_nodes.clone(),
-                message: None,
-            }),
-        };
-
-        log_str(&bounty_created_log.to_string());
-        return bounty;
+        return elected_nodes;
     }
-    pub fn send_retry_event(&self, bounty_id: AccountId) {
-        let bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty not found"));
+    #[private]
+    pub fn send_retry_event(&self, bounty_id: &AccountId, nodes: &Vec<AccountId>) {
+        require!(self.bounties.get(&bounty_id).is_some(), "Bounty does not exist");
         let bounty_request_retry_log: EventLog = EventLog {
             standard: EVENT_STANDARD_NAME.to_string(),
             version: EVENT_STANDARD_SPEC.to_string(),
-            event: EventLogVariant::BountyRequestRetry(BountyRequestRetryLog {
+            event: EventLogVariant::BountyRetry(BountyRetryLog {
                 coordinator_id: current_account_id(),
                 bounty_id: bounty_id.clone(),
-                node_ids: bounty.elected_nodes.clone(),
-                message: Some("Bounty failed due to timeout".to_string()),
+                node_ids: nodes.clone(),
+                message: Some("".to_string()),
             }),
         };
         log_str(&bounty_request_retry_log.to_string());
@@ -707,7 +747,7 @@ impl Coordinator {
             status
         );
         //
-        let mut node_response = NodeResponse::new_node_response(answer.clone(), message.clone(), status.clone());
+        let node_response = NodeResponse::new_node_response(answer.clone(), message.clone(), status.clone());
         let estimated_storage = storage_byte_cost() * size_of_val(&node_response) as u128;
         let used_storage = storage_byte_cost() * size_of_val(&bounty) as u128;
 
@@ -783,6 +823,7 @@ impl Coordinator {
 
         node.lifetime_earnings += payout;
         self.nodes.insert(&node_id, &node);
+        self.total_payouts += payout;
         return Promise::new(node.owner_id).transfer(payout);
     }
 
@@ -905,11 +946,12 @@ impl Coordinator {
             "Only the owner of the bounty or the coordinator can add to the deposit"
         );
         bounty.amt_storage += attached_deposit();
-        self.send_retry_event(bounty_id.clone());
+        self.send_retry_event(&bounty_id, &bounty.elected_nodes);
         self.bounties.insert(&bounty_id, &bounty);
 
         return Promise::new(current_account_id()).transfer(attached_deposit());
     }
+
 
     #[payable]
     pub fn add_node_reward_deposit(&mut self, bounty_id: AccountId) -> Promise {
@@ -923,9 +965,43 @@ impl Coordinator {
             "Only the owner of the bounty or the coordinator can add to the deposit"
         );
         bounty.amt_node_reward += attached_deposit();
-        self.send_retry_event(bounty_id.clone());
+        self.send_retry_event(&bounty_id, &bounty.elected_nodes);
         self.bounties.insert(&bounty_id, &bounty);
         return Promise::new(current_account_id()).transfer(attached_deposit());
+    }
+
+    // When a bounty is stalled due to offline nodes, this can redo the in-flight elections to try it against a new set of nodes
+    pub fn reelect_nodes(&mut self, bounty_id: AccountId){
+        let mut bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
+        require!(bounty.status == BountyStatus::Pending, "Bounty must be in-flight to reelect nodes");
+
+        //TODO Do a compare of bounty created to block timestamp to ensure reelection can only happen after timeout
+
+        let mut existing_elections: Vec<AccountId> = vec![];
+        let mut timed_out_nodes: Vec<AccountId> = vec![];
+        for node_id in bounty.elected_nodes.iter() {
+            if bounty.answers.get(&node_id).is_some() {
+                existing_elections.push(node_id.clone());
+            } else {
+                timed_out_nodes.push(node_id.clone());
+            }
+        }
+        bounty.elected_nodes.retain(|node_id| bounty.answers.get(&node_id).is_some());
+        let mut new_elections = self.elect_nodes(&bounty, timed_out_nodes.len());
+        existing_elections.append(&mut new_elections);
+
+        bounty.elected_nodes = existing_elections;
+
+        for node_id in timed_out_nodes.iter() {
+            bounty.unanswered_nodes.remove(&node_id);
+        }
+        for node_id in new_elections.iter() {
+            bounty.unanswered_nodes.insert(&node_id);
+        }
+        self.bounties.insert(&bounty_id, &bounty);
+
+        //We only need newly elected nodes in the retry event, including all elections would waste compute on nodes that have already answered
+        self.send_retry_event(&bounty_id, &new_elections);
     }
 }
 

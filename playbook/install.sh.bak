@@ -6,16 +6,17 @@ set -e
 
 # Run with sudo su - root -s $HOME/install.sh
 # One line install is (Replace ACCOUNT_ID, NODE_NAME, and WEBSOCKET_URL with your own values):
-# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/installer-one-line/playbook/install.sh | ACCOUNT_ID=faws-demo1.testnet NODE_NAME=vm-node1 WEBSOCKET_URL=ws://127.0.0.1:8000/ws bash
-# (testnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1.testnet NODE_NAME=vm-node1 WEBSOCKET_URL=ws://127.0.0.1:8000/ws bash
-# (mainnet) curl -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1  bash
+# (testnet) curl -H 'Cache-Control: no-cache' -o- https://raw.githubusercontent.com/ad0ll/faws/installer-one-line/playbook/install.sh | ACCOUNT_ID=faws-demo1.testnet NODE_NAME=vm-node1 WEBSOCKET_URL=ws://127.0.0.1:8000/ws bash
+# (testnet) curl -H 'Cache-Control: no-cache' -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1.testnet NODE_NAME=vm-node1 WEBSOCKET_URL=ws://127.0.0.1:8000/ws bash
+# (mainnet) curl -H 'Cache-Control: no-cache' -o- https://raw.githubusercontent.com/ad0ll/faws/main/playbook/install.sh | ACCOUNT_ID=faws-demo1 NODE_NAME=vm-node1  bash
 REPO_NAME="faws"
 REPO_DIR="faws"
-COORDINATOR_ID="dev-1668375639392-20530569635416"
+COORDINATOR_ID="dev-1668967710095-18512722227792"
 PIP_PATH=$(python3 -m site --user-site)
 ACCOUNT_ID=$ACCOUNT_ID
 NODE_NAME=$NODE_NAME
 WEBSOCKET_URL=$WEBSOCKET_URL
+
 
 if [[ -z "$ACCOUNT_ID" || -z "$NODE_NAME" || -z "$WEBSOCKET_URL" ]]; then
     echo "Please set ACCOUNT_ID, NODE_NAME, and WEBSOCKET_URL"
@@ -25,7 +26,7 @@ fi
 ARM6=$(uname -m | grep armv6l) || true #Raspberry Pi Zero 1, older Pi models
 GPU_SUPPORT=$(lspci | grep -i nvidia) || true
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
-apt install -y git curl python3-pip
+apt install -y git curl python3-pip haproxy
 
 if [[ -n "$WIPE" ]]; then
   rm -rf "${HOME:?}/$REPO_DIR"
@@ -68,9 +69,51 @@ install_development_tools() {
   pip3 install ansible-lint
 }
 
+install_node_exporter() {
+  KERNEL=$(uname -s)
+  ARCH=$(uname -m)
+  ARCH=$(sed 's/aarch64/arm64/g' <<<"$ARCH")
+  NODE_EXPORTER_DIR=$(echo "node_exporter-1.4.0.$KERNEL-$ARCH" | tr '[:upper:]' '[:lower:]')
+  NODE_EXPORTER_FILENAME="$NODE_EXPORTER_DIR.tar.gz"
+  wget "https://github.com/prometheus/node_exporter/releases/download/v1.4.0/$NODE_EXPORTER_FILENAME"
+  tar xvfz "$NODE_EXPORTER_FILENAME"
+  cd "$NODE_EXPORTER_DIR" || exit
+  ./node_exporter 2>/dev/null &
+  tee "/etc/haproxy/haproxy.cfg" <<- EOF
+defaults
+    timeout client 30s
+    timeout connect 4s
+    timeout server 30s
+    log global
+    option httplog
+
+frontend localhost
+    mode http
+    # BEGIN CORS
+    http-response set-header Access-Control-Allow-Origin "*"
+    http-response set-header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, JSNLog-RequestId, activityId, applicationId, applicationUserId, channelId, senderId, sessionId"
+    http-response set-header Access-Control-Max-Age 3628800
+    http-response set-header Access-Control-Allow-Methods "GET, DELETE, OPTIONS, POST, PUT"
+    # END CORS
+    bind *:80
+    bind *:443
+    log global
+    use_backend metrics if { path /metrics } || { path_beg /metrics/ }
+    default_backend metrics
+
+backend metrics
+    mode http
+    server server1 127.0.0.1:9100
+
+EOF
+  service haproxy restart
+}
+
+
 install_nvm
 install_pip
 install_ansible
+install_node_exporter
 
 if [[ ! -d "$HOME/$REPO_DIR" ]]; then
   git clone https://github.com/ad0ll/$REPO_NAME.git $REPO_DIR

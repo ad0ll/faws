@@ -274,10 +274,7 @@ function Row({ bounty }: { bounty: any }) {
              Show as red is cancelled or failed
           */
             color={
-              ((bounty.successful_nodes?.length || 0) +
-                (bounty.failed_nodes?.length || 0) ===
-                bounty.total_nodes &&
-                (bounty.successful_nodes?.length || 0) < bounty.min_nodes) ||
+              ((bounty.successful_nodes?.length || 0) < bounty.min_nodes) ||
               bounty.status.toLowerCase() ===
                 BountyStatuses.Failed.toLowerCase() ||
               bounty.status.toLowerCase() ===
@@ -302,7 +299,6 @@ export const exportBounty = (bounty: Bounty) => {
     file_location: bounty.file_location,
     file_download_protocol: bounty.file_download_protocol,
     min_nodes: bounty.min_nodes,
-    total_nodes: bounty.total_nodes,
     amt_storage: Number(bounty.amt_storage) / yoctoNear,
     amt_node_reward: Number(bounty.amt_node_reward) / yoctoNear,
     timeout_seconds: bounty.timeout_seconds,
@@ -310,7 +306,7 @@ export const exportBounty = (bounty: Bounty) => {
     gpu_required: bounty.gpu_required,
   };
   const file = new Blob([JSON.stringify(bountyConfig)], {
-    type: "applciation/json",
+    type: "application/json",
   });
   element.href = URL.createObjectURL(file);
   element.download = `${bounty.id}.json`;

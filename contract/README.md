@@ -18,7 +18,7 @@ local_near call "dev-1665283011588-97304367585179" register_node '{"name": "ache
 ```
 2. Create a bounty:
 ```bash
-local_near call "dev-1665283011588-97304367585179" create_bounty '{"name": "something22", "file_location": "https://github.com/ad0ll/docker-hello-world.git", "file_download_protocol": "GIT", "threshold": 2, "total_nodes": 3, "network_required": true, "gpu_required": false, "amt_storage": "1000000000000000000000000", "amt_node_reward": "1000000000000000000000000"}' --accountId="dev-1665427694682-19594043998989" --deposit 2 
+local_near call "dev-1665283011588-97304367585179" create_bounty '{"name": "something22", "file_location": "https://github.com/ad0ll/docker-hello-world.git", "file_download_protocol": "GIT", "threshold": 2, "network_required": true, "gpu_required": false, "amt_storage": "1000000000000000000000000", "amt_node_reward": "1000000000000000000000000"}' --accountId="dev-1665427694682-19594043998989" --deposit 2 
 ```
 1. Get nodes
 ```bash 

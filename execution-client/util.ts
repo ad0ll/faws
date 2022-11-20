@@ -90,7 +90,6 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
             file_location: process.env.EMIT_BOUNTY__FILE_LOCATION || 'https://github.com/ad0ll/docker-hello-world.git',
             file_download_protocol: SupportedFileDownloadProtocols.GIT,
             min_nodes: parseInt(process.env.EMIT_BOUNTY__MIN_NODES || "2"),
-            total_nodes: parseInt(process.env.EMIT_BOUNTY__TOTAL_NODES || "2"),
             timeout_seconds: parseInt(process.env.EMIT_BOUNTY__TIMEOUT_SECONDS || "60"), //1 minute
             network_required: process.env.EMIT_BOUNTY__NETWORK_REQUIRED !== "false",
             gpu_required: process.env.EMIT_BOUNTY__GPU_REQUIRED !== "false",

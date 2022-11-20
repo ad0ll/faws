@@ -96,7 +96,6 @@ export const BountyDetail: React.FC = () => {
           content={bounty.file_download_protocol}
         />
         <GridLi title="Min Nodes" content={`${bounty.min_nodes}`} />
-        <GridLi title="Total Nodes" content={`${bounty.total_nodes}`} />
         <GridLi
           title="Network Required"
           content={`${bounty.network_required}`}

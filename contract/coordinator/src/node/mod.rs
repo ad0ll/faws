@@ -4,7 +4,6 @@ use near_sdk::{AccountId, env, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::env::signer_account_id;
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::bounty::NodeResponseStatus;
 
 //TODO This struct should be considered when calculating the storage fee.
 #[near_bindgen]

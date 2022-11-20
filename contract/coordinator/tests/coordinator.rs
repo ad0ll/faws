@@ -144,8 +144,7 @@ pub async fn create_bounties(
     coordinator_contract: &Contract,
     creator: Account,
     n_bounties: u64,
-    min_nodes: u64,
-    total_nodes: u64,
+    min_nodes: u64
 ) -> anyhow::Result<Vec<Bounty>> {
     println!("Creating {} bounties", n_bounties);
     let node_count = get_node_count(coordinator_contract).await?;
@@ -153,10 +152,7 @@ pub async fn create_bounties(
         node_count > 0,
         "failed to create bounty, no nodes are registered"
     );
-    assert!(
-        node_count >= total_nodes,
-        "failed to create bounty, not enough nodes are registered"
-    );
+
     for i in 0..n_bounties {
         println!("creating bounty {}", i);
         let location: String = "https://github.com/ad0ll/docker-hello-world.git".to_string();
@@ -166,7 +162,6 @@ pub async fn create_bounties(
                 "file_location": location,
                 "file_download_protocol": "GIT",
                 "min_nodes": min_nodes,
-                "total_nodes": total_nodes,
                 "timeout_seconds": 30,
                 "network_required": true,
                 "gpu_required": false,
@@ -193,10 +188,9 @@ pub async fn create_bounty(
     coordinator_contract: &Contract,
     creator: Account,
     min_nodes: u64,
-    total_nodes: u64,
 ) -> anyhow::Result<Bounty> {
     let mut bounties =
-        create_bounties(coordinator_contract, creator, 1, min_nodes, total_nodes).await?;
+        create_bounties(coordinator_contract, creator, 1, min_nodes).await?;
     return Ok(bounties.pop().unwrap());
 }
 
@@ -208,9 +202,6 @@ pub async fn complete_bounty(
     n_succeeded: u64,
     n_failed: u64,
 ) -> anyhow::Result<()> {
-    // assert!(bounty.total_nodes <= n_succeeded + n_failed,
-    //         format!("bounty has total_nodes ({}) less than n_succeeded ({}) + n_failed ({})", bounty.total_nodes, n_succeeded, n_failed));
-
     async fn process_node(
         coordinator_contract: &Contract,
         bounty: &Bounty,

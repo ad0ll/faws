@@ -17,7 +17,7 @@ use crate::coordinator::PayoutStrategy;
 #[non_exhaustive]
 pub enum EventLogVariant {
     BountyCreated(BountyCreatedLog),
- BountyRequestRetry(BountyRequestRetryLog),
+    BountyRetry(BountyRetryLog),
     BountyCompleted(BountyCompletedLog),
 }
 
@@ -74,7 +74,7 @@ pub struct BountyCreatedLog {
 /// * `message`: optional message
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
-pub struct BountyRequestRetryLog {
+pub struct BountyRetryLog {
     pub coordinator_id: AccountId,
     pub bounty_id: AccountId,
     pub node_ids: Vec<AccountId>,

@@ -41,9 +41,19 @@ import axios from "axios";
 
 
 type MetricPoint = {
-  ram_used: number,
-  cpu_used: number,
-  disk_used: number,
+  ram_used?: number,
+  cpu_used?: number,
+  disk_used?: number
+  disk_avail?: number,
+  disk_total?: number,
+  ram_avail?: number,
+  ram_total?: number,
+  cpu_seconds?: {
+    [key: string]: {
+      idle: number,
+      not_idle: number,
+    }
+  }
 }
 type MetricsHistory = MetricPoint[]
 
@@ -126,8 +136,14 @@ export default function ExistingNode() {
   );
 }
 
-const MetricChip: React.FC<{metric: number}> = ({metric}) => (<Chip
-      label={`${metric}%`}
+const MetricChip: React.FC<{metrics: MetricPoint[], metricKey: string}> = ({metrics, metricKey}) => {
+  if (metrics.length === 0) return <Chip label="N/A" sx={{color:"rgb(0,30,60)"}} />
+  const rawMetric = metrics.reduce((acc, cur) => acc + (cur[metricKey] || 0), 0) / metrics.length
+  // const metric = Math.round(rawMetric * 100)
+  // const metric = Math.round(rawMetric * 100)
+  const metric = (rawMetric * 100)
+  return (<Chip
+      label={`${metric.toFixed(1)}%`}
       sx={{
         color: "rgb(0, 30, 60);",
         backgroundColor: () => {
@@ -141,6 +157,7 @@ const MetricChip: React.FC<{metric: number}> = ({metric}) => (<Chip
         },
       }}
   />)
+}
 
 
 // setNodes is used to update local storage when the user changes the URL
@@ -169,7 +186,8 @@ function Row({ node }: { node: ClientNode }) {
 
   const metricsUrl = url
     .replace(/wss?/, "http")
-    .replace(/(.*):([0-9]+).*/, "$1:9100/metrics");
+    // .replace(/(.*):([0-9]+).*/, "$1:9100/metrics");
+    .replace(/(.*):([0-9]+).*/, "$1/metrics");
   const incompleteBounties = Object.values(bountyState).filter(
     (bounty) => bounty.phase !== "Complete"
   ).length;
@@ -199,20 +217,57 @@ function Row({ node }: { node: ClientNode }) {
         method: "get",
         url: metricsUrl,
         withCredentials: false,
-      }).catch((e) => {console.log(e)});
-      console.log("fetching metrics for: ", metricsUrl);
-      console.log(response);
-
-      const metricsHistory: MetricsHistory = []
-      if(metricsHistory.length > 10){
-        metricsHistory.shift()
+      });
+      let memAvailable=0, memTotal=0, filesystemAvail=0, filesystemSize=0, cpuUsage=0;
+      const a: MetricPoint = {
+        cpu_seconds: {}
       }
+      for(const line of response?.data.split("\n")) {
+        if(line.startsWith("#")) continue;
+        const [metric, value] = line.split(" ");
+
+        //100 - (avg(rate(node_cpu_seconds_total{instance="INSTANCE",job="JOB",replica="REPLICA"}[1m])) - avg(rate(node_cpu_seconds_total{instance="INSTANCE",mode="idle",job="JOB",replica="REPLICA"}[1m])) * 100)
+
+        if(metric.startsWith("node_filesystem_avail_bytes") && metric.includes("mountpoint=\"/\"")) {
+          a.disk_avail = Number(value);
+        } else if(metric.startsWith("node_filesystem_size_bytes") && metric.includes("mountpoint=\"/\"")) {
+            a.disk_total = Number(value);
+        } else if(metric.startsWith("node_memory_MemAvailable_bytes")) {
+            a.ram_avail = Number(value)
+        } else if(metric.startsWith("node_memory_MemTotal_bytes")) {
+            a.ram_total = Number(value)
+        } else if(metric.startsWith("node_cpu_seconds_total")) {
+          const mode = metric.match(/mode="([^"]+)"/)[1];
+          const cpu = metric.match(/cpu="([^"]+)"/)[1];
+          const metricKey = mode === "idle" ? "idle" : "not_idle"
+          if(!a.cpu_seconds[cpu])  a.cpu_seconds[cpu] = {idle: 0, not_idle: 0}
+          a.cpu_seconds[cpu] = {
+           ...a.cpu_seconds[cpu],
+            [metricKey]: a.cpu_seconds[cpu][metricKey] + Number(value)
+          }
+        }
+      }
+      a.disk_used = 1-(a.disk_avail/a.disk_total)
+      a.ram_used = 1-(a.ram_avail/a.ram_total)
+      // console.log(a.cpu_seconds)
+      const totalUsage = Object.values(a.cpu_seconds).reduce((acc, cpu) => {
+        // console.log(`${acc} + (${cpu.not_idle} / (${cpu.idle} + ${cpu.not_idle})`)
+        return acc + (cpu.not_idle / (cpu.idle + cpu.not_idle))
+        return acc + (cpu.not_idle / (cpu.idle + cpu.not_idle))
+      }, 0)
+      // console.log(`avgUsageAcrossCPUS: ${totalUsage/Object.keys(a.cpu_seconds).length}`)
+      a.cpu_used = totalUsage/Object.keys(a.cpu_seconds).length
+      const newMetrics = [...metrics, a];
+      if(newMetrics.length > 3){
+        newMetrics.shift()
+      }
+      setMetrics(newMetrics);
     }
     const pollingInterval = setInterval(fetchMetrics, 1000);
     return () => {
       clearInterval(pollingInterval);
     };
-  }, [metrics])
+  }, [url, metrics])
 
   const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTempUrl(event.target.value);
@@ -271,13 +326,13 @@ function Row({ node }: { node: ClientNode }) {
           />
         </TableCell>
         <TableCell align="center">
-          <MetricChip metric={ramUsage} />
+          <MetricChip metrics={metrics} metricKey={"ram_used"} />
         </TableCell>
         <TableCell align="center">
-          <MetricChip metric={cpuUsage} />
+          <MetricChip metrics={metrics} metricKey={"cpu_used"} />
         </TableCell>
         <TableCell align="center">
-          <MetricChip metric={diskUsage} />
+          <MetricChip metrics={metrics} metricKey={"disk_used"} />
         </TableCell>
         <TableCell align="center">
           <FormControl>

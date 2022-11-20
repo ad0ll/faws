@@ -18,7 +18,16 @@ module.exports = {
                 exclude: /node_modules/,
             },
             {
-
+                test: /\.m?js$/,
+                type: "javascript/auto",
+            },
+            {
+                test: /\.m?js$/,
+                resolve: {
+                    fullySpecified: false,
+                },
+            },
+            {
                 test: /\.svg$/,
                 use: [
                     {
@@ -49,6 +58,7 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, "src", "index.html"),
+            favicon: path.resolve(__dirname, "assets", "favicon.png"),
         }),
         //  Polyfill cheatsheet: https://gist.github.com/ef4/d2cf5672a93cf241fd47c020b9b3066a
         new webpack.ProvidePlugin({

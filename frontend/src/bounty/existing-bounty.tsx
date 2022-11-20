@@ -22,6 +22,7 @@ import { wallet } from "../index";
 import { ErrorBoundary } from "react-error-boundary";
 import { yoctoNear } from "../common/near-wallet";
 import { useNavigate } from "react-router-dom";
+import {NEAR} from "near-units";
 
 const chainBountiesState = selector({
   key: "chainBounties",
@@ -187,7 +188,7 @@ function Row({ bounty }: { bounty: any }) {
         </TableCell>
         <TableCell component="th" scope="row" align="center">
           <Button
-            variant="contained"
+            variant="outlined"
             color="secondary"
             onClick={handleOpenUserMenu}
           >
@@ -228,9 +229,7 @@ function Row({ bounty }: { bounty: any }) {
               <Typography textAlign="center">Details</Typography>
             </MenuItem>
             {bounty.status.toLowerCase() ===
-            BountyStatuses.Pending.toLowerCase() ? (
-              <>
-                <MenuItem
+            BountyStatuses.Pending.toLowerCase() && [(<MenuItem
                   key="reward"
                   onClick={() => {
                     handleOpenModal("Reward", bounty.id);
@@ -238,8 +237,8 @@ function Row({ bounty }: { bounty: any }) {
                   }}
                 >
                   <Typography textAlign="center">Add Reward</Typography>
-                </MenuItem>
-                <MenuItem
+                </MenuItem>),
+                (<MenuItem
                   key="storage"
                   onClick={() => {
                     handleOpenModal("Storage", bounty.id);
@@ -247,8 +246,8 @@ function Row({ bounty }: { bounty: any }) {
                   }}
                 >
                   <Typography textAlign="center">Add Storage</Typography>
-                </MenuItem>
-                <MenuItem
+                </MenuItem>),
+                (<MenuItem
                   key="cancel"
                   onClick={() => {
                     cancelBounty(bounty.id);
@@ -256,11 +255,8 @@ function Row({ bounty }: { bounty: any }) {
                   }}
                 >
                   <Typography textAlign="center">Cancel Bounty</Typography>
-                </MenuItem>{" "}
-              </>
-            ) : (
-              <></>
-            )}
+                </MenuItem>)]
+            }
           </Menu>
           <UpdateBountyModal
             bountyId={bountyId}
@@ -321,3 +317,5 @@ export const exportBounty = (bounty: Bounty) => {
   document.body.appendChild(element);
   element.click();
 };
+
+

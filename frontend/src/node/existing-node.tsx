@@ -37,6 +37,15 @@ import { useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import { UpdateNodeModal } from "./udpate-node-modal";
 import { nanoTimestampToDate } from "../util";
+import axios from "axios";
+
+
+type MetricPoint = {
+  ram_used: number,
+  cpu_used: number,
+  disk_used: number,
+}
+type MetricsHistory = MetricPoint[]
 
 export const viewMineOnlyState = atom<boolean>({
   key: "viewMineOnly",
@@ -53,10 +62,8 @@ export const chainNodesState = selector({
 
 const fetchNodes = async (viewMineOnly: boolean) => {
   if (viewMineOnly) {
-    console.log(`fetching nodes owned by ${wallet.accountId}`);
     return wallet.getNodesOwnedBySelf();
   } else {
-    console.log("fetching all nodes");
     return wallet.getNodes();
   }
 };
@@ -67,13 +74,11 @@ const nodesState = atom({
 
 export default function ExistingNode() {
   const [nodes, setNodes] = useRecoilState(nodesState);
-  console.log(nodes);
 
   const [viewMineOnly, setViewMineOnly] = useRecoilState(viewMineOnlyState);
   //Refresh nodes every 2s. Node data doesn't change w/o a transaction, so this is moreso ceremony
   useEffect(() => {
     const getNodes = async () => {
-      console.log("refreshing nodes");
       const fetchedNodes = await fetchNodes(viewMineOnly);
       setNodes(fetchedNodes);
     };
@@ -100,9 +105,9 @@ export default function ExistingNode() {
                   <TableCell align="center">Last Success</TableCell>
                   <TableCell align="center">Last Failure</TableCell>
                   <TableCell align="center">Active Bounties</TableCell>
+                  <TableCell align="center">RAM Usage</TableCell>
                   <TableCell align="center">CPU Usage</TableCell>
                   <TableCell align="center">Disk Usage</TableCell>
-                  <TableCell align="center">RAM Usage</TableCell>
                   <TableCell align="center">URL</TableCell>
                   <TableCell align="center">Connection</TableCell>
                   <TableCell align="center">Actions</TableCell>
@@ -121,12 +126,29 @@ export default function ExistingNode() {
   );
 }
 
+const MetricChip: React.FC<{metric: number}> = ({metric}) => (<Chip
+      label={`${metric}%`}
+      sx={{
+        color: "rgb(0, 30, 60);",
+        backgroundColor: () => {
+          return `rgb(${Math.min(
+              208,
+              170 + (metric < 50 ? 0 : metric) * 1.6
+          )},${Math.max(
+              85,
+              208 - (metric < 50 ? 0 : metric) * 1.6
+          )},85)`
+        },
+      }}
+  />)
+
+
 // setNodes is used to update local storage when the user changes the URL
 function Row({ node }: { node: ClientNode }) {
-  console.log("loading row");
   const storage = useRecoilValue(localStorageState);
   const [url, setUrl] = useState<string>(storage.get(node.id)?.url ?? "");
   const { lastMessage, readyState } = useWebSocket(url);
+
   const [bountyState, setBountyState] = useState<BountyExecutionState>({});
   const [open, setOpen] = React.useState(false);
   const [openModal, setOpenModal] = React.useState(false);
@@ -136,6 +158,7 @@ function Row({ node }: { node: ClientNode }) {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   );
+  const [metrics, setMetrics] = React.useState<MetricsHistory>([]);
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
@@ -147,7 +170,6 @@ function Row({ node }: { node: ClientNode }) {
   const metricsUrl = url
     .replace(/wss?/, "http")
     .replace(/(.*):([0-9]+).*/, "$1:9100/metrics");
-  console.log(`metrics url: ${metricsUrl}`);
   const incompleteBounties = Object.values(bountyState).filter(
     (bounty) => bounty.phase !== "Complete"
   ).length;
@@ -168,6 +190,29 @@ function Row({ node }: { node: ClientNode }) {
       setBountyState({ ...bountyState, [node.id + bountyId]: bounty });
     }
   }, [url, lastMessage, readyState]);
+
+  // Metrics useEffect
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      if(!metricsUrl) return;
+      const response = await axios({
+        method: "get",
+        url: metricsUrl,
+        withCredentials: false,
+      }).catch((e) => {console.log(e)});
+      console.log("fetching metrics for: ", metricsUrl);
+      console.log(response);
+
+      const metricsHistory: MetricsHistory = []
+      if(metricsHistory.length > 10){
+        metricsHistory.shift()
+      }
+    }
+    const pollingInterval = setInterval(fetchMetrics, 1000);
+    return () => {
+      clearInterval(pollingInterval);
+    };
+  }, [metrics])
 
   const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTempUrl(event.target.value);
@@ -211,12 +256,12 @@ function Row({ node }: { node: ClientNode }) {
         </TableCell>
         <TableCell align="center">
           {node.last_success
-            ? nanoTimestampToDate(node.last_success).toDateString()
+            ? nanoTimestampToDate(node.last_success).toLocaleString()
             : "N/A"}
         </TableCell>
         <TableCell align="center">
           {node.last_failure
-            ? nanoTimestampToDate(node.last_failure).toDateString()
+            ? nanoTimestampToDate(node.last_failure).toLocaleString()
             : "N/A"}
         </TableCell>
         <TableCell align="center">
@@ -226,49 +271,13 @@ function Row({ node }: { node: ClientNode }) {
           />
         </TableCell>
         <TableCell align="center">
-          <Chip
-            label={`${cpuUsage}%`}
-            sx={{
-              color: "rgb(0, 30, 60);",
-              backgroundColor: `rgb(${Math.min(
-                208,
-                170 + (cpuUsage < 50 ? 0 : cpuUsage) * 1.6
-              )},${Math.max(
-                85,
-                208 - (cpuUsage < 50 ? 0 : cpuUsage) * 1.6
-              )},85)`,
-            }}
-          />
+          <MetricChip metric={ramUsage} />
         </TableCell>
         <TableCell align="center">
-          <Chip
-            label={`${diskUsage}%`}
-            sx={{
-              color: "rgb(0, 30, 60);",
-              backgroundColor: `rgb(${Math.min(
-                208,
-                170 + (diskUsage < 50 ? 0 : diskUsage) * 1.6
-              )},${Math.max(
-                85,
-                208 - (diskUsage < 50 ? 0 : diskUsage) * 1.6
-              )},85)`,
-            }}
-          />
+          <MetricChip metric={cpuUsage} />
         </TableCell>
         <TableCell align="center">
-          <Chip
-            label={`${ramUsage}%`}
-            sx={{
-              color: "rgb(0, 30, 60);",
-              backgroundColor: `rgb(${Math.min(
-                208,
-                170 + (ramUsage < 50 ? 0 : ramUsage) * 1.6
-              )},${Math.max(
-                85,
-                208 - (ramUsage < 50 ? 0 : ramUsage) * 1.6
-              )},85)`,
-            }}
-          />
+          <MetricChip metric={diskUsage} />
         </TableCell>
         <TableCell align="center">
           <FormControl>

@@ -18,6 +18,7 @@ export type BountyExecutionState = {
   [key: string]: ExecutionMessageSummaryValue;
 };
 
+const alphaSort = (a: string, b: string) => a.localeCompare(b) * -1;
 // Draftwork component that renders what bounties are running, and their current phase
 // Data is fed to it from NodeList currently (this is what renders when you click "show details" on a node)
 export const BountyMonitor: React.FC<{ bountyState: BountyExecutionState }> = ({
@@ -39,11 +40,13 @@ export const BountyMonitor: React.FC<{ bountyState: BountyExecutionState }> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {Object.entries(bountyState).map(([id, execution]) => {
+              {Object.keys(bountyState).sort((a,b) => alphaSort(a,b))
+                  .map((key) => {
+                    const execution = bountyState[key];
                 return (
-                  <TableRow key={id}>
+                  <TableRow key={key}>
                     <TableCell>{execution.bountyId}</TableCell>
-                    <TableCell>{execution.lastUpdate}</TableCell>
+                    <TableCell>{new Date(execution.lastUpdate).toLocaleString()}</TableCell>
                     <TableCell>{execution.phase}</TableCell>
                   </TableRow>
                 );

@@ -17,11 +17,10 @@ import { setupLedger } from "@near-wallet-selector/ledger";
 import { setupNearWallet } from "@near-wallet-selector/near-wallet";
 import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
 import { CodeResult } from "near-api-js/lib/providers/provider";
-import { Bounty, ClientNode } from "../../../execution-client/types";
-import { COORDINATOR_ID } from "../coordinator/Coordinator";
 import { FinalExecutionOutcome } from "near-api-js/lib/providers";
 import { NEAR } from "near-units";
-import { Node } from "../types";
+import {COORDINATOR_ID} from "../app";
+import { Bounty, ClientNode } from "../../../execution-client/types";
 
 const THIRTY_TGAS = "30000000000000";
 const NO_DEPOSIT = "0";
@@ -141,7 +140,7 @@ export class Wallet {
 
   // TODO: Convert human readable KB storage to near storage cost units
   // TOOD: Add pulling conversion from rpc
-  async createBounty(bounty: Bounty) {
+  async createBounty(bounty: Partial<Bounty>) {
     return await this.callMethod({
       contractId: COORDINATOR_ID,
       method: "create_bounty",
@@ -155,6 +154,7 @@ export class Wallet {
         gpu_required: bounty.gpu_required,
         amt_storage: NEAR.parse(bounty.amt_storage),
         amt_node_reward: NEAR.parse(bounty.amt_node_reward),
+
       },
       deposit: (
         NEAR.parse(bounty.amt_storage).toBigInt() +
@@ -241,7 +241,7 @@ export class Wallet {
     const result = await this.viewMethod({
       method: "get_total_payouts",
     });
-    console.log("get_total_payouts", result);
+    // console.log("get_total_payouts", result);
     return result;
   }
 
@@ -249,7 +249,7 @@ export class Wallet {
     const result = await this.viewMethod({
       method: "get_bounty_count",
     });
-    console.log("get_bounty_count", result);
+    // console.log("get_bounty_count", result);
     return result;
   }
 
@@ -257,7 +257,7 @@ export class Wallet {
     const result = await this.viewMethod({
       method: "get_node_count",
     });
-    console.log("get_node_count", result);
+    // console.log("get_node_count", result);
     return result;
   }
 

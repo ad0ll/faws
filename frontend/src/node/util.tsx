@@ -3,38 +3,6 @@ import { ClientMessage } from "../../../execution-client/database";
 import { ReadyState } from "react-use-websocket";
 import React from "react";
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-export const nodeFactory = (n: number): ClientNode[] => {
-  let i = 0;
-  let res: ClientNode[] = [];
-  while (i < n) {
-    res.push({
-      registration_time: Date.now(),
-      id: `node${i}.node.my.address.here`,
-      owner_id: "me",
-      last_run: Date.now(),
-      last_success: Date.now(),
-      last_failure: Date.now(),
-      last_reject: Date.now(),
-      absolute_timeout: 30000,
-      successful_runs: Math.floor(Math.random() * 100),
-      failed_runs: Math.floor(Math.random() * 100),
-      rejected_runs: Math.floor(Math.random() * 100),
-      unanswered_runs: Math.floor(Math.random() * 100),
-      allow_network: Math.floor((Math.random() * 100) % 2) === 0,
-      allow_gpu: Math.floor((Math.random() * 100) % 2) === 0,
-      lifetime_earnings: Math.floor(Math.random() * 100),
-    });
-    i++;
-  }
-  return res;
-};
-
-export const nodeDatabase: { [key: string]: ClientNode } = {};
-nodeFactory(20).forEach((n) => {
-  nodeDatabase[n.id] = n;
-});
 
 export const readyStateToString = (readyState: ReadyState): string => {
   switch (readyState) {

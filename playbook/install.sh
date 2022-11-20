@@ -26,7 +26,7 @@ fi
 ARM6=$(uname -m | grep armv6l) || true #Raspberry Pi Zero 1, older Pi models
 GPU_SUPPORT=$(lspci | grep -i nvidia) || true
 export PATH="$PATH:$PIP_PATH:$HOME/.local/bin"
-apt install -y git curl python3-pip
+apt install -y git curl python3-pip haproxy
 
 if [[ -n "$WIPE" ]]; then
   rm -rf "${HOME:?}/$REPO_DIR"
@@ -79,7 +79,36 @@ install_node_exporter() {
   tar xvfz "$NODE_EXPORTER_FILENAME"
   cd "$NODE_EXPORTER_DIR" || exit
   ./node_exporter 2>/dev/null &
+  tee "/etc/haproxy/haproxy.cfg" <<- EOF
+defaults
+    timeout client 30s
+    timeout connect 4s
+    timeout server 30s
+    log global
+    option httplog
+
+frontend localhost
+    mode http
+    # BEGIN CORS
+    http-response set-header Access-Control-Allow-Origin "*"
+    http-response set-header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, JSNLog-RequestId, activityId, applicationId, applicationUserId, channelId, senderId, sessionId"
+    http-response set-header Access-Control-Max-Age 3628800
+    http-response set-header Access-Control-Allow-Methods "GET, DELETE, OPTIONS, POST, PUT"
+    # END CORS
+    bind *:80
+    bind *:443
+    log global
+    use_backend metrics if { path /metrics } || { path_beg /metrics/ }
+    default_backend metrics
+
+backend metrics
+    mode http
+    server server1 127.0.0.1:9100
+
+EOF
+  service haproxy restart
 }
+
 
 install_nvm
 install_pip

@@ -77,6 +77,7 @@ impl Display for BountyStatus {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct NodeResponse {
+    pub node_id: AccountId,
     pub solution: String,
     pub message: String,
     // pub timestamp: u64,
@@ -89,11 +90,13 @@ impl NodeResponse {
     #[init]
     #[private]
     pub fn new_node_response(
+        node_id: AccountId,
         solution: String,
         message: String,
         status: NodeResponseStatus,
     ) -> Self {
         Self {
+            node_id,
             solution,
             message,
             // timestamp: block_timestamp(),
@@ -178,6 +181,10 @@ impl Serialize for Bounty {
         state.serialize_field("amt_node_reward", &self.amt_node_reward)?;
         state.serialize_field("timeout_seconds", &self.timeout_seconds)?;
         state.serialize_field("elected_nodes", &self.elected_nodes)?;
+        state.serialize_field("unanswered_nodes", &self.unanswered_nodes.to_vec())?;
+        state.serialize_field("successful_nodes", &self.successful_nodes.to_vec())?;
+        state.serialize_field("failed_nodes", &self.failed_nodes.to_vec())?;
+        state.serialize_field("rejected_nodes", &self.rejected_nodes.to_vec())?;
 
         //TODO Figure out how to serialize and add these fields
         // pub answers: UnorderedMap<AccountId, NodeResponse>, //TODO: How can we make this private?
@@ -349,6 +356,7 @@ impl<'de> Deserialize<'de> for Bounty {
                     amt_node_reward,
                     timeout_seconds,
                     elected_nodes,
+                    //TODO The below isn't real deserialization
                     answers: UnorderedMap::new(
                         format!("{}-answers", "test").to_string().as_bytes(),
                     ),

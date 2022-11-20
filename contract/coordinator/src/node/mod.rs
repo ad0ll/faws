@@ -27,19 +27,7 @@ pub struct Node {
     pub lifetime_earnings: u128,
     pub deposit: u128,
     pub registration_time: u64,
-
-    // pub run_count: u128;
-    // pub outcomes: UnorderedMap<u128, Outcome>;
 }
-
-//Currently omitted because would require nodes to acknowledge that they've received the bounty
-// Also storage isn't currently accounting for this, would need simplified storage to be implemented first
-// pub struct Outcome{
-//     time_started: u64,
-//     time_ended: u64,
-//     bounty_id: AccountId,
-//     status: NodeResponseStatus,
-// }
 
 #[near_bindgen]
 impl Node {

@@ -704,7 +704,7 @@ impl Coordinator {
             "Only the node owner can reject a bounty"
         );
         let response =
-            NodeResponse::new_node_response("".to_string(), message, NodeResponseStatus::REJECT);
+            NodeResponse::new_node_response(node_id.clone(), "".to_string(), message, NodeResponseStatus::REJECT);
         bounty.rejected_nodes.insert(&node_id);
         bounty.answers.insert(&node_id, &response);
         node.rejected_runs = node.rejected_runs + 1;
@@ -747,7 +747,7 @@ impl Coordinator {
             status
         );
         //
-        let node_response = NodeResponse::new_node_response(answer.clone(), message.clone(), status.clone());
+        let node_response = NodeResponse::new_node_response(node_id.clone(), answer.clone(), message.clone(), status.clone());
         let estimated_storage = storage_byte_cost() * size_of_val(&node_response) as u128;
         let used_storage = storage_byte_cost() * size_of_val(&bounty) as u128;
 

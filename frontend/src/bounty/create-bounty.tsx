@@ -314,17 +314,25 @@ export default function CreateBounty({
                         })}
 
                     />
-                    <label htmlFor="raised-button-file">
-                        <Button variant="outlined" component="span">
-                            Import
-                        </Button>
-                    </label>
                 </FormControl>
 
                 <FormControl margin="normal">
-                    <Button variant="contained" onClick={handleSubmit}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                            <label htmlFor="raised-button-file">
+                            <Button sx={{width: "100%"}} variant="outlined" component="span">
+                                Import
+                            </Button>
+                            </label>
+
+                        </Grid>
+                        <Grid item xs={6}>
+                    <Button sx={{width: "100%"}} variant="contained" onClick={handleSubmit}>
                         Create
                     </Button>
+                        </Grid>
+
+                    </Grid>
                 </FormControl>
             </FormGroup>
         </>

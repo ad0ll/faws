@@ -227,6 +227,13 @@ export class Wallet {
     });
   }
 
+  async getBountyResult(bountyId: string): Promise<{ [key: string]: number }> {
+    return await this.viewMethod({
+      method: "get_bounty_result",
+      args: { bounty_id: bountyId },
+    });
+  }
+
   async getBounty(bountyId: string): Promise<Bounty> {
     return await this.viewMethod({
       method: "get_bounty",

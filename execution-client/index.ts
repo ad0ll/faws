@@ -280,7 +280,7 @@ class ExecutionClient {
                 }
             }
             logger.info(`Emitting bounty_completed event for ${bounty_id} with payload: `, bce)
-            await publishEventToWebsocketRelay(this.config, bounty.id, bce);
+            await publishEventToWebsocketRelay(bounty.id, bce);
         }
     }
 
@@ -303,7 +303,7 @@ const init = async () => {
     await client.initialize();
     setInterval(client.heartbeat, 10000)
 
-    // Creates a bounty at a defined interval. Used for development to keep a constant stream of bounty events going
+    // Creates a bounty at a defined interval. Used fomFFr development to keep a constant stream of bounty events going
     // Default block when attempting to run against mainnet since it'll cost real near. Pass EMIT_BOUNTY__ALLOW_MAINNET to override
     if ((config.nearConnection.networkId !== "mainnet" || process.env.EMIT_BOUNTY__ALLOW_MAINNET) && process.env.EMIT_BOUNTY) {
         const emitInterval = parseInt(process.env.EMIT_BOUNTY__INTERVAL || "10000")

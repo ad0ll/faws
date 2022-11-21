@@ -113,16 +113,15 @@ const createBounty = async (config: ClientConfig, coordinatorContract: Coordinat
         }
         const sanity_check =  await coordinatorContract.get_bounty({bounty_id: bounty.id})
         console.log("sanity check", sanity_check)
-        await publishEventToWebsocketRelay(config, bounty.id, bce)
+        await publishEventToWebsocketRelay(bounty.id, bce)
     }
 
     return bounty
 }
 //Dev only, used to publish a message to the websocket relay for when you don't have an indexer that can send events
-export const publishEventToWebsocketRelay = async (config: ClientConfig, bounty_id: string, eventData: BountyCreatedEvent | BountyCompletedEvent): Promise<AxiosResponse> => {
-
+export const publishEventToWebsocketRelay = async (bounty_id: string, eventData: BountyCreatedEvent | BountyCompletedEvent): Promise<AxiosResponse> => {
         const event = generatePlaceholderChainEvent(eventData)
-        const bountyEmitterUrl = process.env.EMIT_BOUNTY__WS_RELAY_URL || "http://localhost:8000/publish"
+        const bountyEmitterUrl = process.env.EMIT_BOUNTY__WS_RELAY_URL || "http://127.0.0.1:8000/publish"
         logger.info(`Posting bounty ${bounty_id} to bounty emitter at ${bountyEmitterUrl}`)
         return axios.post(bountyEmitterUrl, event)
 }

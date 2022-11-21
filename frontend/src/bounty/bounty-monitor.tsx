@@ -7,6 +7,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import {Link} from "react-router-dom";
 
 export type ExecutionMessageSummaryValue = {
   nodeId: string;
@@ -30,8 +31,12 @@ export const BountyMonitor: React.FC<{ bountyState: BountyExecutionState }> = ({
         <Typography>No Bounty Activity</Typography>
       ) : (
         <>
-          <Typography variant={"h5"}>Bounty activity</Typography>
           <Table>
+            <colgroup>
+              <col style={{width:'60%'}}/>
+              <col style={{width:'20%'}}/>
+              <col style={{width:'20%'}}/>
+            </colgroup>
             <TableHead>
               <TableRow>
                 <TableCell>Bounty ID</TableCell>
@@ -45,9 +50,18 @@ export const BountyMonitor: React.FC<{ bountyState: BountyExecutionState }> = ({
                     const execution = bountyState[key];
                 return (
                   <TableRow key={key}>
-                    <TableCell>{execution.bountyId}</TableCell>
-                    <TableCell>{new Date(execution.lastUpdate).toLocaleString()}</TableCell>
-                    <TableCell>{execution.phase}</TableCell>
+                    <TableCell><Link to={`bounty/${execution.bountyId}`}
+                                     style={{ textDecoration: 'none' }}>
+                      <Typography variant={"body1"}
+                      color={"primary"}>{execution.bountyId}</Typography>
+                    </Link></TableCell>
+                    <TableCell>
+                      <Typography variant={"body1"}>{new Date(execution.lastUpdate).toLocaleString()}</Typography></TableCell>
+                    <TableCell>
+                      <Typography>
+                        {execution.phase}
+                      </Typography>
+                      </TableCell>
                   </TableRow>
                 );
               })}

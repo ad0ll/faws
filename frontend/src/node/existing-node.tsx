@@ -307,7 +307,8 @@ function Row({ node }: { node: ClientNode }) {
           "& > *": { borderBottom: "unset" },
           backgroundImage:
             incompleteBounties > 0
-              ? "linear-gradient(to right, #6B6EF9 , #DB5555);"
+              // ? "linear-gradient(to right, #6B6EF9 , #DB5555);"
+              ? "linear-gradient(to right, #6B6EF9 , #A463B0);"
               : "",
         }}
       >
@@ -321,17 +322,22 @@ function Row({ node }: { node: ClientNode }) {
           </IconButton>
         </TableCell>
         <TableCell>
-          <Typography>{node.id.replace(`.node.${node.owner_id}`, "")}</Typography>
+          <Typography variant={"body1"}>{node.id.replace(`.node.${node.owner_id}`, "")}</Typography>
         </TableCell>
         <TableCell align="center">
+          <Typography variant={"body1"}>
+
           {node.last_success
             ? nanoTimestampToDate(node.last_success).toLocaleString()
             : "N/A"}
+          </Typography>
         </TableCell>
         <TableCell align="center">
+          <Typography variant={"body1"}>
           {node.last_failure
             ? nanoTimestampToDate(node.last_failure).toLocaleString()
             : "N/A"}
+          </Typography>
         </TableCell>
         <TableCell align="center">
           <Chip
@@ -372,7 +378,6 @@ function Row({ node }: { node: ClientNode }) {
         <TableCell align="center">
           {url && (
             <Chip
-              variant={"outlined"}
               color={readyState === ReadyState.OPEN ? "success" : "error"}
               label={readyStateToString(readyState)}
             />
@@ -380,8 +385,8 @@ function Row({ node }: { node: ClientNode }) {
         </TableCell>
         <TableCell align="center">
           <Button
-            variant="outlined"
             color="secondary"
+            variant={"contained"}
             onClick={handleOpenUserMenu}
           >
             Actions

@@ -1,10 +1,10 @@
 # Run: local_near dev-deploy --wasmFile target/wasm32-unknown-unknown/release/
 #Populate below variablea
 ACCOUNT=$ACCOUNT
-REDEPLOY_CONTRACT=yes #Put anything here to redeploy the contract
-#REDEPLOY_CONTRACT= #Put anything here to redeploy the contract
+#REDEPLOY_CONTRACT=yes #Put anything here to redeploy the contract
+REDEPLOY_CONTRACT= #Put anything here to redeploy the contract
 #BOUNTY_NAME="test-bounty-$(date +%s)"
-REFERENCE_BOUNTY=1-945146453.bounty.garbage12.testnet
+REFERENCE_BOUNTY=140-836519529.bounty.will-anyone-notice2.testnet
 NETWORK=testnet #testnet or localnet
 #CONTRACT_NAME=dev-1668981191112-14627628939016
 
@@ -82,5 +82,5 @@ local_near view "$CONTRACT_NAME" get_nodes --accountId="$ACCOUNT"
 #local_near call "$CONTRACT_NAME" call_get_answer "{\"node_id\": \"node2.node.$ACCOUNT\", \"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
 
 #local_near call "$CONTRACT_NAME" get_answer "{\"node_id\": \"node3.node.$ACCOUNT\", \"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
-#local_near call "$CONTRACT_NAME" get_bounty_result "{\"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
+local_near call "$CONTRACT_NAME" get_bounty_result "{\"bounty_id\": \"$REFERENCE_BOUNTY\"}" --accountId="$ACCOUNT"
 #local_near call "$CONTRACT_NAME" post_answer "{\"bounty_id\": \"$REFERENCE_BOUNTY\", \"node_id\": \"node5.node.$ACCOUNT\", \"answer\": \"42\", \"message\": \"slayer\", \"status\": \"SUCCESS\"}" --accountId="$ACCOUNT"

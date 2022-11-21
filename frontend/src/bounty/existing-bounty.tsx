@@ -22,7 +22,8 @@ import { wallet } from "../index";
 import { ErrorBoundary } from "react-error-boundary";
 import { yoctoNear } from "../common/near-wallet";
 import { useNavigate } from "react-router-dom";
-import {NEAR} from "near-units";
+import {StyledLink} from "../common/styled-link";
+import {ViewBountySolutionModal} from "./view-solution-modal";
 
 const chainBountiesState = selector({
   key: "chainBounties",
@@ -136,8 +137,9 @@ function Row({ bounty }: { bounty: any }) {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   );
-
+  const [bountySolutionModalOpen, setBountySolutionModalOpen] = React.useState(false);
   const navigate = useNavigate();
+
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
@@ -157,10 +159,11 @@ function Row({ bounty }: { bounty: any }) {
 
   return (
     <React.Fragment>
+      <ViewBountySolutionModal bountyId={bounty.id} bountyStatus={bounty.status} modalOpen={bountySolutionModalOpen} handleClose={setBountySolutionModalOpen}/>
       <TableRow key={bounty.id}>
         <TableCell width={10}></TableCell>
         <TableCell component="th" scope="row">
-          <Typography>{bounty.id}</Typography>
+          <StyledLink linkTarget={`/bounty/${bounty.id}`} content={bounty.id}/>
         </TableCell>
         <TableCell component="th" scope="row" align="center">
           <Typography>{bounty.successful_nodes?.length || 0}</Typography>
@@ -169,19 +172,26 @@ function Row({ bounty }: { bounty: any }) {
           <Typography>{bounty.failed_nodes?.length || 0}</Typography>
         </TableCell>
         <TableCell component="th" scope="row" align="center">
+
           <Chip
-            label={bounty.status}
-            variant="outlined"
-            color={
-              bounty.status.toLowerCase() ===
-              BountyStatuses.Pending.toLowerCase()
-                ? "warning"
-                : bounty.status.toLowerCase() ===
-                  BountyStatuses.Success.toLowerCase()
-                ? "success"
-                : "error"
-            }
+              label={bounty.status}
+              variant="outlined"
+              onClick={() => {
+                //TODO Would be better if below showed a toast
+                bounty.status.toLowerCase() !== BountyStatuses.Pending ?
+                    setBountySolutionModalOpen(true) : null
+              }}
+              color={
+                bounty.status.toLowerCase() ===
+                BountyStatuses.Pending.toLowerCase()
+                    ? "warning"
+                    : bounty.status.toLowerCase() ===
+                    BountyStatuses.Success.toLowerCase()
+                        ? "success"
+                        : "error"
+              }
           />
+
         </TableCell>
         <TableCell component="th" scope="row" align="center">
           <Button
@@ -225,6 +235,17 @@ function Row({ bounty }: { bounty: any }) {
             >
               <Typography textAlign="center">Details</Typography>
             </MenuItem>
+            {bounty.status.toLowerCase() === BountyStatuses.Pending &&
+                <MenuItem
+                    key="solution"
+                    onClick={() => {
+                      setBountySolutionModalOpen(true);
+                      handleCloseUserMenu();
+                    }}
+                >
+                  <Typography textAlign="center">Details</Typography>
+                </MenuItem>
+            }
             {bounty.status.toLowerCase() ===
             BountyStatuses.Pending.toLowerCase() && [(<MenuItem
                   key="reward"

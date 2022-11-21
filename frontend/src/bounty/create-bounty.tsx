@@ -18,6 +18,7 @@ import React, {useContext, useTransition} from "react";
 import {Bounty, BountyStatuses, SupportedFileDownloadProtocols,} from "../../../execution-client/types";
 import {WalletContext} from "../app";
 import HelpIcon from "@mui/icons-material/Help";
+import {NEAR} from "near-units";
 
 const NODE_PADDING = 1.25;
 export const HelpText: React.FC<{ text: string }> = ({text}) => {
@@ -47,9 +48,9 @@ export default function CreateBounty({
         {} as BountyValidationError
     );
     const [state, setState] = React.useState<Partial<Bounty>>({
-        amt_node_reward: "",
-        amt_storage: "",
-        file_download_protocol: "" as SupportedFileDownloadProtocols,
+        amt_node_reward: "0.1",
+        amt_storage: "0.1",
+        file_download_protocol: SupportedFileDownloadProtocols.GIT,
         file_location: "",
         gpu_required: false,
         min_nodes: 0,
@@ -99,6 +100,7 @@ export default function CreateBounty({
             const tempError = validateBounty(state);
             setError(tempError);
             if (Object.keys(tempError).length === 0) {
+                console.log("creating bounty", state)
                 await wallet.createBounty(state);
                 handleClose();
             }
@@ -132,6 +134,7 @@ export default function CreateBounty({
                                 placeholder={"https://github.com/ad0ll/docker-hello-world.git"}
                                 name="file_location"
                                 onChange={handleChange}
+                                value={state.file_location}
                                 helperText={error.file_location}
                                 error={error.file_location !== undefined}
                             />
@@ -152,7 +155,7 @@ export default function CreateBounty({
                                 onChange={handleChange}
                                 size="small"
                                 name="file_download_protocol"
-                                value={state.file_download_protocol}
+                                value={state.file_download_protocol || SupportedFileDownloadProtocols.GIT}
                                 error={error.file_download_protocol !== undefined}
                             >
                                 {Object.values(SupportedFileDownloadProtocols).map(
@@ -183,6 +186,7 @@ export default function CreateBounty({
                                     ),
                                 }}
                                 onChange={handleChange}
+                                value={state.min_nodes}
                                 helperText={error.min_nodes}
                                 error={error.min_nodes !== undefined}
                             />
@@ -201,6 +205,7 @@ export default function CreateBounty({
                                 size="small"
                                 placeholder="Storage in NEAR"
                                 name="amt_storage"
+                                value={state.amt_storage}
                                 onChange={handleChange}
                                 error={error.amt_storage !== undefined}
                                 helperText={error.amt_storage}
@@ -226,6 +231,7 @@ export default function CreateBounty({
                                 placeholder="Reward in NEAR"
                                 name="amt_node_reward"
                                 onChange={handleChange}
+                                value={state.amt_node_reward}
                                 helperText={error.amt_node_reward}
                                 error={error.amt_node_reward !== undefined}
                             />
@@ -235,13 +241,11 @@ export default function CreateBounty({
                                 fullWidth
                                 id="timeout-seconds"
                                 label="Bounty Timeout (seconds)"
-                                placeholder={"60"}
-                                defaultValue={"60"}
+                                value={state.timeout_seconds}
                                 variant="outlined"
                                 size="small"
                                 name="timeout_seconds"
                                 onChange={handleChange}
-                                value={state.timeout_seconds}
                             />
                         </FormControl>
                         <FormControlLabel
@@ -284,6 +288,7 @@ export default function CreateBounty({
                                 console.log(fileContent)
                                 try {
                                     const res = JSON.parse(fileContent.toString())
+
                                     const newBounty: Partial<Bounty> = {
                                         file_location: res.file_location,
                                         file_download_protocol: res.file_download_protocol,
@@ -294,6 +299,7 @@ export default function CreateBounty({
                                         network_required: res.network_required,
                                         gpu_required: res.gpu_required,
                                     }
+                                    console.log("New bounty", newBounty)
                                     setState(newBounty)
                                 } catch (e) {
                                     setError({...error, file_upload: "Invalid JSON file"})

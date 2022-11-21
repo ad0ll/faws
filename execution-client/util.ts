@@ -147,5 +147,5 @@ export const emitBounty = async (config: ClientConfig, coordinatorContract: Coor
     logger.info(`EMIT_BOUNTY has been set by the user. Client will create a bounty against ${config.nearConnection.networkId} every ${emitInterval}ms`)
 
     const bounty = await createBounty(config, coordinatorContract)
-    setInterval(createBounty, 20000, config, coordinatorContract)
+    setInterval(createBounty, emitInterval, config, coordinatorContract)
 }

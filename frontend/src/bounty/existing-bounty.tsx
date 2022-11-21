@@ -110,10 +110,7 @@ export default function ExistingBounty() {
             <TableBody>
               {Object.values(bounties)
                 .filter((bounty) => bounty.owner_id === wallet.accountId)
-                .map((bounty) => (
-                  <>
-                    <Row bounty={bounty} />
-                  </>
+                .map((bounty) => (<Row bounty={bounty} key={bounty.id} />
                 ))}
             </TableBody>
           </Table>
@@ -140,6 +137,7 @@ function Row({ bounty }: { bounty: any }) {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   );
+
   const navigate = useNavigate();
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -166,10 +164,10 @@ function Row({ bounty }: { bounty: any }) {
           <Typography>{bounty.id}</Typography>
         </TableCell>
         <TableCell component="th" scope="row" align="center">
-          <Typography>{bounty.successful_nodes || "N/A"}</Typography>
+          <Typography>{bounty.successful_nodes?.length || 0}</Typography>
         </TableCell>
         <TableCell component="th" scope="row" align="center">
-          <Typography>{bounty.failed_nodes || "N/A"}</Typography>
+          <Typography>{bounty.failed_nodes?.length || 0}</Typography>
         </TableCell>
         <TableCell component="th" scope="row" align="center">
           <Chip

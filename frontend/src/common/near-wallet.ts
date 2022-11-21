@@ -211,6 +211,18 @@ export class Wallet {
       args: { owner_id: this.accountId },
     });
   }
+  async getLifetimeEarningsForOwner(): Promise<number> {
+    return await this.viewMethod({
+      method: "get_lifetime_earnings_for_owner",
+      args: { owner_id: this.accountId },
+    });
+  }
+  async getNodesOwnedBySelfCount(): Promise<number> {
+    return await this.viewMethod({
+      method: "get_nodes_for_owner_count",
+      args: { owner_id: this.accountId },
+    });
+  }
   async getNodes(): Promise<ClientNode[]> {
     return await this.viewMethod({
       method: "get_nodes",
@@ -227,6 +239,12 @@ export class Wallet {
   async getBountiesOwnedBySelf(): Promise<Bounty[]> {
     return await this.viewMethod({
       method: "get_bounties_for_owner",
+      args: { owner_id: this.accountId },
+    });
+  }
+  async getBountiesOwnedBySelfCount(): Promise<number> {
+    return await this.viewMethod({
+      method: "get_bounties_for_owner_count",
       args: { owner_id: this.accountId },
     });
   }

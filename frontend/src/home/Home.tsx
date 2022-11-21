@@ -1,17 +1,15 @@
 import {Box, Paper, Typography} from "@mui/material";
-import React, {useContext, useEffect} from "react";
+import React, {useContext, useEffect, useTransition} from "react";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
 import ComputerIcon from "@mui/icons-material/Computer";
-import {WalletContext} from "../app";
-import {selector, useRecoilValue} from "recoil";
+import {isSignedInState, ONE_YOCTO_NEAR, WalletContext} from "../app";
+import {atom, selector, useRecoilState_TRANSITION_SUPPORT_UNSTABLE} from "recoil";
 import {useNavigate} from "react-router";
-import {chainNodesState} from "../node/existing-node";
-import {wallet} from "..";
 import {default as NearBadge} from "../../assets/svg/near-brand-badge.png";
-import {bountiesState} from "../bounty/existing-bounty";
-import {Bounty, ClientNode} from "../../../execution-client/types";
 import {NEAR} from "near-units";
+import {wallet} from "../index";
+import {yoctoNear} from "../common/near-wallet";
 
 const paperStyle = {
     margin: "24px",
@@ -25,6 +23,31 @@ const iconStyle = {
     width: "50px",
     height: "50px",
 };
+
+const selfPayoutsSelector = selector({
+    key: "selfPayoutsSelector",
+    get: async ({get}) => {
+        const isSignedIn = get(isSignedInState);
+        return isSignedIn ? await wallet.getLifetimeEarningsForOwner() : 0;
+    },
+});
+
+const selfNodeCountSelector = selector({
+    key: "selfNodeCountSelector",
+    get: async ({get}) => {
+        const isSignedIn = get(isSignedInState);
+        return isSignedIn ? await wallet.getNodesOwnedBySelfCount() : 0;
+    },
+});
+
+
+const selfBountyCountSelector = selector({
+    key: "selfBountyCountSelector",
+    get: async ({get}) => {
+        const isSignedIn = get(isSignedInState);
+        return isSignedIn ? await wallet.getBountiesOwnedBySelfCount() : 0;
+    },
+});
 
 const totalPayoutsSelector = selector({
     key: "totalPayoutsSelector",
@@ -47,85 +70,71 @@ const nodesCountSelector = selector({
     },
 });
 
+const selfPayoutsState = atom({
+key: "selfPayoutsState",
+default: selfPayoutsSelector,
+})
+
+const selfNodeCountState = atom({
+    key: "selfNodeCountState",
+    default: selfNodeCountSelector,
+})
+const selfBountyCountState = atom({
+  key: "selfBountyCountState",
+    default: selfBountyCountSelector,
+})
+const totalPayoutsState = atom({
+    key: "totalPayoutsState",
+    default: totalPayoutsSelector,
+})
+const bountiesCountState = atom({
+    key: "totalBountiesState",
+    default: bountiesCountSelector,
+})
+const nodesCountState = atom({
+    key: "nodesCountState",
+    default: nodesCountSelector,
+})
+
 export default function Home({isSignedIn}: { isSignedIn: boolean }) {
     const wallet = useContext(WalletContext);
     const navigate = useNavigate();
-    let nodes = [];
-    let bounties = [];
-    if (isSignedIn) {
-        nodes = useRecoilValue(chainNodesState);
-        bounties = useRecoilValue(bountiesState);
-    }
 
-    const processBounties = (bounties: Bounty[]) => {
-        let tempBountiesCount = 0;
-        Object.values(bounties)
-            .filter((bounty) => bounty.owner_id === wallet.accountId)
-            .forEach((_) => tempBountiesCount++);
-        return tempBountiesCount;
-    };
+    const [totalSelfEarnings, setTotalSelfEarnings] = useRecoilState_TRANSITION_SUPPORT_UNSTABLE(selfPayoutsState);
+    const [totalSelfBounties, setTotalSelfBounties] = useRecoilState_TRANSITION_SUPPORT_UNSTABLE(selfBountyCountState);
+    const [totalSelfNodes, setTotalSelfNodes] = useRecoilState_TRANSITION_SUPPORT_UNSTABLE(selfNodeCountState);
 
-    const processNodes = (nodes: ClientNode[]): [bigint, number] => {
-        let tempNodesCount = 0;
-        let tempEarnings = BigInt(0);
-        Object.values(nodes)
-            .filter((node) => node.owner_id === wallet.accountId)
-            .forEach((node) => {
-                tempEarnings = tempEarnings + BigInt(node.lifetime_earnings || 0);
-                tempNodesCount++;
-            });
+    const [totalPayouts, setTotalPayouts] = useRecoilState_TRANSITION_SUPPORT_UNSTABLE(totalPayoutsState);
+    const [totalBounties, setTotalBounties] = useRecoilState_TRANSITION_SUPPORT_UNSTABLE(bountiesCountState);
+    const [totalNodes, setTotalNodes] = useRecoilState_TRANSITION_SUPPORT_UNSTABLE(nodesCountState);
+    const [inTransition, startTransition] = React.useTransition();
 
-        return [tempEarnings, tempNodesCount];
-    };
-
-    const [totalSelfEarnings, setTotalSelfEarnings] = React.useState(
-        processNodes(nodes)[0]
-    );
-    const [totalSelfBounties, setTotalSelfBounties] = React.useState(
-        processBounties(bounties)
-    );
-    const [totalSelfNodes, setTotalSelfNodes] = React.useState(
-        processNodes(nodes)[1]
-    );
-    const [totalPayouts, setTotalPayouts] = React.useState(
-        useRecoilValue(totalPayoutsSelector)
-    );
-    const [totalBounties, setTotalBounties] = React.useState(
-        useRecoilValue(bountiesCountSelector)
-    );
-    const [totalNodes, setTotalNodes] = React.useState(
-        useRecoilValue(nodesCountSelector)
-    );
 
     useEffect(() => {
-        const getBounties = async () => {
-            if (isSignedIn) {
-                const selfBounties = await wallet.getBountiesOwnedBySelf();
-                setTotalSelfBounties(processBounties(selfBounties));
-            }
-            setTotalBounties(await wallet.getBountyCount());
+        const updateHomepage = async () => {
+            console.log(isSignedIn)
+            const totalSelfNodes = isSignedIn ? await wallet.getNodesOwnedBySelfCount() : 0;
+            const totalSelfEarnings = isSignedIn ? await wallet.getLifetimeEarningsForOwner() : 0;
+            const totalSelfBounties = isSignedIn ? await wallet.getBountiesOwnedBySelfCount() : 0;
+            const totalPayouts = await wallet.getTotalPayouts();
+            const totalBounties = await wallet.getBountyCount();
+            const totalNodes = await wallet.getNodeCount();
+            startTransition(() => {
+                if (isSignedIn) {
+                    setTotalSelfNodes(totalSelfNodes);
+                    setTotalSelfEarnings(totalSelfEarnings);
+                    setTotalSelfBounties(totalSelfBounties);
+                }
+                setTotalBounties(totalBounties)
+                setTotalPayouts(totalPayouts);
+                setTotalNodes(totalNodes);
+            })
         };
-        const interval = setInterval(getBounties, 2000);
-        return () => clearInterval(interval);
-    }, [bounties, isSignedIn, totalSelfBounties, totalBounties]);
-    useEffect(() => {
-        const updateNodes = async () => {
-            if (isSignedIn) {
-                nodes = await wallet.getNodesOwnedBySelf();
-                const [amtSelfEarnings, amtSelfNodes] = processNodes(nodes);
-                console.log((totalSelfEarnings / BigInt(10 * 24)).toString())
-
-                setTotalSelfEarnings(amtSelfEarnings);
-                setTotalSelfNodes(amtSelfNodes);
-            }
-            setTotalPayouts(await wallet.getTotalPayouts());
-            setTotalNodes(await wallet.getNodeCount());
-        };
-        const pollingInterval = setInterval(updateNodes, 2000);
+        const pollingInterval = setInterval(updateHomepage, 3000);
         return () => {
             clearInterval(pollingInterval);
         };
-    }, [nodes, isSignedIn, totalNodes, totalSelfNodes, totalSelfEarnings, totalPayouts]);
+    }, [isSignedIn, totalNodes, totalSelfNodes, totalSelfEarnings, totalPayouts, totalSelfBounties, totalBounties]);
 
     return (
         <>
@@ -161,7 +170,7 @@ export default function Home({isSignedIn}: { isSignedIn: boolean }) {
                         <Typography variant="h5">My Earnings</Typography>
                         <Typography variant="h1">
                             <>
-                                {NEAR.from(totalSelfEarnings).div(NEAR.parse("1")).toString()}
+                                {Math.ceil(totalSelfEarnings/yoctoNear)}
                                 <Typography>NEAR</Typography>
                             </>
                         </Typography>
@@ -218,7 +227,7 @@ export default function Home({isSignedIn}: { isSignedIn: boolean }) {
                         <Typography variant="h5">Total Payouts</Typography>
                         <Typography variant="h1">
                             <>
-                                {NEAR.from(totalPayouts).div(NEAR.parse("1")).toString()}
+                                {Math.ceil(totalPayouts / yoctoNear)}
                                 <Typography>NEAR</Typography>
                             </>
                         </Typography>

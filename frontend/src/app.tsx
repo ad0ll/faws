@@ -1,5 +1,5 @@
 import "regenerator-runtime/runtime";
-import React from "react";
+import React, {useEffect} from "react";
 import NavBar from "./common/nav-bar";
 import Home from "./home/home";
 import Bounty from "./bounty/bounty";
@@ -9,15 +9,20 @@ import {BrowserRouter, Route, Routes} from "react-router-dom";
 import {NodeDetail} from "./node/node-detail";
 import {ErrorBoundary} from "react-error-boundary";
 import {TransientStorage} from "./storage";
-import {atom} from "recoil";
+import {atom, useRecoilState} from "recoil";
 import {BountyDetail} from "./bounty/bounty-detail";
 
-export const COORDINATOR_ID = process.env.CONTRACT_NAME || process.env.COORDINATOR_ID || "dev-1668375639392-20530569635416";
+export const COORDINATOR_ID = process.env.CONTRACT_NAME || process.env.COORDINATOR_ID || "dev-1668985039662-44581385500861";
+export const ONE_YOCTO_NEAR = 10**24;
 
 export const localStorageState = atom<TransientStorage>({
     key: "localStorageState",
     default: new TransientStorage(),
 });
+export const isSignedInState = atom<boolean>({
+    key: "isSignedInState",
+    default: false,
+})
 
 export const WalletContext = React.createContext<Wallet>(null);
 export default function App({
@@ -27,16 +32,24 @@ export default function App({
     isSignedIn: boolean;
     wallet: Wallet;
 }) {
+
+    const [localIsSignedIn, setLocalIsSignedInState] = useRecoilState(isSignedInState);
+    useEffect(() => {
+        if(isSignedIn !== localIsSignedIn) {
+            setLocalIsSignedInState(isSignedIn);
+        }
+    }, [isSignedIn, wallet])
+
     return (
-        // <ErrorBoundary
-        //     fallbackRender={({error, resetErrorBoundary}) => (
-        //         <div role="alert">
-        //             Something went wrong:
-        //             <pre>{error.message}</pre>
-        //             <button onClick={resetErrorBoundary}>Try again</button>
-        //         </div>
-        //     )}
-        // >
+        <ErrorBoundary
+            fallbackRender={({error, resetErrorBoundary}) => (
+                <div role="alert">
+                    Something went wrong:
+                    <pre>{error.message}</pre>
+                    <button onClick={resetErrorBoundary}>Try again</button>
+                </div>
+            )}
+        >
             <WalletContext.Provider value={wallet}>
                 <BrowserRouter>
                     <NavBar isSignedIn={isSignedIn}/>
@@ -62,7 +75,7 @@ export default function App({
                     </main>
                 </BrowserRouter>
             </WalletContext.Provider>
-        // </ErrorBoundary>
+        </ErrorBoundary>
     );
 }
 

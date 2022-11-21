@@ -95,12 +95,10 @@ impl Coordinator {
     }
 
     pub fn get_node_count(&self) -> u64 {
-        log!("get_node_count");
         return self.nodes.len();
     }
 
     pub fn get_bounty_count(&self) -> u64 {
-        log!("get_bounty_count");
         return self.bounties.len();
     }
     pub fn get_offline_node_count(&self) -> u64 {
@@ -109,6 +107,21 @@ impl Coordinator {
 
     pub fn get_total_completed_bounties(&self) -> u64 {
         return self.total_completed_bounties;
+    }
+
+    pub fn get_nodes_for_owner_count(&self, owner_id: AccountId) -> usize {
+        return self.node_by_owner.get(&owner_id).unwrap_or(vec![]).len();
+    }
+    pub fn get_lifetime_earnings_for_owner(&self, owner_id: AccountId) -> Balance {
+        let mut total = 0;
+        for node_id in self.node_by_owner.get(&owner_id).unwrap_or(vec![]) {
+            total += self.nodes.get(&node_id).unwrap().lifetime_earnings;
+        }
+        return total;
+    }
+    pub fn get_bounties_for_owner_count(&self, owner_id: AccountId) -> usize {
+        return self.bounty_by_owner.get(&owner_id).unwrap_or(vec![]).len();
+
     }
     pub fn get_total_payouts(&self) -> Balance {
         return self.total_payouts;
@@ -434,12 +447,12 @@ impl Coordinator {
             "Attached deposit must be equal to the sum of the storage and node reward amounts"
         );
         require!(
-            amt_storage > MIN_STORAGE,
-            "Refundable storage deposit must be greater than 0.1N"
+            amt_storage >= MIN_STORAGE,
+            "Refundable storage deposit must be at least 0.1N"
         );
         //0.1N ~10KB, should be more than enough for most
         require!(
-            amt_node_reward > MIN_REWARD,
+            amt_node_reward >= MIN_REWARD,
             "Node reward must be at least 0.1N"
         );
         require!(
@@ -523,12 +536,14 @@ impl Coordinator {
                 log!("elected {} (only node in queue)", key);
             } else {
                 let seed = Coordinator::rand_u64();
-                let random_node = seed % self.node_queue.len() as u64;
+                let random_node = seed as usize % self.node_queue.len();
                 log!(
-                    "electing node at: {}, (seed: {}, index: {})",
-                    random_node.to_string(),
-                    seed,
-                    random_node
+                    "electing node at: {}, (seed: {}, index: {}, node_queue_len: {}, supposed_node: {})",
+                    random_node,
+                    seed as usize,
+                    random_node,
+                    self.node_queue.len() as u64,
+                    seed as usize % self.node_queue.len()
                 );
                 // let key = self.node_queue.swap_remove(random_node); // O(1) by replacing removed with last element
                 // Remove node to eliminate possibility of collisions
@@ -971,7 +986,7 @@ impl Coordinator {
     }
 
     // When a bounty is stalled due to offline nodes, this can redo the in-flight elections to try it against a new set of nodes
-    pub fn reelect_nodes(&mut self, bounty_id: AccountId){
+    pub fn reelect_unanswered_nodes(&mut self, bounty_id: AccountId){
         let mut bounty = self.bounties.get(&bounty_id).unwrap_or_else(|| panic!("Bounty {} does not exist", bounty_id));
         require!(bounty.status == BountyStatus::Pending, "Bounty must be in-flight to reelect nodes");
 

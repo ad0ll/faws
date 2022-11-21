@@ -111,7 +111,7 @@ export default function ExistingNode() {
               <TableHead>
                 <TableRow>
                   <TableCell />
-                  <TableCell>Id</TableCell>
+                  <TableCell>Name</TableCell>
                   <TableCell align="center">Last Success</TableCell>
                   <TableCell align="center">Last Failure</TableCell>
                   <TableCell align="center">Active Bounties</TableCell>
@@ -299,7 +299,6 @@ function Row({ node }: { node: ClientNode }) {
   const cpuUsage = 10;
   const diskUsage = 50;
   const ramUsage = 100;
-
   return (
     <React.Fragment>
       <TableRow
@@ -321,8 +320,8 @@ function Row({ node }: { node: ClientNode }) {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row">
-          <Typography>{node.id}</Typography>
+        <TableCell>
+          <Typography>{node.id.replace(`.node.${node.owner_id}`, "")}</Typography>
         </TableCell>
         <TableCell align="center">
           {node.last_success

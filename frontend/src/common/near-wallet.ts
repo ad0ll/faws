@@ -32,8 +32,6 @@ export class Wallet {
   wallet: NearWallet;
   accountId: string;
   contractId: string;
-  existingBounties: Bounty[] = [];
-  existingNodes: ClientNode[] = [];
 
   constructor() {
     this.contractId = COORDINATOR_ID; //COORDINATOR_NAME or COORDINATOR_ID envvar
@@ -41,17 +39,6 @@ export class Wallet {
 
   // To be called when the website loads
   async startUp() {
-    //TODO, will want to rewire this to testnet later
-    // const network: Network = {
-    //     networkId: "localnet",
-    //     nodeUrl: "http://0.0.0.0:3030",
-    //     helperUrl: "http://0.0.0.0/helper", //Not a real url
-    //     explorerUrl: "http://0.0.0.0/explorer, //Not a real url
-    //     indexerUrl: "http://0.0.0.0:8081"
-    // }
-
-    //garbage3.testnet: crowd desk cup wink social pudding spot twin pulse tag online cupboard
-    //garbage4.testnet: brother fire ladder embark renew grass decide dad mercy final calm diamond
     this.walletSelector = await setupWalletSelector({
       network: "testnet",
       // network, //TODO make this configurable, see network config in execution client
@@ -92,7 +79,7 @@ export class Wallet {
   signOut() {
     this.wallet.signOut();
     this.wallet = this.accountId = this.contractId = undefined;
-    window.location.replace(window.location.origin + window.location.pathname);
+    // window.location.replace(window.location.origin + window.location.pathname);
   }
 
   // Make a read-only call to retrieve information from the network
@@ -141,7 +128,18 @@ export class Wallet {
   // TODO: Convert human readable KB storage to near storage cost units
   // TOOD: Add pulling conversion from rpc
   async createBounty(bounty: Partial<Bounty>) {
-    return await this.callMethod({
+    console.log({
+      file_location: bounty.file_location,
+      file_download_protocol: bounty.file_download_protocol,
+      min_nodes: Number(bounty.min_nodes),
+      timeout_seconds: Number(bounty.timeout_seconds),
+      network_required: bounty.network_required,
+      gpu_required: bounty.gpu_required,
+      amt_storage: NEAR.parse(bounty.amt_storage),
+      amt_node_reward: NEAR.parse(bounty.amt_node_reward),
+    })
+    console.log("Calling method")
+    await this.callMethod({
       contractId: COORDINATOR_ID,
       method: "create_bounty",
       args: {
@@ -153,13 +151,13 @@ export class Wallet {
         gpu_required: bounty.gpu_required,
         amt_storage: NEAR.parse(bounty.amt_storage),
         amt_node_reward: NEAR.parse(bounty.amt_node_reward),
-
       },
       deposit: (
         NEAR.parse(bounty.amt_storage).toBigInt() +
         NEAR.parse(bounty.amt_node_reward).toBigInt()
       ).toString(),
     });
+    console.log("Fin")
   }
 
   async cancelBounty(bountyId: string) {
@@ -280,7 +278,7 @@ export class Wallet {
 
   async registerNode(
     name: string,
-    absolute_timeout: string,
+    absolute_timeout: number,
     allow_network: boolean,
     allow_gpu: boolean
   ): Promise<void | FinalExecutionOutcome> {

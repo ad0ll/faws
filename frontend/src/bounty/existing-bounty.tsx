@@ -72,7 +72,6 @@ export default function ExistingBounty() {
   useEffect(() => {
     const getBounties = async () => {
       const selfBounties = await wallet.getBountiesOwnedBySelf();
-      console.log("Bounties: ", selfBounties);
       let answers = { ...bountyAnswers };
       for await (const bounty of selfBounties) {
         const answerCounts = await wallet.getBountyAnswerCounts(bounty.id);

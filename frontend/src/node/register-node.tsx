@@ -17,7 +17,7 @@ export default function RegisterNode({
   const wallet = useContext(WalletContext);
   const [state, setState] = React.useState({
     name: "",
-    absolute_timeout: "",
+    absolute_timeout: 0,
     allow_network: false,
     allow_gpu: false,
   });
@@ -36,7 +36,7 @@ export default function RegisterNode({
   const handleSubmit = async () => {
     await wallet.registerNode(
       state.name,
-      state.absolute_timeout,
+      state.absolute_timeout * 1000,
       state.allow_network,
       state.allow_gpu
     );
@@ -61,7 +61,7 @@ export default function RegisterNode({
           <TextField
             fullWidth
             id="timeout"
-            label="Absolute Timeout"
+            label="Absolute Timeout (seconds)"
             variant="outlined"
             size="small"
             name="absolute_timeout"

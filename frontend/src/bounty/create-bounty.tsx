@@ -15,10 +15,9 @@ import {
     Tooltip,
 } from "@mui/material";
 import React, {useContext, useTransition} from "react";
-import {Bounty, BountyStatuses, SupportedFileDownloadProtocols,} from "../../../execution-client/types";
+import {Bounty, SupportedFileDownloadProtocols,} from "../../../execution-client/types";
 import {WalletContext} from "../app";
 import HelpIcon from "@mui/icons-material/Help";
-import {NEAR} from "near-units";
 
 const NODE_PADDING = 1.25;
 export const HelpText: React.FC<{ text: string }> = ({text}) => {
@@ -41,7 +40,6 @@ export default function CreateBounty({
     handleClose: () => void;
     nodeCount: number;
 }) {
-    console.log("Node count: (create bounty)", nodeCount);
     const wallet = useContext(WalletContext);
     const [inTransition, startTransition] = useTransition();
     const [error, setError] = React.useState<BountyValidationError>(
@@ -90,7 +88,7 @@ export default function CreateBounty({
             stagedError.min_nodes = "Minimum number of nodes must be greater than 0";
         }
         if (Math.ceil(bounty.min_nodes * NODE_PADDING) > nodeCount) {
-            stagedError.not_enough_nodes = `Not enough nodes to fill the bounty (requires ${NODE_PADDING*100}% of min_nodes (${bounty.min_nodes})`;
+            stagedError.not_enough_nodes = `Not enough nodes to fill the bounty (requires ${NODE_PADDING * 100}% of min_nodes (${bounty.min_nodes})`;
         }
         return stagedError;
     };
@@ -99,9 +97,13 @@ export default function CreateBounty({
         try {
             const tempError = validateBounty(state);
             setError(tempError);
+            console.log(tempError)
             if (Object.keys(tempError).length === 0) {
                 console.log("creating bounty", state)
-                await wallet.createBounty(state);
+
+                await wallet.createBounty(state).catch(error => {
+                    console.log(`MUCH ERROR ${error}`)
+                })
                 handleClose();
             }
         } catch (e: any) {
@@ -292,10 +294,10 @@ export default function CreateBounty({
                                     const newBounty: Partial<Bounty> = {
                                         file_location: res.file_location,
                                         file_download_protocol: res.file_download_protocol,
-                                        min_nodes: res.min_nodes,
-                                        amt_storage: res.amt_storage,
-                                        amt_node_reward: res.amt_node_reward,
-                                        timeout_seconds: res.timeout_seconds,
+                                        min_nodes: res.min_nodes.toString(),
+                                        amt_storage: res.amt_storage.toString(),
+                                        amt_node_reward: res.amt_node_reward.toString(),
+                                        timeout_seconds: res.timeout_seconds.toString(),
                                         network_required: res.network_required,
                                         gpu_required: res.gpu_required,
                                     }

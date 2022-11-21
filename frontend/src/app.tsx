@@ -12,7 +12,7 @@ import {TransientStorage} from "./storage";
 import {atom, useRecoilState} from "recoil";
 import {BountyDetail} from "./bounty/bounty-detail";
 
-export const COORDINATOR_ID = process.env.CONTRACT_NAME || process.env.COORDINATOR_ID || "dev-1668985039662-44581385500861";
+export const COORDINATOR_ID = process.env.CONTRACT_NAME || process.env.COORDINATOR_ID || "dev-1669007152167-60003371065013";
 export const ONE_YOCTO_NEAR = 10**24;
 
 export const localStorageState = atom<TransientStorage>({

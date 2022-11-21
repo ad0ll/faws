@@ -85,25 +85,30 @@ defaults
     timeout connect 4s
     timeout server 30s
     log global
-    option httplog
 
 frontend localhost
-    mode http
+    bind *:80
+    bind *:443
+    log global
     # BEGIN CORS
     http-response set-header Access-Control-Allow-Origin "*"
     http-response set-header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, JSNLog-RequestId, activityId, applicationId, applicationUserId, channelId, senderId, sessionId"
     http-response set-header Access-Control-Max-Age 3628800
     http-response set-header Access-Control-Allow-Methods "GET, DELETE, OPTIONS, POST, PUT"
     # END CORS
-    bind *:80
-    bind *:443
-    log global
     use_backend metrics if { path /metrics } || { path_beg /metrics/ }
+    use_backend ws if { path /ws } || { path_beg /metrics/ }
     default_backend metrics
+
+backend ws
+    option tcplog
+    mode tcp
+    server server1 127.0.0.1:8081
 
 backend metrics
     mode http
-    server server1 127.0.0.1:9100
+    option httplog
+    server server2 127.0.0.1:9100
 
 EOF
   service haproxy restart

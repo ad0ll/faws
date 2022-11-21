@@ -121,9 +121,9 @@ install_ansible
 install_node_exporter
 
 if [[ ! -d "$HOME/$REPO_DIR" ]]; then
-  git clone https://github.com/ad0ll/$REPO_NAME.git $REPO_DIR
+  git clone "https://github.com/ad0ll/$REPO_NAME.git" "$HOME/$REPO_DIR"
 fi
-cd "$REPO_DIR/playbook" || exit
+cd "$HOME/$REPO_DIR/playbook" || exit
 git pull origin main
 
 echo "Installing tools"

@@ -1,90 +1,62 @@
-## Instructions
-1. Build the contract with `./build.sh`
-2. Deploy t
+# F.A.W.S. coordinator contract
 
-
-## Examples
-1.  Deploy contract
-```bash
-local_near dev-deploy --wasmFile target/wasm32-unknown-unknown/release/coordinator.wasm 
+TL;DR:
+Use the frontend or this command to create bounties
+```shell
+near call "$CONTRACT_NAME" create_bounty --accountId="$ACCOUNT" --deposit 2 "{\"file_location\": \"https://github.com/ad0ll/docker-hello-world.git\", \"file_download_protocol\": \"HTTPS\", \"min_nodes\": 1, \"timeout_seconds\": 600, \"network_required\": true, \"gpu_required\": false, \"amt_storage\": \"1000000000000000000000000\", \"amt_node_reward\": \"1000000000000000000000000\"}"
 ```
-2. Create an account:
-```bash
-
-```
-1. Register a node:
-```bash
-local_near call "dev-1665283011588-97304367585179" register_node '{"name": "acheivement20"}' --accountId=dev-1665427694682-19594043998989
-```
-2. Create a bounty:
-```bash
-local_near call "dev-1665283011588-97304367585179" create_bounty '{"name": "something22", "file_location": "https://github.com/ad0ll/docker-hello-world.git", "file_download_protocol": "GIT", "threshold": 2, "network_required": true, "gpu_required": false, "amt_storage": "1000000000000000000000000", "amt_node_reward": "1000000000000000000000000"}' --accountId="dev-1665427694682-19594043998989" --deposit 2 
-```
-1. Get nodes
-```bash 
- local_near call "dev-1665283011588-97304367585179" get_nodes '{}' --accountId dev-1665427694682-19594043998989 
-```
-2. Get bounties (useless because borsh serialization)
-```bash
-local_near call "dev-1665283011588-97304367585179" get_bounties '{}' --accountId=dev-1665427694682-19594043998989 
-```
-3. Get bounty
-```bash
-
+Use the frontend, playbook, or this command to register a node
+```shell
+near call "$CONTRACT_NAME" register_node '{"name": "helper-node3", "absolute_timeout": 60000, "allow_network": true, "allow_gpu": false}' --deposit 1 --accountId="$ACCOUNT"
 ```
 
-local_near generate-key account1
-near repl
-// Paste this code in the javascript console
-const pk58 = 'ed25519:<data>'
-nearAPI.utils.PublicKey.fromString(pk58).data.hexSlice()
+this contract is the on chain backend for f.a.w.s.. it contains three parts (that may be split into separate contracts in the future):
+1. [coordinator](./coordinator/src/coordinator/mod.rs): all of the heavy lifting. handles most functions of f.a.w.s. including node election, bounty payouts, and managing the lifespan of nodes and bounties. also the only place where data for f.a.w.s. is stored.
+2. [bounty](./coordinator/src/bounty/mod.rs): a discrete job that is distributed to off chain clients by the coordinator. see bounty creation for specifics
+3. [node](./coordinator/src/node/mod.rs): an on chain representation of an off chain client
 
-local_near call localnet create_account '{"new_account_id": "<account-name>.testnet"
-near call testnet create_account '{"new_account_id": "<account-name>.testnet", "new_public_key": "ed25519:<data>"}' --deposit 0.00182 --accountId <account-with-funds>
+## specifics
 
+### Bounties
 
-~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ local_near generate-key account1                                                                                                          4s 06:50:22
-Loaded master account test.near key from /Users/adoll/.near/validator_key.json with public key = ed25519:HxzAZgDCZTvA4dJbUJH1u9VT1YAex13QZohVoYr732zu
-Key pair with ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA public key for an account "account1"
-~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ near repl                                                                                                                                    06:53:49
-> const pk58 = 'ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA'
-undefined
-> const pk58='ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA'
-Uncaught SyntaxError: Identifier 'pk58' has already been declared
-> nearAPI.utils.PublicKey.fromString(pk58).data.hexSlice()
-'48cc310c9020f664cd3f8da6c9a1eae425b2830b623348bec45a38fba896e553'
+#### EABounty Creation
+**When creating a bounty, please be a good steward to the network and avoid running code that could compromise the safety and security of node operators.**
 
+To create a bounty that can be run on F.A.W.S., you must pass a package url to file_location that is one of the following:
+1. A git repository that contains a Dockerfile at its root. The git repo must be public, and we encourage using the https instead of the ssh url, since we don't know if nodes have ssh keys set up.
+2. A zip or tar file that is packed with a directory that contains a Dockerfile at its root/first level
+3. A path to a Dockerfile
 
+You can do anything that Docker can do in your Dockerfile. There are only two concrete requirements. 
+First, **in order to see the result of a node's execution**, the last line of output written to stdout/stderr must be a specifically formatted JSON string: 
+```
+{
+        "bounty_data": {
+            "result": "data as string",
+            "message": "optional message, typically used for printing error messages"
+        }
+}
+```
+Failure to exit with this JSON string will result in empty responses from nodes. They'll get paid for the work, but you won't be able to see the result.
+Second, in order to run GPU workloads, you must pass the "GPU Required" on bounty creation. This will pass "--gpus all" to the docker run command.
 
->
-~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ local_near generate-key account2                                                                                                       1m 4s 06:55:03
-Loaded master account test.near key from /Users/adoll/.near/validator_key.json with public key = ed25519:HxzAZgDCZTvA4dJbUJH1u9VT1YAex13QZohVoYr732zu
-Key pair with ed25519:HEmKDD7JzmhMuoTz3HfsTpAfdmww3EaujexLYXhigvEC public key for an account "account2"
-~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ local_near generate-key account3                                                                                                             06:55:08
-Loaded master account test.near key from /Users/adoll/.near/validator_key.json with public key = ed25519:HxzAZgDCZTvA4dJbUJH1u9VT1YAex13QZohVoYr732zu
-Key pair with ed25519:BwZVQnCpJCFXcreoPMN4uC2fXoJaKxun4AmZmYdynFVD public key for an account "account3"
-~/projects/hello-near/contract ad0ll-develop +1 !8 ?1 ❯ near repl
+There are some other best practices that we recommend, but they are not required:
+1. Always produce the above json, even if there is an error. this will allow node's to consistently report whether the bounty succeeded or failed.
+2. Accurately estimate how long a bounty will take when creating it. This will filter out nodes that have settings that would kill the bounty prematurely.
 
-> nearAPI.utils.PublicKey.fromString('ed25519:HEmKDD7JzmhMuoTz3HfsTpAfdmww3EaujexLYXhigvEC').data.hexSlice()
-'f141a5b618ecc20c9991642529202907b241476ce2e2074121153f3eded89e19'
+You can refer to this [hello world package for an example on how to set up a bounty](https://github.com/ad0ll/docker-hello-world)
 
-
-> nearAPI.utils.PublicKey.fromString('ed25519:BwZVQnCpJCFXcreoPMN4uC2fXoJaKxun4AmZmYdynFVD').data.hexSlice()
-'a28ef825426ea7eb976c8a1083824d45a63e27f73c048ca1cf921dbcc70d7124'
-
-
-
-near call testnet create_account '{"new_account_id": "account1.localnet", "new_public_key": "ed25519:<data>"}' --deposit 0.00182 --accountId <account-with-funds>
-
-ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA
-48cc310c9020f664cd3f8da6c9a1eae425b2830b623348bec45a38fba896e553
-local_near call localnet create_account '{"new_account_id": "account1.localnet", "new_public_key": "ed25519:5uAweyZFafk6WZrh2j9FgKVTGzXjB99ET9YVnfTRUcGA"}' --deposit 2 --accountId dev-1665283011588-97304367585179
+#### Bounty lifecycle
+The typical lifecycle of a bounty is as follows:
+1. A bounty is created using the frontend or a script.
+2. The coordinator looks at what the bounty requires (gpu + network currently) and elects suitable nodes to run the bounty.
+3. Nodes receive the bounty creation event and run the job off chain
+4. Each node submits their answers until the minimum majority of answers required by the bounty is reached.
+5. The final node closes the bounty. The remaining storage deposit is returned to the bounty creator.
+6. Nodes receive the bounty complete event and collect their reward if they're in the majority (Currently, if the majority of nodes succeed, any successful node receives the reward, or if the majority of nodes fail, any failed node receives the reward. This will be changed in the future to be more fair and robust,
 
 
-ed25519:HEmKDD7JzmhMuoTz3HfsTpAfdmww3EaujexLYXhigvEC
-f141a5b618ecc20c9991642529202907b241476ce2e2074121153f3eded89e19
+### Nodes
+Nodes are on chain representations of off chain clients. We use them to store node configuration, which is primarily used to filter nodes during election. For instance, a node can be configured with "allow_gpu" which will allow it to be elected by a bounty that has "gpu_required" set to true.
 
-ed25519:BwZVQnCpJCFXcreoPMN4uC2fXoJaKxun4AmZmYdynFVD
-a28ef825426ea7eb976c8a1083824d45a63e27f73c048ca1cf921dbcc70d7124
-
-near call create_acc
+Besides configuration, the contract records metrics about each node on the network, but doesn't currently act on them. There are plans later to move consistently failing nodes to an offline state (no slashing), but that isn't in the current version

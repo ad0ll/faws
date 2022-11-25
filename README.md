@@ -13,5 +13,5 @@ Please refer to the following directories/readmes for more information:
 * [contract](../contract/README.md): The backend for F.A.W.S, built on NEAR
 * [execution client](../execution-client/README.md): The component that runs off chain workloads
 * [playbook](../playbook/README.md): The one line installer for the execution client
-* [frontend]
+* [frontend](../frontend): The frontend for F.A.W.S.
 

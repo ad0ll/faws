@@ -1,5 +1,7 @@
 # F.A.W.S. 
-Decentralized serverless for the masses. 
+Decentralized serverless for the masses, built on NEAR 
+
+[Watch the overview on youtube](https://www.yo-utube.com/watch?v=HLh7oYuZQ-0)
 
 ## Getting started 
 ### Node operators/Non-technical
